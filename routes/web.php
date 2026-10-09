@@ -1,0 +1,455 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use App\Models\Booking;
+use App\Models\User;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\Admin\BookingController as AdminBookingController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\AdminBootstrapController;
+use App\Http\Controllers\Admin\AdminRecoveryController;
+use App\Http\Controllers\Admin\AdminEmailChangeController;
+use App\Http\Controllers\Admin\AdminPasswordResetController;
+use App\Http\Controllers\Auth\GoogleController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\DeviceVerificationController;
+// Home Page: Landing page route
+Route::get('/', function () {
+    $featuredPackages = \App\Models\Package::where('is_active', true)
+        ->where('is_archived', false)
+        ->with('images')
+        ->take(3)
+        ->get();
+    $featuredGalleries = \App\Models\Gallery::where('is_archived', false)
+        ->with('images')
+        ->orderBy('event_date', 'desc')
+        ->take(5)
+        ->get();
+    return view('home', [
+        'featuredPackages' => $featuredPackages,
+        'featuredGalleries' => $featuredGalleries,
+    ]);
+})->name('home');
+// Gallery Page: Dedicated gallery showcase
+Route::get('/gallery', fn () => view('gallery'))->name('gallery');
+// About Page: Dedicated about page
+Route::get('/about', fn () => view('about'))->name('about');
+
+//flagging invalid image in bookings
+Route::post('/bookings/validate-image', [BookingController::class, 'validateImageAjax'])->name('bookings.validate-image');
+Route::post('/bookings/analyze-temp-image', [BookingController::class, 'analyzeTempImage'])->middleware('throttle:5,1')->name('bookings.analyze-temp-image');
+
+// Dynamic Booking Route
+Route::get('/booking/start', function () {
+    if (Auth::check()) {
+        return redirect()->route('bookings.create', request()->query());
+    }
+    return redirect()->route('guest.booking.create', request()->query());
+})->name('booking.start');
+
+// Public Packages Route
+Route::get('/packages', [\App\Http\Controllers\PackageController::class, 'index'])->name('packages.index');
+
+// Guest Booking Routes
+Route::get('/guest/booking', [\App\Http\Controllers\GuestBookingController::class, 'create'])->name('guest.booking.create');
+Route::post('/guest/booking', [\App\Http\Controllers\GuestBookingController::class, 'store'])->middleware('throttle:3,1')->name('guest.booking.store');
+Route::post('/guest/bookings/analyze-temp-image', [\App\Http\Controllers\GuestBookingController::class, 'analyzeTempImage'])->middleware('throttle:3,1')->name('guest.bookings.analyze-temp-image');
+Route::get('/guest/bookings/{token}', [\App\Http\Controllers\GuestBookingController::class, 'show'])->name('guest.bookings.show');
+Route::get('/guest/bookings/{token}/image/{imageIndex?}', [\App\Http\Controllers\GuestBookingController::class, 'showTemporaryImage'])->name('guest.bookings.image');
+Route::get('/guest/bookings/analysis-image/{token}', [\App\Http\Controllers\GuestBookingController::class, 'showAnalysisTempImage'])->name('guest.bookings.analysis-temp-image');
+Route::get('/guest/bookings/{token}/status', [\App\Http\Controllers\GuestBookingController::class, 'status'])->name('guest.bookings.status');
+Route::get('/guest/booking/{token}', [\App\Http\Controllers\GuestBookingController::class, 'analysis'])->name('guest.booking.show');
+Route::get('/guest/booking/analysis/{token}', [\App\Http\Controllers\GuestBookingController::class, 'analysis'])->name('guest.booking.analysis');
+Route::post('/guest/bookings/{booking}/accept', [\App\Http\Controllers\GuestBookingController::class, 'acceptQuotation'])->name('guest.bookings.accept');
+Route::post('/guest/bookings/{booking}/payment-reference', [\App\Http\Controllers\GuestBookingController::class, 'submitPaymentReference'])->name('guest.bookings.payment.reference');
+
+
+// Authentication Routes: Real session-based authentication
+Route::middleware('guest')->group(function () {
+    // Login Routes
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1')->name('login.attempt');
+
+    // Register Routes
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:10,1')->name('register.attempt');
+
+    // Forgot Password Routes
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('forgot-password');
+    Route::post('/forgot-password', [AuthController::class, 'sendPasswordResetLink'])->middleware('throttle:3,1')->name('password.email');
+    Route::get('/reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
+    Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:5,1')->name('password.update');
+
+    // Admin Password Reset (OTP Flow)
+    Route::get('/admin/password-reset', [AdminPasswordResetController::class, 'showForgot'])->name('admin.password.forgot');
+    Route::post('/admin/password-reset/send', [AdminPasswordResetController::class, 'sendOtp'])->middleware('throttle:3,1')->name('admin.password.send');
+    Route::get('/admin/password-reset/otp', [AdminPasswordResetController::class, 'showOtpForm'])->name('admin.password.otp.show');
+    Route::post('/admin/password-reset/otp', [AdminPasswordResetController::class, 'verifyOtp'])->middleware('throttle:6,1')->name('admin.password.otp.verify');
+    Route::post('/admin/password-reset/otp/resend', [AdminPasswordResetController::class, 'resendOtp'])->middleware('throttle:3,1')->name('admin.password.otp.resend');
+    Route::get('/admin/password-reset/new', [AdminPasswordResetController::class, 'showNewPasswordForm'])->name('admin.password.new.show');
+    Route::post('/admin/password-reset/new', [AdminPasswordResetController::class, 'resetPassword'])->middleware('throttle:5,1')->name('admin.password.new.submit');
+
+    // Admin Emergency Recovery (Email Unavailable)
+    Route::get('/admin/recovery', [AdminRecoveryController::class, 'show'])->name('admin.recovery.show');
+    Route::post('/admin/recovery/code', [AdminRecoveryController::class, 'verifyCode'])->middleware('throttle:10,1')->name('admin.recovery.code');
+    Route::post('/admin/recovery/email', [AdminRecoveryController::class, 'submitEmail'])->middleware('throttle:5,1')->name('admin.recovery.email');
+    Route::post('/admin/recovery/otp', [AdminRecoveryController::class, 'verifyOtp'])->middleware('throttle:6,1')->name('admin.recovery.otp');
+    Route::post('/admin/recovery/otp/resend', [AdminRecoveryController::class, 'resendOtp'])->middleware('throttle:3,1')->name('admin.recovery.resend');
+    Route::post('/admin/recovery/password', [AdminRecoveryController::class, 'updatePassword'])->middleware('throttle:5,1')->name('admin.recovery.password');
+
+    // Google OAuth Routes
+    Route::get('/auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+});
+
+// Logout Route: Authenticated users only
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+
+// Device Verification Routes (S-01E-3): No auth middleware — user is in pending-session state.
+// The controller enforces identity via the server-side pending session.
+Route::prefix('auth')->group(function () {
+    Route::get('/device-verify', [DeviceVerificationController::class, 'show'])
+        ->middleware('throttle:20,1')
+        ->name('device.verify.show');
+    Route::post('/device-verify', [DeviceVerificationController::class, 'verify'])
+        ->middleware('throttle:6,1')
+        ->name('device.verify.submit');
+    Route::post('/device-verify/resend', [DeviceVerificationController::class, 'resend'])
+        ->middleware('throttle:3,1')
+        ->name('device.verify.resend');
+});
+
+// Secure file serving (handles both Auth users and Guest Tokens)
+Route::get('/secure-evidence/{id}', [\App\Http\Controllers\SecureFileController::class, 'showEvidence'])->name('secure.evidence.show');
+Route::get('/secure-inspiration/{bookingId}', [\App\Http\Controllers\SecureFileController::class, 'showInspirationImage'])->name('secure.inspiration.show');
+Route::get('/secure-attachment/{messageId}', [\App\Http\Controllers\SecureFileController::class, 'showMessageAttachment'])->name('secure.attachment.show');
+
+// Email Verification Routes: Authenticated users only
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->middleware('throttle:6,1')->name('verification.verify');
+    Route::post('/email/resend', [EmailVerificationController::class, 'resend'])->middleware('throttle:3,1')->name('verification.resend');
+});
+
+// Staff Routes: operational landing boundary. Staff features are added in later phases.
+// Staff Routes: protected by auth, staff role, and email verification (S-01E-3).
+// Unverified staff are redirected to the email verification gate.
+Route::prefix('staff')->middleware(['auth', 'staff', 'verified'])->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Staff\EventController::class, 'dashboard'])->name('staff.dashboard');
+    Route::get('/events/{booking}', [\App\Http\Controllers\Staff\EventController::class, 'show'])->name('staff.events.show');
+    Route::put('/events/{booking}/checklist/{checklist}', [\App\Http\Controllers\Staff\EventController::class, 'updateChecklist'])->name('staff.events.checklist.update');
+    Route::post('/events/{booking}/dispatch', [\App\Http\Controllers\Staff\EventController::class, 'dispatchItems'])->name('staff.events.dispatch');
+    Route::put('/events/{booking}/inventory/{inventoryItem}', [\App\Http\Controllers\Staff\EventController::class, 'updatePhysicalStock'])->name('staff.events.inventory.update');
+    Route::put('/events/{booking}/return', [\App\Http\Controllers\Staff\EventController::class, 'submitReturn'])->name('staff.events.return.update');
+    Route::put('/events/{booking}/return/condition', [\App\Http\Controllers\Staff\EventController::class, 'recordCondition'])->name('staff.events.return.condition');
+    Route::post('/events/{booking}/reply', [\App\Http\Controllers\Staff\EventController::class, 'reply'])->name('staff.events.reply');
+});
+
+// Client Routes: Protected by authentication and email verification
+Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
+    // Client Dashboard: Main portal overview
+    Route::get('/dashboard', function () {
+        $user = Auth::user();
+        $client = $user ? \App\Models\Client::firstOrCreate(
+            ['email' => $user->email],
+            [
+                'full_name' => $user->name,
+                'phone' => $user->mobile_number,
+                'address' => $user->address,
+            ]
+        ) : null;
+
+        return view('client.dashboard', [
+            'bookings' => $client ? $client->bookings()->latest()->get() : collect(),
+        ]);
+    })->name('client.dashboard');
+
+    // Client notifications
+    Route::get('/notifications', [\App\Http\Controllers\ClientNotificationController::class, 'index'])->name('client.notifications.index');
+    Route::post('/notifications/{notification}/read', [\App\Http\Controllers\ClientNotificationController::class, 'markAsRead'])->name('client.notifications.read');
+    Route::post('/notifications/{notification}/mark-as-read', [\App\Http\Controllers\ClientNotificationController::class, 'markAsReadAjax'])->name('client.notifications.mark-as-read');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\ClientNotificationController::class, 'markAllAsRead'])->name('client.notifications.read-all');
+    Route::get('/bookings/{booking}/updates', [\App\Http\Controllers\ClientNotificationController::class, 'bookingUpdates'])->name('client.booking.updates');
+
+    // Client Bookings: Lists user's active bookings
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings');
+    
+    // Client Guest Booking Claim
+    Route::get('/claim-booking/{token}', [\App\Http\Controllers\Client\ClaimGuestBookingController::class, 'show'])->name('client.claim-guest-booking.show');
+    Route::post('/claim-booking/{token}', [\App\Http\Controllers\Client\ClaimGuestBookingController::class, 'claim'])->name('client.claim-guest-booking.claim');
+
+    // Client Booking Create: Displays new booking form
+    Route::get('/bookings/create', [BookingController::class, 'create'])->name('bookings.create');
+
+    // Client Booking Store: Processes booking form submission and shows AI analysis
+    Route::post('/bookings/create', [BookingController::class, 'store'])->middleware('throttle:5,1')->name('bookings.store');
+
+    // Client Booking Show / Analysis: Displays the booking proposal and pricing summary
+    Route::get('/bookings/{booking}/status', [BookingController::class, 'status'])->name('bookings.status');
+    Route::get('/bookings/{booking}', [BookingController::class, 'analysis'])->name('bookings.show');
+    Route::get('/bookings/analysis/{booking}', [BookingController::class, 'analysis'])->name('bookings.analysis');
+    Route::post('/bookings/{booking}/accept', [BookingController::class, 'acceptQuotation'])->name('bookings.accept');
+    Route::post('/bookings/{booking}/request-changes', [BookingController::class, 'requestChanges'])->name('bookings.request-changes');
+    Route::post('/bookings/{booking}/reply', [BookingController::class, 'replyToAdmin'])->name('bookings.reply');
+    Route::post('/bookings/{booking}/request-cancellation', [BookingController::class, 'requestCancellation'])->name('bookings.request-cancellation');
+    Route::post('/bookings/{booking}/payment-reference', [BookingController::class, 'submitPaymentReference'])->name('bookings.payment.reference');
+    Route::post('/bookings/{booking}/proposals/{presentation}/feedback', [BookingController::class, 'submitProposalFeedback'])->name('bookings.proposals.feedback');
+
+    // Client Booking History: Shows past bookings
+    Route::get('/booking-history', [BookingController::class, 'history'])->name('booking-history');
+
+    // Client Account Settings: User profile management
+    Route::get('/account-settings', function (Request $request) {
+        $user = $request->user();
+        return view('client.account-settings', [
+            'user' => $user,
+            'success' => session('success'),
+            'error' => session('error'),
+        ]);
+    })->name('account-settings');
+
+    Route::post('/account-settings', function (Request $request) {
+        $user = $request->user();
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'mobile_number' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'profile_image' => ['nullable', 'image', 'max:2048'],
+            'current_password' => ['nullable', 'required_with:new_password', 'string'],
+            'new_password' => ['nullable', 'required_with:current_password', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        try {
+            if ($request->hasFile('profile_image')) {
+                if ($user->profile_image && \Storage::disk('public')->exists($user->profile_image)) {
+                    \Storage::disk('public')->delete($user->profile_image);
+                }
+                $path = $request->file('profile_image')->store('profile-images', 'public');
+                $user->profile_image = $path;
+            }
+
+            if ($request->filled('current_password') || $request->filled('new_password')) {
+                if (!\Hash::check($request->current_password, $user->password)) {
+                    return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
+                }
+
+                if ($request->filled('new_password')) {
+                    $user->password = \Hash::make($request->new_password);
+                }
+            }
+
+            $user->first_name = $data['first_name'];
+            $user->last_name = $data['last_name'];
+            $user->name = $data['first_name'] . ' ' . $data['last_name'];
+            $user->email = $data['email'];
+            $user->mobile_number = $data['mobile_number'] ?? null;
+            $user->address = $data['address'] ?? null;
+            $user->save();
+
+            return redirect()->route('account-settings')->with('success', 'Account settings updated successfully.');
+        } catch (\Throwable $e) {
+            \Log::error('Account settings update error: ' . $e->getMessage());
+            return back()->withErrors(['account' => 'Update failed. Please try again.'])->withInput();
+        }
+    })->name('account-settings.update');
+});
+
+// Admin Bootstrap Setup Routes: Accessible only to bootstrap Admin
+Route::prefix('admin/setup')->middleware(['auth', 'admin', 'admin.setup'])->group(function () {
+    Route::get('/', [AdminBootstrapController::class, 'show'])->name('admin.setup');
+    Route::post('/email', [AdminBootstrapController::class, 'submitEmail'])->middleware('throttle:5,1')->name('admin.setup.email');
+    Route::post('/otp', [AdminBootstrapController::class, 'verifyOtp'])->middleware('throttle:6,1')->name('admin.setup.otp');
+    Route::post('/otp/resend', [AdminBootstrapController::class, 'resendOtp'])->middleware('throttle:3,1')->name('admin.setup.resend');
+    Route::post('/password', [AdminBootstrapController::class, 'updatePassword'])->middleware('throttle:5,1')->name('admin.setup.password');
+    Route::post('/acknowledge', [AdminBootstrapController::class, 'acknowledgeRecoveryCode'])->name('admin.setup.acknowledge');
+    Route::post('/reissue-code', [AdminBootstrapController::class, 'reissueRecoveryCode'])->middleware('throttle:5,1')->name('admin.setup.reissue-code');
+});
+
+// Admin Routes: Protected by authentication, admin role, and completed setup middleware
+Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(function () {
+    // Admin Email Change Routes
+    Route::get('/email-change', [AdminEmailChangeController::class, 'show'])->name('admin.email-change.show');
+    Route::post('/email-change/submit', [AdminEmailChangeController::class, 'submitNewEmail'])->middleware('throttle:5,1')->name('admin.email-change.submit');
+    Route::post('/email-change/verify', [AdminEmailChangeController::class, 'verifyOtp'])->middleware('throttle:6,1')->name('admin.email-change.verify');
+    Route::post('/email-change/resend', [AdminEmailChangeController::class, 'resendOtp'])->middleware('throttle:3,1')->name('admin.email-change.resend');
+
+    // Admin Dashboard: Main admin panel overview
+    Route::get('/dashboard', function () {
+        $actionableStatuses = [
+            'pending',
+            'quotation_sent',
+            'payment_submitted',
+            'payment_pending',
+            'approved',
+            'admin_approved',
+            'change_requested',
+            'cancellation_requested',
+            'pending_return',
+            'pending_resolution',
+        ];
+
+        return view('admin.dashboard', [
+            'totalBookings'   => Booking::count(),
+            'pendingBookings' => Booking::whereIn('status', $actionableStatuses)->count(),
+            'totalUsers'      => User::count(),
+            'recentBookings'  => Booking::with('client')->latest()->limit(5)->get(),
+            'activeAlerts'    => \App\Models\AdminAlert::where('is_read', false)->latest()->limit(20)->get(),
+        ]);
+    })->name('admin.dashboard');
+
+    Route::get('/notifications', [AdminBookingController::class, 'notifications'])->name('admin.notifications');
+
+    // Admin Alerts: Mark a single alert as read
+    Route::post('/alerts/{alert}/read', function (\App\Models\AdminAlert $alert) {
+        $alert->update(['is_read' => true]);
+        return back()->with('success', 'Alert dismissed.');
+    })->name('admin.alerts.read');
+
+    Route::post('/notifications/resolve-shortage/{inventoryItem}', [\App\Http\Controllers\Admin\InventoryController::class, 'resolveShortage'])->name('admin.notifications.resolve-shortage');
+
+    // Admin Alerts: Dismiss all alerts
+    Route::post('/alerts/read-all', function () {
+        \App\Models\AdminAlert::where('is_read', false)->update(['is_read' => true]);
+        return back()->with('success', 'All alerts dismissed.');
+    })->name('admin.alerts.read-all');
+
+    // Admin Stock Adjustments (Decision A)
+    Route::post('/inventory/adjustments/{alert}/approve', [AdminBookingController::class, 'approveStockAdjustment'])->name('admin.inventory.adjustments.approve');
+    Route::post('/inventory/adjustments/{alert}/reject', [AdminBookingController::class, 'rejectStockAdjustment'])->name('admin.inventory.adjustments.reject');
+
+    // Admin Gallery
+    Route::get('/gallery', [\App\Http\Controllers\Admin\GalleryController::class, 'index'])->name('admin.gallery');
+    Route::get('/gallery/archived', [\App\Http\Controllers\Admin\GalleryController::class, 'archived'])->name('admin.gallery.archived');
+    Route::post('/gallery/{gallery}/restore', [\App\Http\Controllers\Admin\GalleryController::class, 'restore'])->name('admin.gallery.restore');
+    Route::get('/gallery/create', [\App\Http\Controllers\Admin\GalleryController::class, 'create'])->name('admin.gallery.create');
+    Route::post('/gallery', [\App\Http\Controllers\Admin\GalleryController::class, 'store'])->name('admin.gallery.store');
+    Route::get('/gallery/{gallery}/edit', [\App\Http\Controllers\Admin\GalleryController::class, 'edit'])->name('admin.gallery.edit');
+    Route::put('/gallery/{gallery}', [\App\Http\Controllers\Admin\GalleryController::class, 'update'])->name('admin.gallery.update');
+    Route::delete('/gallery/{gallery}', [\App\Http\Controllers\Admin\GalleryController::class, 'destroy'])->name('admin.gallery.destroy');
+
+    // Admin Packages
+    Route::get('/packages/archived', [\App\Http\Controllers\Admin\PackageController::class, 'archived'])->name('admin.packages.archived');
+    Route::post('/packages/{package}/restore', [\App\Http\Controllers\Admin\PackageController::class, 'restore'])->name('admin.packages.restore');
+    Route::post('/packages/{package}/archive', [\App\Http\Controllers\Admin\PackageController::class, 'archive'])->name('admin.packages.archive');
+    Route::resource('packages', \App\Http\Controllers\Admin\PackageController::class)
+        ->except(['show', 'destroy'])
+        ->names('admin.packages');
+
+    // Admin Bookings: Booking management listing
+    Route::get('/bookings', [AdminBookingController::class, 'index'])->name('admin.bookings');
+    Route::get('/bookings/{booking}/edit', [AdminBookingController::class, 'edit'])->name('admin.bookings.edit');
+    // Admin Booking Review: Specific booking detail view
+    Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('admin.bookings.show');
+    Route::put('/bookings/{booking}', [AdminBookingController::class, 'update'])->name('admin.bookings.update');
+    Route::post('/bookings/{booking}/assign-staff', [AdminBookingController::class, 'assignStaff'])->name('admin.bookings.assign-staff');
+    Route::post('/bookings/{booking}/presentations', [AdminBookingController::class, 'storeProposal'])->name('admin.bookings.presentations.store');
+    // Dedicated AI suggestion actions (link/promote) to avoid validating full booking payload
+    Route::post('/bookings/{booking}/ai-link', [AdminBookingController::class, 'linkAiItem'])->name('admin.bookings.ai.link');
+    Route::post('/bookings/{booking}/ai-promote', [AdminBookingController::class, 'promoteAiItem'])->name('admin.bookings.ai.promote');
+    Route::post('/bookings/{booking}/items/{bookingItem}/confirm', [AdminBookingController::class, 'confirmMaterial'])->name('admin.bookings.items.confirm');
+    Route::post('/bookings/{booking}/final-approve', [AdminBookingController::class, 'finalApproveQuotation'])->name('admin.bookings.final-approve');
+    // Admin negotiation loop
+    Route::post('/bookings/{booking}/reply', [AdminBookingController::class, 'reply'])->name('admin.bookings.reply');
+    Route::post('/bookings/{booking}/handle-cancellation', [AdminBookingController::class, 'handleCancellationRequest'])->name('admin.bookings.handle-cancellation');
+    // Admin actions: verify payment, reject payment, and decline booking
+    Route::post('/payments/{payment}/verify', [AdminBookingController::class, 'verifyPayment'])->name('admin.payments.verify');
+    Route::post('/payments/{payment}/reject', [AdminBookingController::class, 'rejectPayment'])->name('admin.payments.reject');
+    Route::post('/bookings/{booking}/final-payment', [AdminBookingController::class, 'finalPayment'])->name('admin.bookings.final_payment');
+    Route::post('/bookings/{booking}/decline', [AdminBookingController::class, 'decline'])->name('admin.bookings.decline');
+    Route::post('/bookings/{booking}/reserve-materials', [AdminBookingController::class, 'reserveMaterials'])->name('admin.bookings.reserve-materials');
+    Route::post('/bookings/{booking}/confirm-fresh-flowers', [AdminBookingController::class, 'confirmFreshFlowers'])->name('admin.bookings.confirm-fresh-flowers');
+    Route::post('/bookings/{booking}/resolve-shortages', [AdminBookingController::class, 'resolveBookingShortages'])->name('admin.bookings.resolve-shortages');
+    Route::post('/notifications/resolve-booking-shortages/{booking}', [AdminBookingController::class, 'resolveBookingShortages'])->name('admin.notifications.resolve-booking-shortages');
+    Route::post('/notifications/promote-booking-items/{booking}', [AdminBookingController::class, 'promoteBookingItemsToInventory'])->name('admin.notifications.promote-booking-items');
+    // Admin Dispatch
+    Route::post('/bookings/{booking}/dispatch', [AdminBookingController::class, 'dispatchItems'])->name('admin.bookings.dispatch');
+    Route::post('/bookings/transactions/{transaction}/correct-dispatch', [AdminBookingController::class, 'correctDispatch'])->name('admin.bookings.dispatch.correct');
+    
+    // Admin Inventory: Inventory management listing and CRUD
+    Route::get('/inventory/archived', [\App\Http\Controllers\Admin\InventoryController::class, 'archived'])->name('admin.inventory.archived');
+    Route::get('/inventory', [\App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('admin.inventory.index');
+    Route::get('/inventory/create', [\App\Http\Controllers\Admin\InventoryController::class, 'create'])->name('admin.inventory.create');
+    Route::post('/inventory', [\App\Http\Controllers\Admin\InventoryController::class, 'store'])->name('admin.inventory.store');
+    Route::get('/inventory/{inventoryItem}/edit', [\App\Http\Controllers\Admin\InventoryController::class, 'edit'])->name('admin.inventory.edit');
+    Route::put('/inventory/{inventoryItem}', [\App\Http\Controllers\Admin\InventoryController::class, 'update'])->name('admin.inventory.update');
+    Route::post('/inventory/{inventoryItem}/archive', [\App\Http\Controllers\Admin\InventoryController::class, 'archive'])->name('admin.inventory.archive');
+    Route::post('/inventory/{id}/restore', [\App\Http\Controllers\Admin\InventoryController::class, 'restore'])->name('admin.inventory.restore');
+
+    // Admin Return Tracking
+    Route::get('/return-tracking', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'index'])->name('admin.return-tracking');
+    Route::get('/return-tracking/manage/{booking}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'manage'])->name('admin.return-tracking.manage');
+    Route::get('/return-tracking/{return}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'show'])->name('admin.return-tracking.show');
+    Route::put('/return-tracking/{return}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'update'])->name('admin.return-tracking.update');
+    // Admin account management
+    Route::get('/users', function () {
+        return redirect()->route('admin.settings');
+    })->name('admin.users');
+    Route::post('/account-management/password', function (Request $request) {
+        $validated = $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password' => ['required', 'confirmed', 'min:8'],
+        ]);
+
+        $request->user()->update(['password' => $validated['password']]);
+
+        return back()->with('success', 'Your password has been updated successfully.');
+    })->name('admin.account.password');
+    Route::post('/account-management/accounts', function (Request $request) {
+        abort_unless($request->user()->role === 'admin', 403);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role' => ['required', 'in:admin,staff'],
+            'password' => ['required', 'confirmed', 'min:8'],
+        ]);
+
+        User::create($validated);
+
+        return back()->with('success', 'Account created successfully.');
+    })->name('admin.account.accounts.store');
+    // Admin AI Analysis: Review AI suggested floral materials and pricing
+    Route::get('/ai-analysis', [ReportController::class, 'aiAnalysis'])->name('admin.ai-analysis');
+    // Admin Quotations: Manage price reconfirmation and quotations
+    Route::get('/quotations', [\App\Http\Controllers\Admin\QuotationController::class, 'index'])->name('admin.quotations');
+    // Note: Admin Return Tracking real routes are defined above (lines 170-173)
+    // Admin Reports: KPI charts and operational activity
+    Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
+    // Admin Client Records: View client history and records
+    Route::get('/client-records', [\App\Http\Controllers\Admin\ClientRecordController::class, 'index'])->name('admin.client-records');
+    // Admin Account Management: preferences, accounts, and audit trail
+    Route::get('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('admin.settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('admin.settings.update');
+});
+
+#Temporary route for testing Gemini Vision Service
+use App\Services\GeminiVisionService;
+
+Route::get('/test-gemini', function (GeminiVisionService $service) {
+    abort_unless(app()->environment('local'), 404);
+
+    // Uses the flowaah1.jpg file in your public folder
+    $imagePath = public_path('flowaah1.jpg');
+
+    if (!file_exists($imagePath)) {
+        return response()->json(['error' => 'Image flowaah1.jpg not found in public folder!'], 404);
+    }
+
+    $result = $service->analyzeImageFromPath($imagePath);
+
+    return response()->json($result);
+});
+
+// PHASE 4 UI MOCK ROUTES
+Route::middleware(['web'])->group(function () {
+    Route::get('/mock', [\App\Http\Controllers\MockUIController::class, 'hub'])->name('mock.hub');
+    Route::get('/mock/client/{scenario}', [\App\Http\Controllers\MockUIController::class, 'clientScenario'])->name('mock.client');
+    Route::get('/mock/admin/{scenario}', [\App\Http\Controllers\MockUIController::class, 'adminScenario'])->name('mock.admin');
+    Route::get('/mock/staff/{scenario}', [\App\Http\Controllers\MockUIController::class, 'staffScenario'])->name('mock.staff');
+});

@@ -1,0 +1,1691 @@
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+              A Flower Arrangement Event Booking and Inventory Management 
+System with Gemini AI-Assisted Image Analysis 
+A Research 
+Presented to the Faculty of College of Computer Studies 
+Global Reciprocal Colleges 
+Caloocan City 
+ 
+In Partial Fulfillment 
+of the Requirements for the Degree 
+Bachelor of Science in Information Technology 
+ 
+Prepared by: 
+Labonite, John Lloyd, 
+Nadonza, Lismer John, 
+Pantua, Ryan, 
+Prudenciano, Christian Art, 
+Samonte, Daniela Rose 
+ 
+Eduardo S. Rodrigo 
+Capstone Adviser 
+ 
+April 2026
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+TABLE OF CONTENTS 
+PRELIMINARIES ​​​​​​​        PAGE 
+TITLE PAGE    
+CHAPTER 1 – THE PROBLEM AND ITS BACKGROUND 
+1.1 Project Context​	1 
+1.2 Background of the Study​	2 
+1.3 Statement of the Problem​	5 
+1.4 Objective of the Study​	6 
+General Objective​ 6 
+Specific Objective​ 6 
+1.5 Scope and Limitation​	7 
+Scope​ 7 
+Limitation​ 8 
+1.6 Significance of the Study​	10 
+1.7 Definition of Terms​	12 
+CHAPTER 2 – REVIEW OF RELATED LITERATURE AND STUDIES 
+2.1 Introduction​	14 
+2.2 Review of Related Literature​	15 
+Local Literature​	15 
+Foreign Literature​ 17 
+2.3 Review of Related Studies​	22  
+Local Studies​	22  
+Foreign Studies​ 26 
+2.4 Synthesis of the Review of Related Literature and Studies​ 30 
+Research Gap​ 32 
+CHAPTER 3 – RESEARCH METHODOLOGY 
+3.1 Research Method​ 33 
+Rapid Application Development (RAD) Model​ 34
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+ 
+Context Diagram of the Proposed System​ 35 
+Data Flow Diagram level 1 of the Proposed System​ 37 
+Data Flow Diagram Level 2​ 39 
+3.2 Conceptual Framework​ 50 
+ Input Process Output (IPO) Model​ 51 
+3.3 Data Gathering Tools and Procedures​ 52 
+Data Gathering Tools​ 52 
+Data Gathering Procedures​ 53 
+Flowchart of the Existing System​ 54 
+3.4 Project Design​ 56 
+System Architecture of the Proposed System​ 57 
+Use Case Diagram of the Proposed System​ 59 
+Entity Relationship Diagram of the Proposed System (Part 1)​ 61 
+Entity Relationship Diagram of the Proposed System (Part 2)​ 62 
+3.5 Project Evaluation​ 64 
+Respondents of the Study​ 64 
+Evaluation Design​ 65 
+Evaluation Instrument​ 66 
+Likert Scale​ 67
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+CHAPTER 1 
+THE PROBLEM AND ITS BACKGROUND 
+ 
+1.1 Project Context 
+The floral industry, particularly within the events sector, operates in a fast-paced 
+and highly demanding environment where precision and timeliness are essential. Staff 
+are required to produce flower arrangements for occasions such as weddings, 
+corporate functions, and celebrations, all within strict deadlines. The perishable 
+nature of fresh flowers compounds this pressure significantly, as cut flowers lose 
+market value rapidly after harvest, necessitating constant stock replenishment to 
+minimize waste (Maheshwari et al., 2021). 
+Client preferences further strain operations, as requests for rare imported varieties or 
+locally available flowers require advance planning that manual systems cannot 
+reliably support. Without adequate planning tools, even minor oversights can result in 
+wilted arrangements or budget overruns. Companies that rely on fragmented, 
+paper-based workflows such as physical notebooks, wall calendars, and informal 
+social media messaging risk falling behind more organized competitors. These 
+manual approaches create critical vulnerabilities including scheduling conflicts, 
+inaccurate material estimation, undetected stock shortages, and the inability to 
+systematically interpret client-provided inspiration images, all of which result in 
+recurring operational delays and financial leakage.  1 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+To address these challenges, this study proposes the development of a web-based 
+Flower Arrangement Event Booking and Inventory Management System with Gemini 
+AI-Assisted Image Analysis. The system consolidates fragmented manual workflows 
+into a unified digital platform that automates booking coordination, monitors 
+real-time inventory levels, and leverages the Gemini AI API to interpret 
+client-uploaded inspiration images and generate structured floral material 
+suggestions. By transitioning from a manual, decentralized model to a centralized 
+digital ecosystem, the proposed system directly addresses the operational 
+inefficiencies identified and supports the long-term sustainability of floral 
+enterprises within the growing events industry.  
+1.2 Background of the Study  
+Raflora Enterprises has maintained a consistent presence in the local floral 
+industry since 2013, a strength that grants the company a stable market reputation for 
+weddings, debuts, and corporate functions. While the company typically operates 
+with a core staff of 10 to 15, the ability to scale to 60 personnel during peak seasons 
+is an operational requirement. However, this capacity is currently hampered by a 
+manual operational framework. Relying on physical notebooks, wall calendars, and 
+fragmented social media messaging creates critical weaknesses that negate the firm’s 
+competitive advantage. 
+The operational lifecycle consists of two high-friction phases: Consultation and 
+Planning, and Confirmation and Execution. In the initial phase, client preferences are 
+manually transcribed from social media, followed by design planning where the 
+2 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+manual analysis of "inspiration images" results in documented delays of one to two 
+hours per booking. This stage involves the application of an unstandardized 
+cost-estimation using the formula: Final Price = [(Flower Cost × 3.5) + (Hard Goods 
+Cost × 2.5)] × Labor Rate, often involving repetitive feedback loops via chat. Once 
+the owner and client reach an agreement on the event price and design, the owner 
+presents a contract for the client to sign, formally confirming the booking. Raflora 
+classifies confirmed events into three categories Advanced, Standard, and Rush each 
+corresponding to a different scale of operation and staffing requirement. ​
+Once confirmed, the execution phase begins with staff assignment based on the event 
+category. Advanced events, being the largest in scale, require up to 60 personnel 
+divided across flower arrangement, backdrop construction, wiring and lighting 
+design, and equipment assistance. Standard events follow the same operational 
+structure but are staffed by 10 to 20 personnel. Rush events, by contrast, are handled 
+by 5 to 10 available staff focused primarily on flower procurement and setup, with the 
+florist's involvement left to the owner's discretion depending on urgency.  
+Procurement based on visual estimation rather than inventory data; if items are 
+unavailable, last-minute sourcing from expensive retailers is required to avoid setup 
+delays. Finally, the logistics team executes the setup, followed by a manual Return 
+Audit where staff count non-perishable items like vases and stand against storage 
+records, a process that lacks formal documentation and remains prone to error.  These compounding inefficiencies ranging from the lack of a standardized pricing 
+model to the inability to accurately track assets result in recurring record loss and 
+financial leakage. The absence of accurate inventory records is a critical vulnerability 
+3 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+that has led to documented operational failures and unplanned overtime costs 
+(Bermudez et al., 2024). Consequently, the company is losing significant productive 
+hours that could be redirected toward high-value opportunities, such as business 
+expansion or service innovation. 
+Among the available multimodal AI APIs considered for this study, the Gemini AI 
+API developed by Google was selected for its demonstrated capability in processing 
+both text and image inputs within a single request, its well-documented REST API 
+structure compatible with the Laravel framework, and its accessible API tier suitable 
+for SME-scale deployment. Unlike specialized computer vision models that require 
+custom-trained datasets, Gemini's generative multimodal architecture allows it to 
+interpret diverse floral arrangement styles from client-uploaded photos without prior 
+domain-specific training, making it the most practical choice for Raflora's operational 
+context.  
+This study proposes the development of a web-based Flower Arrangement Event 
+Booking and Inventory Management System with Gemini AI-Assisted Image 
+Analysis. While common solutions like generic inventory applications were 
+considered, none address the specific intersection of perishable-focused planning and 
+AI-assisted interpretation of client inspiration photos. By capitalizing on the 
+opportunity for digital transformation, this system consolidates fragmented manual 
+workflows into a unified digital architecture, directly addressing the operational 
+weaknesses identified and mitigating the threats to Raflora’s long-term sustainability. 
+1.3 Statement of the Problem 
+4 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Raflora Enterprises currently manages event bookings and inventory through a 
+fragmented manual process involving physical notebooks and social media 
+messaging. This decentralized approach leads to documented delays of one to two 
+hours per booking and additional setup delays of up to two hours per event due to 
+last-minute stock shortages. To address these inefficiencies, this study develops a 
+Web-based Flower Arrangement Event Booking and Inventory Management System 
+with Gemini AI-Assisted Image Analysis.  
+ Specifically, it seeks to answer the following questions:  
+1.​What are the challenges encountered by the staff in manually coordinating client 
+reservations, scheduling, and price reconfirmations for long-term bookings? 
+2.​How does the lack of a structured return-tracking system for non-perishable items 
+affect the company's asset management and inventory accuracy? 
+3.​What difficulties do the staff face in accurately estimating floral material 
+requirements when relying solely on client-provided inspiration images and 
+personal experience? 
+4.​What are the limitations of the current physical shelf-count method in detecting 
+stock shortages prior to event preparation? 
+5.​How does the Gemini AI-Assisted Image Analysis perform in identifying 
+materials, and how do users rate the system's overall quality?  
+ 
+5 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+1.4 Objective of the Study 
+General Objective:  
+The primary objective of this study is to develop a web-based Flower 
+Arrangement Event Booking and Inventory Management System with Gemini 
+AI-Assisted Image Analysis for Raflora Enterprises to streamline booking 
+coordination, automate inventory monitoring, and provide AI-driven material 
+suggestions to minimize operational waste and processing delays.  Specific Objective: 
+Specifically, the study aims to: 
+1.​To design and develop an Event Booking module that automates client 
+reservations, scheduling, and the reconfirmation of price validity for long-term 
+bookings.  
+2.​To develop a Post-Event Return Tracking and Reports module to monitor the 
+return of non-perishable assets and generate operational audit logs.  
+3.​To integrate Gemini AI-Assisted Image Analysis that interprets client-uploaded 
+inspiration images to generate structured floral material suggestions.  
+4.​To implement an Inventory Management system with a real-time stock shortage 
+detection and flagging mechanism.  
+5.​To evaluate the functional suitability of the Gemini AI module and the system's 
+overall usability using a standardized evaluation instrument.  
+ 
+6 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+1.5 Scope and Limitation 
+The study focuses on the design and development of a web-based Flower 
+Arrangement Event Booking and Inventory Management System with Gemini 
+AI-Assisted Image Analysis, specifically tailored for the operations of Raflora 
+Enterprises. The system is designed to transition the business from a manual, 
+paper-based workflow to a centralized digital ecosystem. The system is accessible via standard web browsers and implements role-based 
+access control (RBAC) for three distinct user roles:  
+Admin: Responsible for managing the overall booking calendar, validating 
+AI-generated material suggestions, overseeing inventory levels, and generating 
+operational reports. 
+Client: Accesses a self-service portal to submit event booking requests, upload 
+inspiration images for AI analysis, and receive price quotations. 
+Staff: Utilizes the system to view assigned event checklists, update physical stock 
+levels, and log the return of non-perishable materials. 
+The functional core of the system is composed of the following modules: 
+Event Booking Coordination: Manages the lifecycle of a reservation, from initial 
+request and scheduling to final confirmation. It supports both pre-set packages (with 
+automated material lists) and customized arrangements. 
+Gemini AI-Assisted Image Analysis: Utilizes the Gemini AI API to analyze 
+client-uploaded inspiration photos. The AI interprets visual data to suggest a 
+7 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+structured list of floral materials, which serves as a professional reference for the 
+administrator. 
+Inventory Tracking: Monitors real-time stock levels and flags shortages relative to 
+confirmed bookings. The system implements a tiered alert mechanism, performing 
+weekly inventory checks starting four weeks prior to an event and escalating to daily 
+alerts during the final week. To address stock unavailability, the system includes a 
+Seasonal Substitution feature that recommends alternative floral materials when 
+requested items are out of stock or out of season, minimizing operational disruptions 
+and unplanned procurement costs.  
+Post-Event Return Tracking: Tracks the recovery of non-perishable assets (vases, 
+stands, lighting), flags missing or damaged items, and updates inventory records 
+accordingly. 
+Price Validity and Reconfirmation: Manages the volatility of floral pricing by 
+marking initial quotes as "tentative" and triggering automatic reconfirmation 
+notifications for long-term bookings. 
+Reports and Audit Logs: Generates timestamped logs and dashboard analytics 
+regarding material usage, booking history, and business performance.  
+ 
+Limitation 
+The system is delimited to the operations of Raflora Enterprises' single-branch 
+facility and does not support multi-location synchronization. The Gemini AI-assisted 
+image analysis is implemented as a decision-support tool; it provides suggestions 
+8 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+based on visual patterns, but the final validation and authorization of material lists 
+remain the sole responsibility of the Administrator. Consequently, the system is not 
+responsible for the absolute botanical accuracy of the AI's suggestions, as these are 
+constrained by the quality, lighting, and clarity of the client-uploaded images. Technical limitations include a mandatory requirement for continuous internet 
+connectivity, as the system relies on cloud-based hosting and the Gemini AI API. The 
+system does not support offline mode or a dedicated native mobile application. 
+Finally, the project evaluation is restricted to usability and functional testing among 
+the internal staff and administrators of Raflora Enterprises. Furthermore, the 
+collection and storage of client-uploaded images and personal booking information 
+are handled in accordance with the principles of Republic Act No. 10173, also known 
+as the Data Privacy Act of 2012, ensuring that all user data is accessed only by 
+authorized system roles and is not shared with third parties.  
+9 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+1.6 Significance of the Study 
+The development and implementation of this system are expected to provide 
+significant operational and technical value to the following stakeholders: 
+Administrators /Management: The system provides a professional decision-support 
+tool that eliminates the critical business risk of relying on personal memory or 
+unofficial communication channels like social media messaging. By centralizing 
+booking schedules, integrating automated inventory alerts, and shifting from a 
+fragmented manual workflow to a centralized digital ecosystem, the organization 
+achieves a higher level of operational maturity. This digital transformation allows 
+management to shift their focus from manual data entry to strategic quality control, 
+enabling the business to scale operations during peak seasons without a proportional 
+increase in administrative burden.  
+Clients: Clients benefit from a streamlined self-service portal that facilitates faster 
+price quotations and more accurate interpretations of their inspiration images. The 
+Price Validity and Reconfirmation mechanism ensures transparency regarding the 
+volatility of floral pricing, fostering trust through automated notifications for 
+long-term bookings.  Future Researchers: This study serves as a practical reference for implementing 
+generative multimodal architecture within SME-scale deployment. It provides a 
+framework for how the Gemini AI API can be utilized as a decision-support tool to 
+solve domain-specific challenges in industries dealing with perishable-focused 
+planning and inventory monitoring.  
+10 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Staff: The system provides immediate operational relief by replacing the current 
+high-friction phases of manual coordination with a streamlined digital workflow. By 
+utilizing Gemini AI-Assisted Image Analysis, staff are no longer burdened by the 
+documented delays of one to two hours typically spent on the manual transcription 
+and visual analysis of client photos. Additionally, the transition from the unreliable 
+physical shelf-count method to a structured Post-Event Return Tracking module 
+reduces the risk of manual errors and prevents the unplanned overtime costs often 
+caused by asset recovery disputes.  
+ 
+11 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+1.7 Definition of Terms 
+The following terms are defined operationally as they are used and interpreted 
+within the context of this study and the operations of Raflora Enterprises: 
+Event Booking: The process of receiving, scheduling, and confirming client event 
+reservations through the system, matched against available inventory and the event 
+calendar. 
+Flower Arrangement: refers to the structured composition of floral and decorative 
+materials prepared for a specific client event, serving as the primary service output 
+that the system's booking, inventory, and AI analysis features are designed to support. 
+Gemini AI-Assisted Image Analysis: The integration of the Gemini AI API into the 
+system to process client-uploaded inspiration images and translate visual data into a 
+structured list of suggested floral materials. 
+Inspiration Image: refers to a client-provided photo showing desired event themes, 
+color schemes, or arrangement styles, uploaded through the system for AI-assisted 
+analysis. 
+Inventory Management: refers to the process of recording, tracking, and monitoring 
+floral materials and supplies specific to Raflora Enterprises confirmed and upcoming 
+event bookings, including stock level monitoring against booking requirements and 
+the recording of material release. Post-Event Return Tracking: The mechanism used to monitor the return of 
+non-perishable assets (such as vases, stands, and lighting equipment) following an 
+event and flagging missing or damaged property for administrative follow-up. 
+ 
+12 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Pre-set Package: refers to a predefined floral arrangement bundle with fixed material 
+lists and pricing that clients may select during the booking process as an alternative to 
+a fully customized arrangement request. 
+Price Validity and Reconfirmation: The system process that marks initial 
+quotations as "tentative" and generates notifications to re-verify pricing and material 
+availability prior to the event date. 
+Seasonal Substitution: refers to the recommendation of alternative floral materials 
+when requested items are unavailable or out of season. 
+ 
+ 
+13 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+CHAPTER 2​
+REVIEW OF RELATED LITERATURE AND STUDIES 
+ 
+2.1 Introduction 
+This chapter presents a comprehensive review of related literature and studies 
+essential to the architectural and functional design of the Flower Arrangement Event 
+Booking and Inventory Management System with Gemini AI-Assisted Image 
+Analysis. Unlike traditional retail systems that manage non-perishable hardware, the 
+floral industry faces a unique dual challenge: the high perishability of inventory and 
+the extreme visual complexity of client requirements. This review establishes the 
+technical necessity for a system that can bridge the gap between unstructured visual 
+inspiration and precise material quantification. 
+The literature surveyed from both local and foreign sources explores the evolution of 
+perishable inventory management, the logistics of event booking coordination, and 
+the emerging role of AI-assisted tools for Small and Medium Enterprises (SMEs). 
+Following this, a review of related studies evaluates existing web-based platforms for 
+event and reservation management, highlighting their strengths and their failure to 
+address the translation gap between reference images and stock deduction. By 
+synthesizing these findings, this chapter establishes the Research Gap that the 
+proposed system seeks to fill and presents the Conceptual Framework using the 
+Input-Process-Output (IPO) model to illustrate the system’s operational logic within 
+the specific context of Raflora Enterprises. 
+14 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+2.2 Review of Related Literature 
+Local Literature 
+Oyangoren and Camilo (2025) examined AI‑tool adoption among administrative 
+personnel in Philippine organizations, using interviews and thematic analysis to show 
+how AI automates routine tasks but faces barriers such as inadequate infrastructure 
+and resistance to change. They emphasize that training and organizational support are 
+critical for successful adoption, which is relevant to Raflora’s Gemini AI‑Assisted 
+Image Analysis module and its implementation among non‑technical staff. Their 
+findings support the need for user oriented design and in house training in the 
+proposed system. 
+Balba, Junio, and Sanares (2024) analyzed how AI technologies improve 
+customer experience and business performance in Philippine SMEs, combining 
+qualitative and quantitative methods to assess machine‑learning models, predictive 
+analytics, and automated service systems. Their results show that digital AI tools 
+enhance efficiency and customer satisfaction, though data privacy and technical skill 
+gaps remain, which supports integrating AI‑assisted features into Raflora’s web‑based 
+platform. This work justifies AI‑assisted decision support for a service oriented SME 
+seeking digital transformation. 
+Sarucam, Paglinawan, Paglinawan, and Otto (2023) developed a QR‑integrated 
+web application for small scale businesses, using an Agile‑based approach to allow 
+customers to check store and product availability online. Usability surveys showed 
+15 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+that users find the system useful and easy to use, supporting the design of a 
+responsive web interface for small Philippine enterprises similar to Raflora’s needs. 
+Their work informs the proposed web‑based, QR‑ready interface for client and staff 
+access. 
+Jiang and Denuevo (2024) studied digital transformation strategies of commercial 
+banks and SME financing, using empirical bank and loan data to show how big data 
+risk control and blockchain based finance improve SME access to credit. They 
+highlight scenario based service design and digital readiness gaps, which reflect the 
+broader context Raflora faces when adopting a web‑based management system as an 
+SME. Their findings support the need for simple, scenario driven system features and 
+organizational preparedness. 
+Ortega-Dela Cruz and Dela Cruz (2025) examined AI integration in IT education 
+in the Philippines through a survey of IT students and educators, applying the 
+Technology Acceptance Model. They identified key challenges (inadequate 
+infrastructure, limited AI literacy, ethics/privacy concerns, rural connectivity gaps) 
+alongside opportunities such as personalized learning, automated administrative 
+tasks, and enhanced data analysis. The study recommends curriculum updates, policy 
+frameworks, and industry collaboration to overcome barriers. These insights are 
+highly relevant to Raflora’s overall system, especially the Gemini AI-Assisted Image 
+Analysis and inventory modules, as they stress the need for infrastructure support, 
+ethical guidelines, and educator/staff training to successfully deploy AI-enhanced 
+booking and management tools in Philippine settings. 
+16 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Albano et al. (2025) examined Generation Z Filipinos’ perceptions of 
+text-generative AI using the Unified Theory of Acceptance and Use of Technology 
+(UTAUT 2) extended with ethical considerations and multiple regression analysis on 
+student respondents from the University of Santo Tomas. They identified Effort 
+Expectancy, Performance Expectancy, Facilitating Conditions, Hedonic Motivation, 
+Habit, Ethical Considerations, Perceived Risk, Attitude, Region, and Gender as 
+significant predictors of behavioral intention to adopt AI. The study highlights 
+infrastructure, cost, and ethical barriers in the Philippine education context while 
+noting widespread student use (83% for research/writing). Their findings reinforce 
+the importance of addressing facilitating conditions and ethical factors when 
+implementing Raflora’s Gemini AI-Assisted Image Analysis, particularly for younger 
+users or staff involved in event booking and inventory decisions. 
+Foreign Literature 
+Maheshwari, Singh, and Tiwari (2021) developed an IoT‑based cost‑benefit 
+model for perishable inventory in MSME food retail, using fractional programming 
+and particle swarm optimization to show how automated monitoring reduces spoilage 
+and inventory costs. Their findings indicate that real‑time stock tracking and 
+optimized ordering are feasible for small scale enterprises, which supports the need 
+for an automated Inventory Management System in Raflora to reduce manual 
+counting errors and last-minute high cost purchases. This work is relevant to the 
+system’s event linked shortage detection and inventory alert mechanisms for 
+perishable floral materials. 
+17 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Momotaz and Banik (2021) analyzed seasonal price and wastage patterns in fresh 
+flower businesses in Bangladesh, using quantitative price monitoring and season 
+based demand supply analysis to show how shortages and oversupply affect 
+profitability and post‑harvest losses. They found that rainy season shortages drive 
+price spikes while spring over supply depresses prices, which underpins Raflora’s 
+planned Seasonal Substitution and Emergency Substitute module for peak event 
+months. Their work directly supports the integration of seasonal aware rules into an 
+SME floral event context. 
+Macías‑López, Mendoza, and González (2021) formulated a multivariate 
+inventory model for perishable items that links price, stock level, and freshness state, 
+using optimization routines to derive order quantities, cycle times, and pricing 
+strategies under varying shelf-life conditions. Their results show that extending shelf 
+life improves profitability and that dynamic pricing outperforms static rules, which 
+supports the rationale for Raflora’s Price Validity and Reconfirmation and 
+AI‑Suggested Materials modules. These concepts help justify price and freshness 
+linked ordering logic in the proposed system. 
+Kusumawardhani et al. (2025) developed a web‑based reservation system for 
+catering MSMEs using Agile‑Scrum, incorporating real‑time availability and 
+automated coordination to reduce manual booking delays and scheduling conflicts. 
+User acceptance testing showed that the system improves customer satisfaction and 
+service efficiency in small service operations, which directly informs Raflora’s Event 
+Booking Coordination module. Their work supports the design of real‑time 
+availability and role‑based booking features in the proposed system. 
+18 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Rao (2026) explored AI‑driven real‑time inventory management for perishable 
+goods, using machine learning forecasting, computer vision quality assessment, and 
+IoT sensors to reduce spoilage and optimize storage. The study demonstrates how 
+predictive analytics and freshness monitoring improve inventory accuracy and 
+operational performance in perishable goods supply chains, which provides a 
+theoretical foundation for Raflora’s Gemini AI‑Assisted Image Analysis and 
+Perishable Inventory Management modules. This literature supports the integration of 
+real‑time data and image-based quality checks for floral materials. 
+Ilcheva (2025) conducted a comprehensive literature review of six AI-based 
+models addressing sustainable inventory management in grocery retail, focusing on 
+demand forecasting, inventory control, and perishables classification. Her Aalto 
+University thesis demonstrates how machine learning reduces food waste by 20-49% 
+through predictive analytics, directly paralleling Raflora Enterprises' challenges with 
+rapidly perishing cut flowers during peak wedding seasons. These findings validate 
+the integration of Gemini AI-driven forecasting and real-time stock optimization in 
+Raflora's proposed system to eliminate shortages and over-procurement losses. 
+Kumar (2025) reviewed and synthesized advanced optimization models 
+(FIFO/LIFO, Just-In-Time, multi-echelon inventory, dynamic pricing, and AI/ML 
+demand forecasting) tailored for time-sensitive retail perishables, explicitly citing the 
+floral industry as a prime example where short shelf life and freshness requirements 
+drive high waste. The study showed that combining IoT cold-chain monitoring, 
+blockchain traceability, and machine-learning-based replenishment can cut expired 
+stock by up to 30% and reduce transport costs while maintaining service levels. This 
+19 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+work strongly supports your Raflora’s system’s inventory management and 
+event-booking features: the dynamic pricing and automated replenishment strategies 
+justify the Price Validity/Reconfirmation modules, and the floral-specific examples 
+reinforce the need for real-time stock visibility to prevent double-booking or 
+out-of-stock issues during large event arrangements. 
+Sundaravadivel et al. (2025) proposed Ros-AI, a multimodal framework 
+combining UAV/drone imaging, deep learning, unsupervised computer vision, and 
+large language models (LLMs) for automated flower detection, counting, and 
+inventory management in ornamental nurseries. The system achieves high accuracy in 
+real-time stock tracking and quality assessment while integrating generative AI for 
+decision support. Results showed significant improvements in inventory accuracy and 
+reduced manual labor for perishable ornamental crops. This directly relates to your 
+Raflora’s Gemini AI-Assisted Image Analysis and inventory management features: 
+the multimodal image analysis and LLM-enhanced suggestions mirror AI-Suggested 
+Materials and event-booking stock validation, while addressing freshness and 
+availability challenges in floral systems. 
+Mantilla et al. (2025) conducted a systematic review of Industry 4.0 technologies 
+(IoT, AI, computer vision, and machine learning) in the global export flower sector, 
+showing how AI optimizes resource management, predicts disease outbreaks, and 
+enables real-time inventory and supply chain visibility to cut spoilage and improve 
+sustainability. Case examples from major exporters demonstrated 15–25% reductions 
+in waste through predictive analytics and automated quality grading via computer 
+vision. This work strongly justifies your system’s Raflora’s perishable inventory 
+20 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+backbone, event booking reliability (preventing overbooking of short-shelf-life 
+stock), dynamic Price Validity/Reconfirmation modules, and Gemini AI image 
+analysis for assessing flower quality and suggesting complementary materials in real 
+time. 
+Wani et al. (2023) reviewed robotics, computer vision, and machine learning 
+applications in floriculture, including automated harvesting, disease detection, and 
+robotic systems for flower arrangement. They highlighted QuickFlora’s FloraBot 
+prototype, which uses computer vision and ML algorithms to recognize flower 
+types/colors and autonomously assemble arrangements, along with image-processing 
+robots for precise handling of delicate cut flowers. The study stressed labor shortages 
+and the need for scalable automation to maintain quality in high-volume production. 
+These innovations directly support the Raflora’s Gemini AI-Assisted Image Analysis 
+component of your system (real-time flower recognition and arrangement suggestions 
+during event booking) and the overall inventory management for perishable items, 
+enabling AI-Suggested Materials and automated quality checks to reduce spoilage 
+and support reliable event scheduling. 
+ 
+21 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+2.3 Review of Related Studies 
+Local Studies 
+Tanaman, Baylosis, Abiles, Catungal, and Encarnacion (2023) developed a 
+web‑based inventory management system for a small business enterprise in Pagadian 
+City, Zamboanga del Sur, using a web application framework to automate stock 
+recording and reporting. The system showed that online inventory monitoring reduces 
+manual data entry errors and improves operational efficiency, which directly supports 
+Raflora’s current need to replace paper based inventory processes. Their work is a 
+relevant local precedent for an SME focused web‑based inventory module. 
+Espenida and Formanes (2023) developed an e‑inventory management system for 
+the supply office of secondary schools in Sorsogon, Philippines, using a web‑based 
+approach to enable remote access and inter‑departmental coordination. Evaluation 
+showed that the system Improves information flow and reduces manual follow ups, 
+which supports the idea of an online inventory structure for Raflora that links event 
+requests with stock availability. This study underpins the need for real‑time inventory 
+visibility in a service oriented SME.  
+Calucin, Hapa, and Benito (2024) developed a web‑based clinic records and 
+inventory management system for St. Paul University Quezon City, integrating 
+patient records, inventory tracking, and appointment scheduling. The system met 
+software quality standards and user acceptance metrics, demonstrating that a single 
+platform can combine records and inventory operations, similar to Raflora’s 
+22 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+integrated event booking and inventory needs. Their work supports the design of a 
+unified system that links bookings and operational workflows. 
+Vega and Generoso (2023) created an online facility reservation system for 
+Lyceum of the Philippines University–Batangas using PHP and MySQL, focusing on 
+real‑time availability checking and automated confirmations to reduce scheduling 
+errors. User testing showed that the system improves notification efficiency and 
+administrative productivity, which directly informed the design of Raflora’s Event 
+Booking Coordination module. Their work supports the use of conflict‑checking and 
+automated confirmation features in the proposed system. 
+Reyna (2023) examined the development of FlowerHub, an online flower shop 
+system for local flower shops in Surigao City using object-oriented analysis and the 
+Laravel PHP Framework. Through use-case modeling, class diagrams, and System 
+Usability Scale (SUS) evaluation (score: 85/100), the study demonstrated how a 
+web-based platform automates manual ordering, real-time inventory tracking 
+(add/update/remove products and quantity in stock monitoring), order processing, and 
+sales reporting. It addresses perishable goods challenges such as limited reach and 
+inefficient stock management. These findings directly support Raflora’s flower 
+arrangement event booking and inventory management modules by providing a 
+proven local model for digital order fulfillment and centralized inventory control that 
+can be extended with Gemini AI image analysis for arrangement recommendations. 
+Valdez et al. (2025) analyzed the integration of AI tools among Filipino college 
+students and young professionals, noting a significant trend toward using Large 
+23 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Language Models (LLMs) like Gemini for "process automation" and "content 
+generation." They argued that while technology spreads rapidly, successful 
+implementation requires a clear understanding of the tool's capabilities to avoid 
+"policy gaps." This research is applicable to your capstone Raflora’s as it highlights 
+the necessity of a well defined AI workflow ensuring that your system’s image 
+analysis correctly translates visual flower arrangements into inventory data without 
+technical friction. 
+Pandramisu (2023) developed an event management system as a graduate 
+capstone project at Governors State University, providing a platform for users to view 
+past and upcoming events and manage event logistics through a web application. The 
+system adopted Agile web development methodology to support rapid iteration and 
+quality assurance. Through an international study, Raflora references its structured 
+event lifecycle model from creation to post-event reporting which mirrors the 
+proposed system's event booking lifecycle for floral arrangement clients. 
+Coro, Cuenca, and Ramos (2022) developed an inventory management system for 
+the finished goods of RISO Packaging Technology Corp. at Batangas State University 
+JPLPC–Malvar, addressing discrepancies between manual inventory counts and 
+actual stocks. The system automated stock tracking, generated inventory reports, and 
+minimized human error from manual counting. Raflora's Inventory Management 
+Module for floral materials and arrangement supplies was informed by this study's 
+emphasis on real-time stock monitoring and automated discrepancy detection. 
+24 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Atilano-Tang, L. A., and Damsani, K. (2023) assessed the quality of the 
+inventory management system of the BARMM-Ministry of Public Works-Basilan 
+District Engineering Office in the Philippines, examining how system quality affects 
+organizational effectiveness and efficiency in procurement and supply chain 
+management. The study found that well-implemented inventory systems significantly 
+enhance government service delivery, and recommended strategies to improve data 
+accuracy and procurement transparency. This is relevant to the proposed system's 
+Raflora’s need to ensure accurate, real-time inventory records for flower stock and 
+event supplies. 
+Ahmad (2023) developed and evaluated the e-AIMSS, an electronic asset 
+inventory and management system deployed in a school setting in the Philippines, 
+resulting in measurable improvements in resource optimization and organizational 
+productivity. The study established that digital inventory systems significantly 
+outperform manual methods in tracking school assets, with reduced discrepancies and 
+faster retrieval. Raflora's inventory system for floral arrangement supplies and 
+materials adopts similar asset-tracking principles to ensure accurate stock levels and 
+reorder alerts. 
+Weng and colleagues (2024) applied a mixed-methods Design Thinking approach 
+to determine user requirements for a tailored web-based inventory and sales 
+management system for micro-small construction supply stores in the Philippines, 
+presented at the World Symposium on Software Engineering 2024. The study 
+employed Swimlane Diagrams and SWOT analysis and found that business owners 
+25 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+need real-time, intuitive inventory dashboards tailored to their specific trade. Raflora 
+applies the Design Thinking philosophy from this study in crafting a user-centered 
+interface for floral inventory management. 
+Onsay and Rabajante (2024) from the University of the Philippines Los Baños 
+proposed using a combination of Participatory Rural Appraisal (PRA) and Machine 
+Learning (ML) to forecast natural disasters in the Bicol region, representing one of 
+the early published local applications of AI/ML in community decision-making. The 
+study underscores the growing viability of AI-driven analytical tools in Philippine 
+contexts. Raflora references this study as evidence of expanding AI adoption in local 
+academic research, providing academic grounding for Raflora's own AI-assisted 
+image analysis feature. 
+Foreign Studies 
+Deepthi et al. (2025) developed a web-based event booking platform using the 
+Django framework and PostgreSQL database to streamline event management for 
+both organizers and attendees, incorporating real-time booking, ticketing, and 
+payment integration. Usability testing confirmed that the centralized platform reduces 
+manual coordination effort and scheduling conflicts while supporting large scale 
+event operations. The role-based booking tools and confirmation logic demonstrated 
+in this study directly inform the design of Raflora's Event Booking Coordination 
+module. 
+26 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Nguyen et al. (2025) proposed the Automated Image Recognition (AIR) 
+Framework, using generative AI to synthesize annotated datasets and train 
+deep‑learning models for image recognition. Evaluation showed that AIR improves 
+dataset quality and classification performance, which is directly relevant to Raflora’s 
+Gemini AI‑Assisted Image Analysis module for automating object recognition 
+behavior from client images. This framework supports the idea of AI‑assisted 
+generation of recognition like rules. 
+Patil and Rana (2023) reviewed the use of machine learning and deep‑learning 
+techniques in computer vision, including object detection and image classification, 
+using recent literature surveys to show how AI‑powered systems achieve high object 
+identification accuracy. Their review supports the use of similar image analysis 
+principles in Raflora’s Gemini AI module for Interpreting floral arrangement photos. 
+The work underpins the selection of object recognition and classification techniques 
+for clients submitted images. 
+Vimalarani and Sathiyaseelan (2021) developed an event‑management system for 
+conferences and workshops using JavaServer Faces and MySQL, incorporating 
+registration, scheduling, and profile management modules. Testing showed that the 
+centralized platform reduces manual scheduling errors and improves coordination, 
+which aligns with the proposed event booking and scheduling structure for Raflora 
+Enterprises. Their system demonstrates how a web‑based platform can manage event 
+related workflows in small scale settings. 
+27 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Li, H., Zhang, Y., and Wang, F. (2024) proposed an intelligent 
+flower-arrangement assistance system that performs image-based recognition of floral 
+materials, matches them with database-stored designs, and guides manual or 
+automated arrangement. Their results demonstrate that target-detection and 
+data-matching algorithms can significantly speed up the design process while 
+maintaining aesthetic quality, which supports Raflora’s Gemini AI-Assisted Image 
+Analysis and AI-Suggested Materials modules by validating the use of visual 
+recognition for selecting appropriate flowers from available stock. 
+Parves, KM et al. (2024) proposed an AI-powered inventory management system 
+using YOLO (You Only Look Once) object detection for real-time identification and 
+tracking of warehouse items, achieving over 90% accuracy in differentiating 
+packages and extracting serial numbers for tracking. The system automated data 
+collection, reduced manual labor, and enabled seamless integration with existing 
+warehouse management software. This research strongly supports Raflora's 
+image-based inventory identification module, demonstrating that real-time AI object 
+detection can accurately recognize and update stock levels for physical items 
+analogous to identifying specific flower types from visual input. 
+Cayli, O. and Oralhan, Z. (2024) investigated the application of AI algorithms 
+including Gradient Boosting Machines and Support Vector Machines to enhance 
+inventory management for retail SMEs. Using historical sales data, the study trained 
+models to answer questions about weekly sales targets under seasonal and 
+promotional influences, achieving more accurate stock-level determination than 
+manual methods. This study supports Raflora's inventory module by demonstrating 28 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+that AI-driven demand forecasting can help florist businesses avoid stockouts and 
+reduce waste for time-sensitive floral materials 
+JosephNg, P.S., Al-Sofi, S.M., Phan, K.Y., Lim, J.T., and Lai, S.C. (2023) 
+designed a web-based platform for event-venue booking and management, 
+demonstrating how digital platforms can handle multiple tasks such as financial 
+management, scheduling, and coordination for events. Their study showed that a 
+properly structured web system improves event organization efficiency and reduces 
+human error in managing reservations. This is directly relevant to the Flower 
+Arrangement Event Booking System module of the capstone, as it validates the use of 
+a web-based platform for managing event bookings, client scheduling, and resource 
+tracking in a centralized digital environment. 
+Prasasti, K.F.A., Anansa, M.A., Putri, L.M.N., and Lestari, D.I. (2025) designed a 
+web-based marketplace platform called FlowerNest for micro, small, and medium 
+enterprise (MSME) florists in Indonesia, using the Eisenhower Matrix, MoSCoW 
+Framework, and User Journey Map to define system features. Their usability testing 
+confirmed functional feasibility and positive user acceptance, with plans to expand to 
+AI-based recommendations and AR previews. This study supports the capstone's 
+approach of building a flower-specific web platform with AI-assisted features, 
+validating that florist-oriented digital systems with intelligent recommendation 
+capabilities are viable and well received by users. 
+Onyejiaku, T., Nwakanma, C., and Ekoema, B. (2024) developed a deep 
+learning-based web application capable of recognizing flower species and monitoring 
+29 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+their status using convolutional neural network models. Their results showed that 
+deep learning significantly improves the accuracy of real-time flower identification in 
+a web-deployed environment, enabling automated monitoring of floral health. This 
+study directly supports the capstone's Gemini AI-Assisted Image Analysis module by 
+proving that AI-powered image recognition can be successfully integrated into web 
+platforms to identify and analyze floral materials automatically. 
+2.4 Synthesis of the Review of Related Literature and Studies  
+The reviewed literature collectively establishes a strong technical and 
+operational foundation for the proposed system by converging on three major themes: 
+the necessity of automated perishable inventory management, the effectiveness of 
+web-based event booking platforms, and the growing viability of AI-assisted image 
+analysis in specialized service industries. On the subject of perishable inventory, studies by Maheshwari et al. (2021), 
+Macías-López et al. (2021), Ilcheva (2025), and Kumar (2025) consistently 
+demonstrate that manual stock management is fundamentally inadequate for 
+time-sensitive perishables such as cut flowers. These works collectively support the 
+need for real-time, event-linked inventory tracking with automated shortage alerts 
+precisely the function addressed by the system's Inventory Management module. The 
+floral-specific findings of Momotaz and Banik (2021) and Mantilla et al. (2025) 
+further reinforce that seasonal price volatility and supply unpredictability require 
+proactive digital solutions, justifying the inclusion of the Price Validity and 
+Reconfirmation module. 
+30 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+On the subject of event booking and coordination, studies by Kusumawardhani et al. 
+(2025), Deepthi et al. (2025), Vimalarani and Sathiyaseelan (2021), and JosephNg et 
+al. (2023) consistently show that centralized, role-based digital booking platforms 
+reduce scheduling conflicts, eliminate manual coordination errors, and improve 
+service reliability in small-scale operations. Local studies by Vega and Generoso 
+(2023) and Calucin et al. (2024) further demonstrate that this approach is applicable 
+and effective within the Philippine SME context, directly informing the design of 
+Raflora's Event Booking Coordination module.  
+On the subject of AI-assisted image analysis, research by Li et al. (2024), Onyejiaku 
+et al. (2024), Sundaravadivel et al. (2025), and Wani et al. (2023) establishes that 
+multimodal AI and computer vision systems can accurately recognize floral materials 
+from visual input and translate those findings into structured operational data. The 
+Philippine-context studies of Oyangoren and Camilo (2025), Balba et al. (2024), and 
+Albano et al. (2025) further confirm that AI adoption in local SMEs is feasible but 
+requires user-centered design, staff training, and clear validation workflows all of 
+which are addressed by the system's human-in-the-loop administrator validation step. 
+This convergence of literature reveals a critical gap in existing platforms: while 
+individual modules for event booking, perishable inventory management, and AI 
+image analysis have each been developed and validated independently, no unified 
+system has yet integrated all three functions within the specific operational context of 
+a Philippine floral SME. This gap forms the primary technical justification for the 
+proposed system.  
+31 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Research Gap 
+While existing research has developed independent modules for event booking, 
+inventory management, and AI image analysis, these technologies typically operate in 
+isolation. Foreign studies on perishable inventory focus on shelf-life monitoring, 
+while local Philippine studies emphasize general web-based coordination for SMEs. 
+However, there is no existing integrated platform that links event booking, 
+perishable-aware inventory, and AI-image analysis with specific seasonal substitution 
+logic for the floral industry. 
+Furthermore, current systems lack a Price Validity and Reconfirmation module that 
+connects AI-suggested materials with real-time pricing updates for long-term event 
+bookings. This study fills this gap by developing a unified platform that explicitly 
+links event data, seasonal rules, and AI-assisted analysis into a single ecosystem 
+designed specifically for the operational constraints of small Philippine floral 
+enterprises. 
+CHAPTER 3 
+RESEARCH METHODOLOGY 
+3.1 Research Method 
+ This study used the Rapid Application Development (RAD) Model as the 
+software development methodology for the design and development of the Flower 
+Arrangement Event Booking and Inventory Management System with Gemini 
+AI-Assisted Image Analysis for Raflora Enterprises. RAD was chosen because it 
+supports close collaboration with Raflora’s owner and staff, allowing ongoing 
+32 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+refinement of each module to align with the operational workflows identified during 
+requirements planning. Unlike sequential methodologies, RAD allows for evolving 
+design details and facilitates rapid prototyping and user feedback in each 
+development cycle. This approach is particularly suitable for a system that integrates 
+an external AI component (the Gemini AI API) requiring iterative testing and 
+adjustments during development. The system’s specific focus covering a 
+single-branch operation with three user roles and six core modules further supports 
+the use of RAD, enabling researchers to progress through the requirements, design, 
+and construction phases effectively without significant scope changes. 
+ 
+ 
+33 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+RAD Model 
+ 
+ 
+ 
+ 
+ 
+Figure 1: Rapid Application Development (RAD) Model 
+Phase 1: Requirements Planning 
+The Requirements Planning phase focused on identifying the operational 
+problems, functional requirements, and system boundaries for the proposed system. 
+The researchers conducted a semi-structured interview with the owner of Raflora 
+Enterprises to gather first hand accounts of existing manual booking and inventory 
+management workflows. A structured questionnaire was subsequently sent to the 
+owner and designated staff members to systematically collect quantifiable data on 
+recurring problems, including booking processing times, frequency of inventory 
+shortages, pricing challenges, and desired system features. Direct observation of the 
+company’s manual operations, together with analysis of existing operational 
+documents such as sample booking records and inventory logs, was used to define 
+required system inputs, outputs, and data structures. The findings from this phase 
+34 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+were consolidated into a System Requirements Specification that served as the 
+foundation for the subsequent User Design and Construction phases. 
+ 
+   Figure 2: Context Diagram of the Proposed System  
+35 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+The Context Diagram shows the proposed system as a single high-level process 
+interacting with four external entities: Client, Administrator, Staff, and Gemini AI 
+API. The Client submits booking requests and inspiration images, receiving 
+confirmations and price notifications. The Administrator provides approvals and 
+inventory updates, receiving shortage alerts and reports; Staff submits inventory 
+counts and return reports, receiving event checklists; and the Gemini AI API 
+processes images to return material suggestions cross-referenced with inventory. 
+ 
+Phase 2: User Design 
+User Design, the project moves from high-level requirements into detailed 
+technical modeling to create a blueprint for the system’s architecture. This phase is 
+centered on the development of the Entity Relationship Diagram (ERD), which 
+defines the database schema and ensures all data from user accounts to AI-generated 
+reports is logically structured and related. Alongside the ERD, Data Flow Diagrams 
+(DFD) Levels 1 and 2 are constructed to map out the internal logic and specific 
+processes, such as how the system handles image analysis and booking workflows. 
+By finalizing these designs, the project establishes a clear roadmap that minimizes 
+errors and streamlines the transition into the construction and coding stage.  
+ 
+36 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Figure 3: Data Flow Diagram level 1 of the Proposed System 
+Presents a Level 1 Data Flow Diagram (DFD) that elaborates on the detailed 
+processes within the Flower Arrangement Event Booking and Inventory Management 
+37 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+System. The diagram breaks down the system into its primary functional modules: 
+User Management, Booking Processing, Inventory Tracking, and AI Analysis. The 
+Administrator initiates system configurations and inventory updates, while the 
+Customer provides event requirements and reference images for processing. 
+The system records operational data into specific data stores, including user 
+credentials, event booking records, and floral inventory levels. The AI Analysis 
+process retrieves uploaded image data and communicates with the Gemini API to 
+identify material requirements, which are then cross-referenced with the inventory 
+data store to automate stock deduction. These data flows among the entities and 
+processes illustrate a comprehensive booking-to-inventory cycle, emphasizing the 
+transition from manual record-keeping to a synchronized digital infrastructure. 
+     ​ 
+38 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Data Flow Diagram Level 2 
+ 
+ 
+Figure 4: Data Flow Diagram Level 2 of the Proposed System 
+Decomposes the coordination process (Process 1.2) to show how the system 
+manages availability. It outlines the interaction where the Client requests a schedule 
+and views available slots retrieved from the Calendar Events and Meetings data store. 
+Upon selecting a time, the system writes the booking and automatically blocks the 
+39 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+calendar, while the admin eventually marks the meeting as completed to update the 
+final Bookings records.  
+ 
+ 
+Figure 5: Data Flow Diagram Level 2 of the Proposed System 
+Illustrates the financial verification flow within Process 1.1 of the system. It 
+captures the Client providing downpayment details, which are then written to the 
+Payments data store. The system validates the required 70% downpayment to confirm 
+the booking and triggers a notification to proceed with meeting scheduling once the 
+payment status is verified. 
+40 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+ 
+Figure 6: Data Flow Diagram Level 2 of the Proposed System 
+Presents the Level 2 DFD for Process 1.0, detailing the lifecycle of a booking 
+request from initial inquiry to final confirmation. The process begins when the Client 
+submits a booking request and inspiration images, which are processed to create a 
+tentative quotation. The Admin reviews and edits these quotations based on feedback, 
+maintaining a comprehensive audit trail in the Quotation History data store until final 
+approval updates the Bookings status.  
+ 
+ 
+41 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+ 
+Figure 7: Data Flow Diagram Level 2 of the Proposed System 
+Shows the decomposed sub-processes of Process 1.3, which automates the 
+identification of floral requirements. The flow moves from receiving the inspiration 
+image to calling the Gemini AI API and parsing the response. The results are stored in 
+the AI Analyses data store for Admin review, allowing for a validated update to the 
+Booking Items that eliminates the need for manual material listing. 
+42 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+ 
+     
+Figure 8: Data Flow Diagram Level 2 of Presentation Management 
+Describes the iterative design phase in Process 1.4 where the Admin manages 
+visual proposals. The Admin uploads presentation files which are delivered to the 
+Client for feedback. The system supports version control by creating new versions in 
+43 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+the Presentations data store based on client comments until the design is marked as 
+approved, updating the final Booking Items.  
+ 
+ 
+         Figure 9: Data Flow Diagram Level 2 of the Proposed System 
+Elaborates on Process 1.5, focusing on the transition from confirmed bookings to 
+logistical readiness. The diagram details how the system checks confirmed bookings to 
+calculate suggested procurement dates for fresh stock. It records procurement 
+44 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+movements in Inventory Transactions and generates automated alerts for the Admin to 
+ensure all materials are set for the event date. 
+ 
+ 
+Figure 10: Data Flow Diagram Level 2 of the Proposed System 
+45 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Describes the post-event logistical flow (Process 1.6) for handling equipment 
+returns and assessing damages. The process accepts return data from Admin or Staff, 
+recording the entry before assessing item conditions. Data is written to Returns and 
+Return Items, ultimately updating the Inventory Items stock levels and recording the 
+final movement in the Inventory Transaction store.  
+ 
+46 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Figure 11: Data Flow Diagram Level 2 of the Proposed System 
+Presents the Level 2 DFD for Process 1.7, which ensures system accountability 
+and data integrity. It shows how the Admin triggers logging for various events, 
+including quotation changes, inventory transactions, and cancellations. These actions 
+are written to the Quotation History, Inventory Transactions, and Users data stores, 
+providing a transparent record of all critical system activities and user actions.  
+47 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Phase 3: Construction 
+The Construction phase focuses on building and testing the system modules 
+through a step-by-step process. The application will be developed using the Laravel 
+framework for the backend, HTML, CSS, and Bootstrap for the user interface, and 
+MySQL for managing the database. A major part of this phase is the integration of 
+the Gemini AI API, which allows the system to analyze inspiration photos uploaded 
+by clients and suggest the specific floral materials needed for an event. To help with 
+shop operations, the system includes Automated Scheduling Logic that monitors 
+event dates and stock levels. This logic is programmed to send out alerts that start 
+four weeks before a confirmed event and move to daily reminders during the final 
+week to ensure all materials are secured. The development follows a logical sequence 
+starting with user logins and event booking, moving to inventory and AI analysis, and 
+ending with price checks and reports. Each module undergoes careful testing to 
+ensure that the entire system works as a unified and reliable tool for Raflora 
+Enterprises. 
+Phase 4: Cutover 
+The Cutover phase will involve the deployment of the completed system into a 
+testing environment accessible to Raflora Enterprises' administrators and staff, 
+followed by User Acceptance Testing (UAT) and system orientation. System 
+orientation sessions will be conducted with designated respondents to familiarize 
+them with the system's navigation, role-specific features, and module workflows prior 
+to formal evaluation. UAT will be conducted using a standardized software quality 
+48 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+evaluation instrument adapted from the ISO/IEC 25010 Software Quality Model to 
+assess the system's practical functionality and overall quality in the context of the 
+company's actual event coordination and inventory management operations. 
+Post-deployment activities within this phase will include monitoring system behavior 
+under actual usage conditions, resolving defects identified during evaluation, and 
+implementing minor enhancements based on respondent feedback. Performance 
+metrics specifically booking processing time, incidence of scheduling conflicts, and 
+inventory alert response accuracy will be recorded during this phase to support the 
+comparative evaluation.  
+3.2 Conceptual Framework 
+INPUT 
+Data Requirements: 
+Client-Provided 
+Data: Event details, 
+booking dates, and 
+contact information. 
+Visual Input: 
+Client-uploaded 
+inspiration images 
+(JPG/PNG). 
+Inventory Data: 
+Current floral stock 
+levels, unit costs, and 
+material categories. 
+Operational 
+Parameters: Price 
+validity periods, 
+seasonal substitution 
+rules, and 
+PROCESS 
+System Logic and 
+Transformation: 
+AI-Assisted Image Parsing: 
+Analyzing visual data via the 
+Gemini AI API to identify 
+floral materials. 
+Booking Coordination: 
+Validating event dates and 
+managing the reservation 
+lifecycle. 
+Inventory  
+Synchronization: Real-time 
+stock deduction and shortage 
+detection logic. 
+OUTPUT 
+System Deliverables: 
+A Unified Web-Based 
+Platform: A Flower 
+Arrangement Event 
+Booking and Inventory 
+Management System with 
+Gemini AI-Assisted 
+Image Analysis 
+AI-Generated Material 
+Suggestions: Structured 
+lists of recommended 
+flowers and quantities. 
+Optimized Event 
+Schedules: A 
+49 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+non-perishable asset 
+lists. 
+User Credentials: 
+Administrator and staff 
+authentication data. 
+ 
+Price Reconfirmation: 
+Triggering alerts for tentative 
+quotations based on date 
+thresholds. 
+Asset Recovery Tracking: 
+Logging the return and status 
+of non-perishable materials. 
+Data Aggregation: 
+Generating audit logs and 
+operational reports through 
+MySQL queries. 
+ 
+conflict-free digital 
+calendar of bookings. 
+Real-Time Inventory 
+Alerts: Automated 
+notifications for low stock 
+and procurement needs. 
+Operational Reports: 
+Timestamped audit logs, 
+material usage 
+summaries, and business 
+performance analytics. 
+ 
+ 
+Table 1: Input Process Output (IPO) Model 
+The conceptual framework follows the Input-Process-Output (IPO) model to 
+illustrate the system’s operational flow. The Input phase captures unstructured data 
+from event images and manual booking details, which are then transitioned into the 
+Process phase for AI-assisted material extraction and database synchronization. To 
+ensure reliability, the processing stage includes a human-in-the-loop validation step 
+where administrators confirm AI-generated suggestions before they are committed to 
+the database. This technical workflow ensures that high-accuracy data is fed into the 
+Output phase, which generates structured results such as automated material 
+requirements and a conflict-free digital calendar. By standardizing these procedures, 
+the framework effectively bridges the visibility gap between Raflora Enterprises' 
+bookings and inventory stock. 
+50 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+3.3 Data Gathering Tools and Procedures 
+The researchers employed four data gathering methods to support the 
+Requirements Planning phase of the RAD methodology. These activities identified 
+Raflora Enterprises' operational problems, workflows, and system requirements 
+detailed in Section 1.1. 
+​
+Data Gathering Tools 
+Interview. A semi-structured interview was conducted with Raflora Enterprises' 
+owner to document manual booking and inventory processes. The session confirmed 
+operational problems from Section 1.1 and identified requirements for booking 
+coordination, inventory alerts, role-based access, and audit logging. 
+Questionnaire. A structured questionnaire distributed to the owner and five 
+designated staff members validated interview findings. It collected preferences for 
+inventory alert frequency, AI material suggestions, and role-restricted financial data 
+access. 
+Observation. Direct observation at Raflora facilities verified manual processes 
+including notebook updates, wall calendar maintenance, physical shelf counts, and 
+post-event material tracking. 
+Document Analysis. Existing booking records, inventory logs, and quotation 
+documents were analyzed to define system inputs, outputs, and database structures for 
+all six modules. 
+51 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Data Gathering Procedures 
+The researchers employed a multi-phased data gathering approach to ensure a 
+holistic understanding of the business requirements. The process began by securing 
+formal written permission from the owner of Raflora Enterprises to conduct research 
+activities. 
+Initially, the researchers conducted semi-structured interviews and distributed 
+questionnaires to the owner and five staff members. These tools were designed to 
+document existing workflows, validate the problems identified in the project context, 
+and collect specific user preferences for the system’s features. Following the 
+interviews, the research team performed on-site observations at the Raflora facilities. 
+These sessions allowed the researchers to verify manual processes in real-time and 
+document the specific time required to cross-reference flower availability, confirming 
+a manual processing delay of approximately one to two hours. 
+Finally, operational documents were collected and analyzed to identify precise data 
+requirements. All gathered qualitative and quantitative findings were consolidated, 
+which served as the technical foundation for the User Design phase of the RAD 
+methodology." 
+52 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Figure 12: Flowchart of Existing System 
+Presents the Activity Flowchart of the Existing System, illustrating the manual 
+and paper-based operational sequence currently utilized by Raflora Enterprises. The 
+diagram identifies a linear, decentralized process where event inquiries and inventory 
+checks are conducted through physical media and fragmented communication 
+channels. The workflow begins with a manual client inquiry and moves through a 
+series of human-dependent steps, including physical stock verification and 
+handwritten booking entries in a traditional logbook. 
+The process logic reveals a lack of automated synchronization, as data is recorded 
+into non-relational formats that lack centralized validation. Because there is no 
+53 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+integrated digital hub, the flow illustrates significant bottlenecks where staff must 
+manually cross-reference event requirements against physical inventory lists. This 
+visualization emphasizes the systemic risks of data redundancy and record loss 
+inherent in the manual-decentralized model, providing the technical justification for 
+the proposed digital transformation.  
+54 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+3.4 Project Design 
+The Project Design is based on the Rapid Application Development (RAD) 
+methodology, which emphasizes an iterative process between the researchers and the 
+system’s end-users. The diagram illustrates the core development lifecycle, moving 
+from Requirement Planning to the User Design and Construction phases. This design 
+justifies the accelerated development timeline by showing how user feedback is 
+directly integrated into the prototyping process to refine the system’s features and 
+interface. 
+The logic of this design ensures that the technical requirements such as the 
+AI-assisted image analysis and inventory modules are validated early in the 
+development cycle. By maintaining a continuous feedback loop, the project design 
+minimizes the risk of logical gaps between the proposed software and the actual 
+operational needs of Raflora Enterprises. This iterative framework serves as the 
+roadmap for the system's architecture, ensuring a final product that is both 
+functionally robust and aligned with the users' technical capabilities. 
+ 
+ 
+ 
+ 
+55 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Figure 13: System Architecture of the Proposed System 
+Presents the System Architecture, illustrating the structural relationship between the 
+hardware components, the software interface, and the backend cloud services. The 
+diagram defines a three-tier architecture consisting of the Client Layer (Web 
+Interface), the Application Layer (Logic and AI Parsing), and the Data Layer 
+(MySQL Database). This architectural logic demonstrates how user inputs from the 
+local interface are transmitted to the Gemini AI API for material identification before 
+being stored in the centralized database. 
+The architecture emphasizes the secure and efficient flow of data between the internal 
+system and external cloud environments. By utilizing an API-driven design, the 
+system offloads complex computational tasks to the Gemini suite while maintaining a 
+56 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+lightweight local footprint for the Administrator. This structure justifies the system’s 
+ability to provide real-time inventory updates and booking management, establishing 
+a high-performance foundation that eliminates the processing latencies found in the 
+previous manual-decentralized setup. 
+57 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Figure 14: Use Case Diagram of the Proposed System 
+58 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Presents the Use Case Diagram, which defines the functional boundaries of the 
+system and the specific interactions between the primary actors and the platform's 
+core modules. The diagram identifies the Administrator as the primary actor and the 
+Gemini API as the secondary actor. The architectural logic centers on the "Event 
+Booking" and "Inventory Management" use cases, which serve as the primary 
+triggers for the system's automated features. 
+The process logic illustrated in the use case highlights the Gemini AI-Assisted Image 
+Analysis as a critical relationship for the booking process. When the Administrator 
+initiates a new event booking and uploads a reference photo, the system invokes the 
+Gemini API to parse visual data into a structured material list. This interaction 
+justifies the system’s ability to automate material identification, effectively bridging 
+the gap between client requirements and physical stock levels. By defining these 
+boundaries, the Use Case Diagram serves as a behavioral blueprint ensuring that all 
+identified operational problems such as manual counting errors and decentralized data 
+are addressed through specific system-user interactions. 
+ 
+ 
+ 
+ 
+ 
+59 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Figure 15: Entity Relationship Diagram of the Proposed system (Part 1) 
+ 
+60 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+ 
+Figure 16: Entity Relationship Diagram of the Proposed system (Part 2) 
+Presents the Entity Relationship Diagram (ERD), which illustrates the relational 
+database schema and the logical structure of the system’s data storage. The diagram 
+identifies core entities including Users, Bookings, and Inventory linked through 
+61 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+primary and foreign key constraints to ensure referential integrity. To manage the 
+complex requirements of floral arrangements, an associative entity is utilized to 
+resolve the many-to-many relationship between unique bookings and specific 
+inventory items. 
+The database records transaction-level data, such as material quantities, unit costs, 
+and event schedules, into normalized tables to prevent data redundancy. When a 
+booking is finalized, the system executes an automated update across these related 
+entities, ensuring that stock levels are deducted in real-time. This relational mapping 
+emphasizes the transition to a centralized source of truth, providing the technical 
+foundation necessary to eliminate the record loss and material discrepancies common 
+in paper-based documentation. 
+ 
+ 
+ 
+ 
+ 
+ 
+62 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+3.5 Project Evaluation 
+The evaluation assessed usability and operational effectiveness during the RAD 
+Cutover phase. Two approaches were used with Raflora staff: a survey questionnaire 
+adapted from the ISO/IEC 25010 Software Quality Model evaluating the system 
+across six quality characteristics: Functional Suitability, Usability, Reliability, 
+Performance Efficiency, Security, and Compatibility; and a before-after performance 
+comparison against the Section 1.1 baseline metrics of booking processing time, 
+scheduling conflicts, and inventory shortage incidence.  
+Respondents of the Study 
+The respondents of the study consist of five (5) individuals, comprising the 
+owner, the lead floral designer, and three administrative staff members of Raflora 
+Enterprises. While this represents a small numerical sample, the researchers utilized 
+a total population sampling technique. Since these five individuals constitute 100% of 
+the administrative and decision-making workforce responsible for the booking and 
+inventory management processes, they are the only qualified subjects capable of 
+evaluating the system's impact on these specific internal workflows. While the 
+business employs additional general staff for event setup, the selected respondents 
+represent the total population of the system's intended end-users. Consequently, their 
+feedback will provide a comprehensive and highly valid assessment of the system's 
+usability and effectiveness within its intended organizational context. 
+ 
+ 
+63 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Evaluation Design 
+ The evaluation of the system is divided into three parts to test its usability, 
+business impact, and AI accuracy. First, the researchers will conduct User Acceptance 
+Testing (UAT) with five respondents representing the Administrator, Staff, and Client 
+roles who will perform tasks like booking events and checking inventory. Their 
+feedback will be measured using a survey questionnaire adapted from the ISO/IEC 
+25010 Software Quality Model, evaluating the system across six quality 
+characteristics: Functional Suitability, Usability, Reliability, Performance Efficiency, 
+Security, and Compatibility. Second, a performance analysis will compare the new 
+system to the old manual way of working, specifically measuring how much time is 
+saved and if scheduling errors are reduced. Finally, the AI Model Performance 
+Validation will be conducted to check the accuracy of the Gemini AI-Assisted Image 
+Analysis. The Ground Truth was established through a validation session conducted 
+with the shop owner, wherein a set of client-provided inspiration images representing 
+varying arrangement styles, color schemes, and event types will be pre-verified to 
+identify the correct floral materials. The AI's suggestions for each image will then be 
+compared against these verified materials to compute Precision, Recall, and User 
+Agreement Rate. 
+ 
+ 
+ 
+64 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Evaluation Instrument 
+Quality 
+Characteristic 
+Definition 
+Functional 
+Suitability 
+System performs tasks correctly 
+and completely 
+Usability 
+Easy to learn, navigate, and 
+operate 
+Reliability 
+Operates consistently without 
+errors 
+Performance 
+Efficiency 
+Responds within acceptable time 
+limits 
+Security 
+Protects data and access from 
+unauthorized use 
+Compatibility 
+Functions across web browsers 
+and devices 
+ 
+Table 2: ISO/IEC 25010 Software Quality Model.  
+Ensuring a standard and objective assessment, the primary tool for data collection 
+is a survey questionnaire adapted from the ISO/IEC 25010 Software Quality Model. 
+This instrument evaluates the system based on six specific quality characteristics: 
+Functional Suitability, Usability, Reliability, Performance Efficiency, Security, and 
+65 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Compatibility. Each criterion is assessed using a five-point Likert Scale, with ratings 
+ranging from 5 (Highly Accepted) to 1 (Not Acceptable). By utilizing this 
+standardized instrument, the researchers can calculate the weighted mean of the 
+responses, providing a statistically sound basis for determining the system’s technical 
+quality and its readiness for full-scale implementation.​ Likert Scale 
+Scale Range Interpretation 
+5 4.21 – 5.00 Highly Acceptable 
+4 3.41 – 4.20 Acceptable 
+3 2.61 – 3.40 Neutral 
+2 1.81 – 2.60 Slightly Acceptable 
+1 1.00 – 1.80 Not Acceptable 
+Table 3: Likert Scale and Interpretation 
+Presents the Five-Point Likert Scale used to quantify the respondents' evaluation 
+of the system’s functional and non-functional requirements. The scale provides a 
+standardized metric for measuring subjective qualitative feedback such as usability, 
+reliability, and AI accuracy into objective numerical data. This conversion is essential 
+for the statistical analysis phase, allowing the researchers to determine the overall 
+66 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+level of acceptance of the Flower Arrangement Event Booking and Inventory 
+Management System. 
+The interpretive ranges applied to the computed weighted mean scores justify the 
+system's readiness for deployment. By categorizing scores into specific levels of 
+acceptability, the researchers can pinpoint which modules such as the Gemini 
+AI-assisted parsing or the MySQL inventory synchronization meet the high standards 
+of the end-users. This logical mapping ensures that the final evaluation is not based 
+on general impressions but on a rigorous, data-driven assessment of the software's 
+operational performance. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+67 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+References 
+Balba, N. P., Junio, O. M., and Sanares, R. N. (2024). Leveraging information 
+technology for sustainable business growth: A strategic approach to digital 
+transformation in SMEs. ejournals.ph. https://ejournals.ph/article.php?id=25997 
+Bermudez, R. S., and Cantos, M. C. G. (2024). Development and validation of flora 
+inventory management system. ejournals.ph. https://ejournals.ph/article.php?id=6744 
+Jiang, Y., and Denuevo, A. U. (2024). Digital transformation strategies of commercial 
+banks and financing services availed by small and medium enterprises. ejournals.ph. 
+https://ejournals.ph/article.php?id=28556 
+Kusumawardhani, S. D., et al. (2025). Development of a web‑based reservation 
+system to improve service efficiency for catering MSMEs. BIT Journal, 2718. 
+https://jurnal.kdi.or.id/index.php/bt/article/view/2718 
+Maheshwari, S., Singh, R., and Tiwari, M. K. (2021). Internet of things for perishable 
+inventory management systems. Journal of Industrial Information Integration, 24, 
+Article 100233. https://doi.org/10.1016/j.jii.2021.100233 
+Macías‑López, A., Mendoza, A., and González, A. (2021). An inventory model for 
+perishable items with price‑, stock‑, and time‑dependent demand rate considering 
+shelf‑life and nonlinear holding costs. Mathematical Problems in Engineering, 2021, 
+Article 6630938. https://doi.org/10.1155/2021/6630938 
+Momotaz, S., and Banik, S. (2020). Effects of seasonal variation driven price 
+disparity on fresh flower business: Evidence from Bangladesh. Journal of Business 
+68 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+and Retail Management Research, 14(4), 1–10. 
+https://jbrmr.com/cdn/article_file/2021‑04‑28‑16‑40‑44‑PM.pdf 
+Oyangoren, M. O., and Camilo, J. B. C. (2025). AI‑powered application tools: 
+Practices, benefits, and challenges in performing educational administrative 
+functions. ejournals.ph. https://ejournals.ph/article.php?id=32435 
+Rao, S. (2026). Leveraging AI for real‑time inventory management in perishable 
+goods supply chains. In AI in perishable supply chains (pp. 1–32). IGI Global. 
+https://www.igi‑global.com/chapter/leveraging‑ai‑for‑real‑time‑inventory‑managemen
+t‑in‑perishable‑goods‑supply‑chains/385274
+ 
+Sarucam, J. V., Paglinawan, J. M., Paglinawan, A. M. M., and Otto, J. V. (2023). 
+QR‑STORE ONLINE: Development of a web application with Quick Response (QR) 
+technology for small‑scale businesses. NRCP Research Journal, 22(2), 35–48. 
+ejournals.ph. https://ejournals.ph/article.php?id=21858 
+Deepthi, P., Gowda, S. M., Vishal, M., Vaibhav, M. S., and Umamahesh, B. N. 
+(2025). Event booking platform: A web-based solution for event management and 
+ticketing. GENGPI Journal.https://doi.org/10.55248/gengpi.6.0625.2189 
+Nguyen, Q.-B., Hoang, T.-V., Tran, N.-D., Nguyen, T. V., Tran, M.-T., and Le, T.-N. 
+(2025). Automated Image Recognition (AIR) Framework. arXiv preprint. 
+https://arxiv.org/abs/2506.19261 
+69 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Patil, S. N., and Rana, M. K. (2023). Image analysis leveraging machine learning and 
+AI for image recognition. International Journal of Advanced Research Studies in 
+Computer Vision, 1(1), 1–12. https://ijarsct.co.in/Paper15586G.pdf 
+Vimalarani, S., and Sathiyaseelan, S. (2021). Development of event management 
+process (ITSM) for a cloud service provider. Theseus. 
+https://www.theseus.fi/bitstream/handle/10024/510368/Kauko_Jonas.pdf?sequence=2 
+Calucin, R. A., Hapa, J. P., and Benito, J. P. P. (2024). A web‑based clinic records 
+management and inventory system for St. Paul University Quezon City. Unpublished 
+bachelor’s thesis, St. Paul University Quezon City. ejournals.ph. 
+https://ejournals.ph/article.php?id=14161 
+Vega, M. M., and Generoso, M. J. I. (2023). EReserve: An Online Facility 
+Reservation System of One Philippine Higher Education Institution. Unpublished 
+capstone project, Lyceum of the Philippines University – Batangas. ejournals.ph. 
+https://ejournals.ph/article.php?id=30627 
+Capuno, M. I., Benigno, J. F., Reyes, R. G., and Tojino, K. C. M. (2024). iReserve: 
+An online event reservation for Lipa City Cultural with SMS notification. Philippine 
+eJournals. https://ejournals.ph/article.php?id=16128 
+Reyna, J. M. (2023). Development of FlowerHub: An online flower shop system for 
+local flower shops in Surigao City. International Journal of Advanced Research in 
+Science, Communication and Technology, 3(2). https://ijarsct.co.in/Paper12180.pdf 
+70 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Valdez, S. T., et al. (2025). Artificial intelligence in Philippine education: A narrative 
+review of applications, perceptions, and challenges. zenodo.org. 
+https://zenodo.org/records/15902950 
+Ortega-Dela Cruz, R. A., and Dela Cruz, R. (2025). Artificial intelligence integration 
+in IT education in the Philippines: Opportunities and challenges. International Journal 
+of Learning, Teaching and Educational Research. 
+https://files.eric.ed.gov/fulltext/EJ1487116.pdf  
+Albano, R. D., et al. (2025). Generation Z Filipinos’ perceptions of text-generative 
+AI: An extended UTAUT2 approach. Proceedings of the IEOM Society. 
+https://ieomsociety.org/proceedings/morocco2025/109.pdf 
+Ilcheva, S. (2025). AI-Driven Approaches for Sustainable Inventory Management in 
+Grocery Retail [Bachelor’s thesis]. Aalto University. 
+https://aaltodoc.aalto.fi/bitstreams/2893bd22-5e3e-408d-9e31-86b941c351d7/downlo
+ad 
+Kumar, S. (2025). Inventory Optimization Techniques for Perishable Goods in the 
+Retail Supply Chain. IRE Journals, 8(12), 1–6.  
+https://www.irejournals.com/formatedpaper/1709195.pdf 
+Sundaravadivel, P., et al. (2025). Ros-AI: An LLM-Enhanced Scalable Multimodal 
+Framework for Ornamental Nursery Inventory Management. TechRxiv.  
+https://www.techrxiv.org/doi/pdf/10.36227/techrxiv.176108108.86171044 
+71 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Mantilla, F., et al. (2025). The role of industry 4.0 technologies in the export flower 
+industry: A systematic literature review. Cleaner and Circular Bioeconomy, 9, 
+100145. https://www.sciencedirect.com/science/article/pii/S2590123025005845 
+Wani, M. A., et al. (2023). Navigating the future: exploring technological innovations 
+in floriculture for sustainable development. Frontiers in Environmental Science, 11, 
+1188643.https://www.frontiersin.org/journals/environmentalscience/articles/10.3389/f
+envs.2023.1188643/full 
+Pandramisu, T. (2023). Event Management System. Graduate capstone project, 
+Governors State University, University Park, IL. OPUS Open Portal to University 
+Scholarship.https://opus.govst.edu/cgi/viewcontent.cgi?article=1626&context=capsto
+nes 
+Coro, J. M., Cuenca, D. J. M., and Ramos, J. P. G. (2022). Development of Inventory 
+Management System for the Finished Goods of RISO Packaging Technology Corp. 
+Unpublished capstone project, Batangas State University JPLPC–Malvar, Malvar, 
+Batangas, Philippines. Retrieved from 
+https://www.studocu.com/ph/document/lyceum-of-the-philippines-university/operatio
+ns-management/development-of-inventory-management-system-for-the-finished-goo
+ds-of-riso-packaging-technology-corp/101221688 
+Atilano-Tang, L. A., and Damsani, K. (2023). Quality of inventory management 
+system: Case study of BARMM-Ministry of Public Works-Basilan District 
+Engineering Office. SSRN. 
+72 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+https://papers.ssrn.com/sol3/Delivery.cfm/SSRN_ID4535950_code6015100.pdf?abstr
+actid=4535950&mirid=1 
+Ahmad, A. (2023). e-AIMSS (Electronic Asset Inventory and Management System in 
+School) for resource optimization and organizational productivity. International 
+Journal of Multidisciplinary Educational Research and Innovation, 1(3), 121–139. 
+https://doi.org/10.5281/zenodo.8326056 
+Weng et al. (2024). Determining user requirements for a tailored web-based inventory 
+and sales management system in micro-small construction supply stores using Design 
+Thinking. In Proceedings of the 2024 The 6th World Symposium on Software 
+Engineering (WSSE). ACM. https://dl.acm.org/doi/10.1145/3698062.3698082 
+Onsay, E., and Rabajante, J. (2024). Machine Learning for Disaster Response 
+Forecasting in the Bicol Region. University of the Philippines Los Baños, College of 
+Arts and Sciences. Referenced in: Transforming the Philippine Workforce: The 
+National AI Strategy and AI Skills Development. Learning News. 
+https://learningnews.com/news/lumify-group/2025/transforming-the-philippine-workf
+orce-the-national-ai-strategy-and-ai-skills-development 
+Acharya, K. (2024). Flower shop billing management system project report. 
+ResearchGate. 
+https://www.researchgate.net/publication/383056979_FLOWER_SHOP_BILLING_
+MANAGEMENT_SYSTEM_PROJECT_REPOR T 
+Li, H., Zhang, Y., and Wang, F. (2024). New Intelligent Flower Arrangement System 
+Using Image Recognition and AI-Based Matching. International Conference on 
+73 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Artificial Intelligence and Computer Engineering (ACE-2024), 15911. 
+https://www.ewadirect.com/proceedings/ace/article/view/15911 
+Çaylı, O., and Oralhan, Z. (2024). Artificial intelligence-driven inventory 
+management: Optimizing stock levels and reducing costs through advanced machine 
+learning techniques. The European Journal of Research and Development, 4(4), 
+427–439. https://www.researchgate.net/publication/388245304 
+Parves, KM., Mahin, M., Palasta, M., Sarkar MD, (2024). AI-powered inventory 
+management system using object detection. ResearchGate. 
+https://www.researchgate.net/publication/377977596_AI-Powered_Inventory_Manag
+ement_System_using_Object_Detection 
+JosephNg, P.S., Al-Sofi, S.M., Phan, K.Y., Lim, J.T., and Lai, S.C. (2023). Design of 
+a Web-Based Platform: Event-Venues Booking and Management System. In: 
+Pervasive Computing and Social Networking. Lecture Notes in Networks and 
+Systems, vol 475. Springer, Singapore. 
+https://link.springer.com/chapter/10.1007/978-981-19-2840-6_35 
+Prasasti, K.F.A., Anansa, M.A., Putri, L.M.N., and Lestari, D.I. (2025). Designing the 
+Interface and Features of the Web-Based "FlowerNest" Marketplace Platform to 
+Support the Digitalisation of MSME Florists. Journal of Artificial Intelligence and 
+Engineering Applications (JAIEA), 5(1), 121–127. 
+https://ioinformatic.org/index.php/JAIEA/article/view/1257 
+Onyejiaku, T., Nwakanma, C., and Ekoema, B. (2024). Deep Learning-Based Web 
+Application for Flower Recognition and Status Monitoring. 2024 2nd International 
+74 
+​
+
+GOD-FEARING             RECIPROCATING           COMMITTING TO EXCELLENCE 
+Conference on Technology Innovation and Its Applications (ICTIIA). 
+https://doi.org/10.1109/ICTIIA61827.2024.10761803 
+75 
+​

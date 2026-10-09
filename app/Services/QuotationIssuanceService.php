@@ -1,0 +1,243 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Booking;
+use App\Models\BookingItem;
+use App\Models\Quotation;
+use App\Models\QuotationHistory;
+use Illuminate\Support\Facades\DB;
+
+class QuotationIssuanceService
+{
+    public function __construct(
+        private readonly QuotationPricingService $pricingService
+    ) {}
+
+    /**
+     * Issue an authoritative quotation snapshot for the given booking.
+     *
+     * This method is atomic — all DB writes happen inside a transaction.
+     * On failure an exception is thrown and the caller should roll back.
+     *
+     * Business rules enforced:
+     *  - Cannot reissue if the active quotation is already accepted by the client.
+     *  - Every confirmed material item must have a quoted_unit_price > 0
+     *    (i.e., Admin has reviewed the price before issuance).
+     *  - AI recommendations (ai_recommended_price) are NEVER used as the
+     *    client-facing price — only Admin-approved quoted_unit_price is.
+     *  - Package bookings use the existing final_quoted_price without
+     *    recalculating through the raw-materials engine.
+     *
+     * @param  Booking  $booking
+     * @param  int      $issuedByUserId     The admin user who is issuing.
+     * @param  string|null $validUntil      Optional validity date; defaults to 7 days from today.
+     * @return Quotation  The newly-created, immutable quotation record.
+     *
+     * @throws \RuntimeException  if validation fails (unreviewed items, no items, already accepted, etc.)
+     * @throws \Throwable         on any DB / unexpected error (triggers rollback)
+     */
+    public function issue(Booking $booking, int $issuedByUserId, ?string $validUntil = null, bool $isPriceReconfirmation = false): Quotation
+    {
+        return DB::transaction(function () use ($booking, $issuedByUserId, $validUntil, $isPriceReconfirmation): Quotation {
+            $downpaymentPct = (float) \App\Models\Setting::getSetting('downpayment_percentage', 50.0);
+
+            // ------------------------------------------------------------------
+            // 0. Guard: cannot reissue if client has already accepted a quotation
+            //    (unless explicitly performing price reconfirmation revision)
+            // ------------------------------------------------------------------
+            if (!$isPriceReconfirmation) {
+                $hasAccepted = Quotation::where('booking_id', $booking->id)
+                    ->where('status', Quotation::STATUS_ACCEPTED)
+                    ->exists();
+
+                if ($hasAccepted) {
+                    throw new \RuntimeException(
+                        'Cannot reissue: the client has already accepted a quotation for this booking. ' .
+                        'Please contact the client before issuing a new quotation.'
+                    );
+                }
+            }
+
+            // ------------------------------------------------------------------
+            // 1. Load confirmed booking items
+            // ------------------------------------------------------------------
+            $booking->load('bookingItems');
+            $confirmedItems = $booking->bookingItems
+                ->filter(fn (BookingItem $item): bool => !is_null($item->confirmed_at) && $item->quantity > 0);
+
+            if ($confirmedItems->isEmpty()) {
+                throw new \RuntimeException('Cannot issue a quotation: no confirmed materials exist for this booking.');
+            }
+
+            // ------------------------------------------------------------------
+            // 2. AI review boundary — no unreviewed zero-priced AI items
+            // ------------------------------------------------------------------
+            $unpricedAiItems = $confirmedItems->filter(
+                fn (BookingItem $item): bool =>
+                    $item->is_ai_suggested &&
+                    (float) $item->quoted_unit_price === 0.0 &&
+                    (float) ($item->ai_recommended_price ?? 0) > 0.0
+            );
+
+            if ($unpricedAiItems->isNotEmpty()) {
+                $names = $unpricedAiItems->pluck('item_name')->join(', ');
+                throw new \RuntimeException(
+                    "Cannot issue quotation: the following AI-suggested items have not been priced by Admin yet: {$names}. " .
+                    "Set a quoted_unit_price for each before issuing."
+                );
+            }
+
+            // ------------------------------------------------------------------
+            // 3. Recalculate pricing via the centralized pricing service
+            // ------------------------------------------------------------------
+            $this->pricingService->calculateTotals($booking, false); // update in-memory, not saved yet
+
+            // ------------------------------------------------------------------
+            // 4. Build the items snapshot (Admin-approved prices only, no AI metadata)
+            // ------------------------------------------------------------------
+            $itemsSnapshot = $confirmedItems->map(function (BookingItem $item) use ($booking): array {
+                $qty   = (float) $item->quantity;
+                $price = (float) $item->quoted_unit_price;
+                $multiplier = (float) ($booking->multiplier ?? 3.0);
+                $sellingUnitPrice = $price * $multiplier;
+                
+                return [
+                    'item_name'        => $item->item_name,
+                    'quantity'         => $qty,
+                    'quoted_unit_price'=> $price,
+                    'amount'           => round($qty * $price, 2),
+                    'selling_unit_price' => $sellingUnitPrice,
+                    'selling_amount'     => round($qty * $sellingUnitPrice, 2),
+                ];
+            })->values()->toArray();
+
+            // ------------------------------------------------------------------
+            // 5. Calculate labor amount for snapshot storage
+            // ------------------------------------------------------------------
+            $rawSum    = (float) $booking->raw_materials_sum;
+            $multiplier = (float) ($booking->multiplier ?? 3.0);
+            $laborAmount = 0.0;
+            if ($booking->labor_method === 'percentage') {
+                $laborAmount = $rawSum * ((float) $booking->labor_rate / 100);
+            } elseif ($booking->labor_method === 'fixed') {
+                $laborAmount = (float) $booking->labor_rate;
+            }
+
+            // ------------------------------------------------------------------
+            // 6. Determine next version number
+            // ------------------------------------------------------------------
+            $maxVersion = Quotation::where('booking_id', $booking->id)->max('version') ?? 0;
+            $nextVersion = (int) $maxVersion + 1;
+
+            // ------------------------------------------------------------------
+            // 7. Mark superseded quotations
+            // ------------------------------------------------------------------
+            if ($isPriceReconfirmation) {
+                Quotation::where('booking_id', $booking->id)
+                    ->whereIn('status', [Quotation::STATUS_ISSUED, Quotation::STATUS_ACCEPTED])
+                    ->update(['status' => Quotation::STATUS_SUPERSEDED]);
+            } else {
+                Quotation::where('booking_id', $booking->id)
+                    ->where('status', Quotation::STATUS_ISSUED)
+                    ->update(['status' => Quotation::STATUS_SUPERSEDED]);
+            }
+
+            // ------------------------------------------------------------------
+            // 8. Establish synchronized validity window (authoritative 7-day rule)
+            // ------------------------------------------------------------------
+            $resolvedValidUntil = $validUntil !== null
+                ? \Carbon\Carbon::parse($validUntil)->toDateString()
+                : \Carbon\Carbon::today()->addDays(7)->toDateString();
+
+            $booking->price_valid_until = $resolvedValidUntil;
+            if ($isPriceReconfirmation) {
+                $booking->status = 'quotation_sent';
+            }
+            $booking->save();
+
+            // ------------------------------------------------------------------
+            // 8b. Determine tentative status & reconfirmation timestamp
+            // ------------------------------------------------------------------
+            if ($isPriceReconfirmation) {
+                $isTentative = false;
+                $reconfirmedAt = \Carbon\Carbon::now();
+            } else {
+                $longTermThreshold = \App\Models\Setting::getLongTermBookingThresholdDays();
+                $isTentative = $booking->event_date && \Carbon\Carbon::today()->diffInDays($booking->event_date, false) > $longTermThreshold;
+                $reconfirmedAt = null;
+            }
+
+            // ------------------------------------------------------------------
+            // 9. Create the new immutable quotation record
+            // ------------------------------------------------------------------
+            $quotation = Quotation::create([
+                'booking_id'             => $booking->id,
+                'issued_by'              => $issuedByUserId,
+                'status'                 => Quotation::STATUS_ISSUED,
+                'version'                => $nextVersion,
+                'raw_materials_sum'      => $rawSum,
+                'multiplier'             => $multiplier,
+                'labor_method'           => $booking->labor_method,
+                'labor_rate'             => $booking->labor_rate,
+                'labor_amount'           => round($laborAmount, 2),
+                'final_quoted_price'     => (float) $booking->final_quoted_price,
+                'downpayment_percentage' => round(max(0, min(100, $downpaymentPct)), 2),
+                'valid_until'            => $resolvedValidUntil,
+                'items_snapshot'         => $itemsSnapshot,
+                'is_tentative'           => (bool) $isTentative,
+                'reconfirmed_at'         => $reconfirmedAt,
+            ]);
+
+            // ------------------------------------------------------------------
+            // 10. Record issuance event in quotation_history & audit log
+            // ------------------------------------------------------------------
+            $reason = $isPriceReconfirmation
+                ? "Quotation v{$nextVersion} issued as revised price reconfirmation."
+                : "Quotation v{$nextVersion} issued by admin.";
+
+            QuotationHistory::create([
+                'booking_id'   => $booking->id,
+                'field_changed'=> 'quotation_issued',
+                'old_value'    => null,
+                'new_value'    => [
+                    'quotation_id'      => $quotation->id,
+                    'version'           => $nextVersion,
+                    'final_quoted_price'=> $quotation->final_quoted_price,
+                    'is_tentative'      => (bool) $isTentative,
+                ],
+                'reason'     => $reason,
+                'changed_by' => $issuedByUserId,
+            ]);
+
+            if ($isPriceReconfirmation) {
+                \App\Models\AdminAlert::where('type', 'price_reconfirmation_due')
+                    ->where('booking_id', $booking->id)
+                    ->where('is_read', false)
+                    ->update(['is_read' => true]);
+
+                \App\Models\AuditLog::record(
+                    $issuedByUserId,
+                    'price_reconfirmed_revised',
+                    "Revised quotation v{$nextVersion} issued following price reconfirmation with total ₱" . number_format((float) $quotation->final_quoted_price, 2),
+                    'quotation_reconfirmation',
+                    [
+                        'quotation_id' => $quotation->id,
+                        'version' => $nextVersion,
+                        'final_quoted_price' => (float) $quotation->final_quoted_price,
+                    ]
+                );
+            }
+
+            return $quotation;
+        });
+    }
+
+    /**
+     * Issue a revised quotation version specifically during long-term price reconfirmation.
+     */
+    public function reconfirmWithRevision(Booking $booking, int $issuedByUserId, ?string $validUntil = null): Quotation
+    {
+        return $this->issue($booking, $issuedByUserId, $validUntil, true);
+    }
+}

@@ -1,0 +1,1 @@
+<?php \ = file_get_contents('C:\Users\lismerpalce\OneDrive\Documents\Capstone2\Raflora2\rafloraenterprises\storage\framework\views\fb8a8cb8124c4d366e0190c6008b2eba.php'); preg_match_all('/(<\?php if|<\?php endif;)/', \, \); \=0; \=0; foreach(\[0] as \) { if (\ == '<?php if') \++; else \++; } echo 'Orig If: '.\.', Endif: '.\; 
