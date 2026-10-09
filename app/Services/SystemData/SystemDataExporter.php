@@ -61,6 +61,10 @@ class SystemDataExporter
             $zipPath = storage_path('app/tmp_system_data/' . $datasetId . '.zip');
             File::ensureDirectoryExists(dirname($zipPath));
 
+            if (!class_exists(\ZipArchive::class)) {
+                throw new RuntimeException('PHP ZIP support (ext-zip) is required for system data export.');
+            }
+
             $zip = new ZipArchive();
             if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
                 throw new RuntimeException('Unable to create ZIP archive for system data export.');
