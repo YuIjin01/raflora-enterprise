@@ -688,21 +688,97 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 0.9rem;
-        border-radius: 0.9rem;
-        color: var(--rf-text-soft);
+        padding: 0.65rem 0.85rem;
+        border-radius: 0.75rem;
+        color: #475569;
         font-weight: 600;
-        transition: background-color 0.2s ease, color 0.2s ease;
+        font-size: 0.875rem;
+        border: 1px solid transparent;
+        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
     }
 
     .rf-nav-item:hover {
-        background: rgba(16, 185, 129, 0.06);
-        color: var(--rf-primary-700);
+        background: #f8fafc;
+        color: #0f172a;
     }
 
     .rf-nav-item.is-active {
-        background: rgba(16, 185, 129, 0.09);
-        color: var(--rf-primary-700);
+        background: #ecfdf5;
+        color: #047857;
+        font-weight: 700;
+        border-color: rgba(167, 243, 208, 0.8);
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+    }
+
+    .rf-nav-item.is-active i {
+        color: #059669;
+    }
+
+    /* Desktop Sidebar Collapsed State Rules */
+    html.sidebar-collapsed #adminSidebar {
+        width: 5rem !important;
+    }
+
+    html.sidebar-collapsed #adminMainContainer {
+        padding-left: 5rem !important;
+    }
+
+    html.sidebar-collapsed .rf-sidebar-label,
+    html.sidebar-collapsed .rf-sidebar-section-title,
+    html.sidebar-collapsed .rf-sidebar-brand-text,
+    html.sidebar-collapsed .rf-sidebar-footer-text,
+    html.sidebar-collapsed .rf-nav-badge-pill {
+        display: none !important;
+    }
+
+    html.sidebar-collapsed .rf-nav-item {
+        justify-content: center !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    html.sidebar-collapsed .rf-nav-badge-dot {
+        display: block !important;
+    }
+
+    html.sidebar-collapsed .rf-sidebar-header {
+        justify-content: center !important;
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+    }
+
+    html.sidebar-collapsed .rf-collapse-btn-icon {
+        transform: rotate(180deg);
+    }
+
+    /* Floating Tooltip in Collapsed Sidebar */
+    .rf-collapsed-tooltip {
+        display: none;
+    }
+
+    html.sidebar-collapsed .rf-collapsed-tooltip {
+        display: block;
+        opacity: 0;
+        visibility: hidden;
+        position: absolute;
+        left: 100%;
+        margin-left: 0.75rem;
+        padding: 0.4rem 0.75rem;
+        background-color: #0f172a;
+        color: #ffffff;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        pointer-events: none;
+        z-index: 50;
+        transition: opacity 0.15s ease-in-out;
+    }
+
+    html.sidebar-collapsed .rf-nav-item:hover .rf-collapsed-tooltip {
+        opacity: 1;
+        visibility: visible;
     }
 
     .rf-panel {

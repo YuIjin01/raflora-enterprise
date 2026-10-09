@@ -1,57 +1,7 @@
-<x-admin-layout title="Inventory Management">
-    <!-- Breadcrumb & Header -->
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-wider text-purple-600 mb-1">OPERATIONS</p>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 font-serif">Inventory Management</h1>
-            <p class="text-sm text-slate-500 mt-1">Track and manage floral materials, props, and event inventory.</p>
-        </div>
-        <div class="flex items-center gap-2.5">
-            <a href="{{ route('admin.inventory.archived') }}" class="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition shadow-2xs">
-                <i class="fa-solid fa-box-archive text-slate-400"></i>
-                <span>Archived Items</span>
-            </a>
-        </div>
-    </div>
-
-    <!-- Success & Error Alerts -->
-    @if(session('success'))
-        <div class="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl flex items-center justify-between shadow-2xs" role="alert">
-            <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-circle-check text-emerald-600"></i>
-                <span class="text-sm font-medium">{{ session('success') }}</span>
-            </div>
-            <button type="button" onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 text-sm">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-5 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl flex items-center justify-between shadow-2xs" role="alert">
-            <div class="flex items-center gap-2.5">
-                <i class="fa-solid fa-circle-exclamation text-rose-600"></i>
-                <span class="text-sm font-medium">{{ session('error') }}</span>
-            </div>
-            <button type="button" onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700 text-sm">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-        </div>
-    @endif
-
-    @if ($errors->any())
-        <div class="mb-5 bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl shadow-2xs">
-            <div class="flex items-center gap-2 text-sm font-bold text-rose-900 mb-1">
-                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-                <span>Action Required</span>
-            </div>
-            <ul class="list-disc pl-5 text-xs space-y-0.5 text-rose-700">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+<x-admin-layout
+    title="Inventory Management"
+    description="Track and manage floral materials, props, and event inventory."
+>
 
     <!-- 4 KPI Cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -273,8 +223,14 @@
                         </div>
                     </div>
 
+                    <!-- Archived Items Button -->
+                    <a href="{{ route('admin.inventory.archived') }}" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition shadow-2xs whitespace-nowrap">
+                        <i class="fa-solid fa-box-archive text-slate-400"></i>
+                        <span>Archived Items</span>
+                    </a>
+
                     <!-- + Add Item Button -->
-                    <a href="{{ route('admin.inventory.create') }}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap">
+                    <a href="{{ route('admin.inventory.create') }}" onclick="event.preventDefault(); openCreateModal();" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer">
                         <i class="fa-solid fa-plus text-xs"></i>
                         <span>+ Add Item</span>
                     </a>
@@ -393,10 +349,10 @@
                     <tr>
                         <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">ITEM</th>
                         <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider">CATEGORY</th>
-                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">CURRENT</th>
-                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">RESERVED</th>
-                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">AVAILABLE</th>
-                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">MINIMUM</th>
+                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right" title="Physical stock currently recorded in inventory">ON HAND</th>
+                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right" title="Quantity committed to valid bookings">RESERVED</th>
+                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right" title="Additional quantity required to fulfill current reserved event demand">TO PROCURE</th>
+                        <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right" title="Configured minimum stock threshold">MINIMUM</th>
                         <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-center">STATUS</th>
                         <th class="px-5 py-3.5 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">ACTION</th>
                     </tr>
@@ -451,9 +407,9 @@
                                 @endif
                             </td>
 
-                            <!-- AVAILABLE Column -->
-                            <td class="px-5 py-3.5 text-right text-sm font-bold {{ $item->net_available < 0 ? 'text-rose-600' : 'text-slate-900' }}">
-                                {{ (float) $item->net_available }}
+                            <!-- TO PROCURE Column -->
+                            <td class="px-5 py-3.5 text-right text-sm font-bold {{ $item->to_procure > 0 ? 'text-rose-600' : 'text-slate-900' }}">
+                                {{ (float) $item->to_procure }}
                             </td>
 
                             <!-- MINIMUM Column -->
@@ -483,44 +439,17 @@
 
                             <!-- ACTION Column -->
                             <td class="px-5 py-3.5 text-right">
-                                <div class="inline-flex items-center gap-1.5">
-                                    <!-- View Button: Opens slide-over drawer -->
-                                    <button
-                                        type="button"
-                                        onclick="openItemDrawer({{ $item->id }})"
-                                        class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-semibold rounded-lg transition cursor-pointer"
-                                        title="View details for {{ $item->name }}"
-                                    >
-                                        <i class="fa-regular fa-eye text-xs"></i>
-                                        <span>View</span>
-                                    </button>
-
-                                    <!-- Edit Link -->
-                                    <a
-                                        href="{{ route('admin.inventory.edit', $item) }}"
-                                        class="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition"
-                                        title="Edit Item"
-                                    >
-                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
-                                    </a>
-
-                                    <!-- Archive Action -->
-                                    <form
-                                        action="{{ route('admin.inventory.archive', $item) }}"
-                                        method="POST"
-                                        class="inline-block"
-                                        onsubmit="return confirm('Archive {{ addslashes($item->name) }}?\n\nThis item will be removed from active inventory while its historical records are preserved.');"
-                                    >
-                                        @csrf
-                                        <button
-                                            type="submit"
-                                            class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                                            title="Archive Item"
-                                        >
-                                            <i class="fa-solid fa-box-archive text-xs"></i>
-                                        </button>
-                                    </form>
-                                </div>
+                                <!-- View Button: Opens slide-over drawer -->
+                                <button
+                                    type="button"
+                                    onclick="openItemDrawer({{ $item->id }})"
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-200 text-xs font-semibold rounded-lg transition cursor-pointer"
+                                    title="View details for {{ $item->name }}"
+                                >
+                                    <i class="fa-regular fa-eye text-xs"></i>
+                                    <span>View</span>
+                                </button>
+                            </td>
 
                                 <!-- Slide-over Drawer Template for Item -->
                                 <template id="item-drawer-template-{{ $item->id }}">
@@ -619,7 +548,7 @@
 
                                                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                                         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-center">
-                                                            <p class="text-[10px] font-bold text-slate-400 uppercase">CURRENT</p>
+                                                            <p class="text-[10px] font-bold text-slate-400 uppercase">ON HAND</p>
                                                             <p class="text-xl font-extrabold text-slate-800 mt-1">{{ (float) $item->current_stock }}</p>
                                                             <p class="text-[10px] text-slate-500 mt-0.5">Physical stock</p>
                                                         </div>
@@ -629,9 +558,9 @@
                                                             <p class="text-[10px] text-slate-500 mt-0.5">For bookings</p>
                                                         </div>
                                                         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-center">
-                                                            <p class="text-[10px] font-bold text-slate-400 uppercase">AVAILABLE</p>
-                                                            <p class="text-xl font-extrabold {{ $item->net_available < 0 ? 'text-rose-600' : 'text-slate-900' }} mt-1">{{ (float) $item->net_available }}</p>
-                                                            <p class="text-[10px] text-slate-500 mt-0.5">Remaining</p>
+                                                            <p class="text-[10px] font-bold text-slate-400 uppercase">TO PROCURE</p>
+                                                            <p class="text-xl font-extrabold {{ $item->to_procure > 0 ? 'text-rose-600' : 'text-emerald-700' }} mt-1">{{ (float) $item->to_procure }}</p>
+                                                            <p class="text-[10px] text-slate-500 mt-0.5">Needed for events</p>
                                                         </div>
                                                         <div class="bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-center">
                                                             <p class="text-[10px] font-bold text-slate-400 uppercase">MINIMUM</p>
@@ -639,6 +568,19 @@
                                                             <p class="text-[10px] text-slate-500 mt-0.5">Alert limit</p>
                                                         </div>
                                                     </div>
+
+                                                    <!-- Procurement Demand Coverage Banner -->
+                                                    @if($item->to_procure > 0)
+                                                        <div class="mt-3 p-3 bg-rose-50/80 rounded-xl border border-rose-200/80 text-xs text-rose-700 font-semibold flex items-center gap-2">
+                                                            <i class="fa-solid fa-triangle-exclamation text-rose-500 shrink-0"></i>
+                                                            <span>{{ (float) $item->to_procure }} {{ $item->unit }} still needed for current reserved event demand.</span>
+                                                        </div>
+                                                    @else
+                                                        <div class="mt-3 p-3 bg-emerald-50/80 rounded-xl border border-emerald-200/80 text-xs text-emerald-800 font-semibold flex items-center gap-2">
+                                                            <i class="fa-solid fa-circle-check text-emerald-600 shrink-0"></i>
+                                                            <span>Current reserved event demand is covered.</span>
+                                                        </div>
+                                                    @endif
                                                 </div>
 
                                                 <!-- Stock Explanation Guide -->
@@ -648,26 +590,27 @@
                                                     </p>
                                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600 pt-1">
                                                         <div>
-                                                            <span class="font-semibold text-slate-800">Current:</span> Physical stock currently recorded in inventory.
+                                                            <span class="font-semibold text-slate-800">On Hand:</span> Physical quantity currently in inventory.
                                                         </div>
                                                         <div>
-                                                            <span class="font-semibold text-slate-800">Reserved:</span> Quantity committed to valid bookings.
+                                                            <span class="font-semibold text-slate-800">Reserved:</span> Quantity committed to valid event bookings.
                                                         </div>
                                                         <div>
-                                                            <span class="font-semibold text-slate-800">Available:</span> Stock remaining after valid reservations.
+                                                            <span class="font-semibold text-slate-800">To Procure:</span> Additional quantity required to fulfill current reserved event demand.
                                                         </div>
                                                         <div>
-                                                            <span class="font-semibold text-slate-800">Minimum:</span> Configured minimum stock threshold.
+                                                            <span class="font-semibold text-slate-800">Minimum:</span> Configured minimum inventory threshold.
                                                         </div>
                                                     </div>
                                                     @if($item->net_available < 0)
-                                                        <div class="mt-2 pt-2 border-t border-rose-100 text-rose-700 font-semibold flex items-center gap-1.5">
-                                                            <i class="fa-solid fa-triangle-exclamation"></i>
-                                                            <span>Available quantity is below the required level.</span>
+                                                        <div class="mt-2 pt-2 border-t border-slate-200 text-slate-600 text-[11px] flex items-center justify-between">
+                                                            <span>Net Available After Reservations:</span>
+                                                            <span class="font-bold text-rose-600">{{ (float) $item->net_available }} {{ $item->unit }}</span>
                                                         </div>
                                                     @endif
                                                 </div>
 
+                                                <!-- Item Information -->
                                                 <!-- Item Information -->
                                                 <div>
                                                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">ITEM INFORMATION</h3>
@@ -679,6 +622,13 @@
                                                         <div class="py-2.5 px-3.5 flex justify-between">
                                                             <span class="text-slate-500 font-medium">Item Code</span>
                                                             <span class="font-mono font-semibold text-slate-700">{{ $item->item_code ?? '—' }}</span>
+                                                        </div>
+                                                        <div class="py-2.5 px-3.5 flex justify-between items-center">
+                                                            <span class="text-slate-500 font-medium">Status</span>
+                                                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold {{ $item->status === 'inactive' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700 border border-emerald-100' }}">
+                                                                <span class="w-1.5 h-1.5 rounded-full {{ $item->status === 'inactive' ? 'bg-slate-400' : 'bg-emerald-500' }}"></span>
+                                                                {{ ucfirst($item->status ?? 'active') }}
+                                                            </span>
                                                         </div>
                                                         <div class="py-2.5 px-3.5 flex justify-between">
                                                             <span class="text-slate-500 font-medium">Category</span>
@@ -693,21 +643,63 @@
                                                             <span class="font-bold text-slate-900">₱{{ number_format((float) $item->unit_cost, 2) }}</span>
                                                         </div>
                                                         <div class="py-2.5 px-3.5 flex justify-between">
-                                                            <span class="text-slate-500 font-medium">Perishable</span>
-                                                            <span class="font-semibold {{ $item->is_perishable ? 'text-rose-600' : 'text-slate-700' }}">
-                                                                {{ $item->is_perishable ? 'Yes' : 'No' }}
+                                                            <span class="text-slate-500 font-medium">Item Type</span>
+                                                            <span class="font-semibold {{ $item->is_perishable ? 'text-rose-600' : 'text-emerald-700' }}">
+                                                                {{ $item->is_perishable ? 'Perishable (Consumable)' : 'Non-Perishable (Returnable)' }}
                                                             </span>
                                                         </div>
+                                                        <div class="py-2.5 px-3.5 flex justify-between">
+                                                            <span class="text-slate-500 font-medium">{{ $item->is_perishable ? 'Shelf Life' : 'Usable Life' }}</span>
+                                                            <span class="font-semibold text-slate-700">
+                                                                {{ $item->usable_life_value ? $item->usable_life_value . ' ' . $item->usable_life_unit : '—' }}
+                                                            </span>
+                                                        </div>
+                                                        @if($item->latestStock?->usable_until)
+                                                            <div class="py-2.5 px-3.5 flex justify-between">
+                                                                <span class="text-slate-500 font-medium">Usable Until</span>
+                                                                <span class="font-semibold {{ $item->latestStock->isExpired() ? 'text-rose-600' : 'text-slate-800' }}">
+                                                                    {{ $item->latestStock->usable_until->format('M d, Y') }}
+                                                                </span>
+                                                            </div>
+                                                        @endif
+                                                        @if($item->supplier_name)
+                                                            <div class="py-2.5 px-3.5 flex justify-between">
+                                                                <span class="text-slate-500 font-medium">Supplier</span>
+                                                                <span class="font-semibold text-slate-700">{{ $item->supplier_name }}</span>
+                                                            </div>
+                                                        @endif
+                                                        @if($item->storage_location)
+                                                            <div class="py-2.5 px-3.5 flex justify-between">
+                                                                <span class="text-slate-500 font-medium">Location</span>
+                                                                <span class="font-semibold text-slate-700">{{ $item->storage_location }}</span>
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 </div>
 
                                                 <!-- Quick Actions -->
                                                 <div>
                                                     <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">QUICK ACTIONS</h3>
-                                                    <div class="grid grid-cols-2 gap-2.5">
-                                                        <a href="{{ route('admin.inventory.edit', $item) }}" class="flex items-center justify-center gap-2 p-3 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 transition">
+                                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                                        <button
+                                                            type="button"
+                                                            onclick="openReceiveStockModal({{ $item->id }}, '{{ addslashes($item->name) }}', '{{ addslashes($item->item_code ?? ('INV-' . str_pad($item->id, 4, '0', STR_PAD_LEFT))) }}', '{{ addslashes($item->unit) }}', {{ (float) $item->current_stock }}, {{ (float) $item->reserved_stock }}, {{ (float) $item->to_procure }}, {{ (float) $item->unit_cost }})"
+                                                            class="flex items-center justify-center gap-1.5 p-2.5 bg-emerald-600 hover:bg-emerald-700 border border-emerald-600 rounded-xl text-xs font-semibold text-white shadow-2xs transition cursor-pointer"
+                                                        >
+                                                            <i class="fa-solid fa-boxes-packing"></i>
+                                                            <span>Receive Stock</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onclick="openAdjustStockModal({{ $item->id }}, '{{ addslashes($item->name) }}', '{{ addslashes($item->item_code ?? ('INV-' . str_pad($item->id, 4, '0', STR_PAD_LEFT))) }}', '{{ addslashes($item->unit) }}', {{ (float) $item->current_stock }})"
+                                                            class="flex items-center justify-center gap-1.5 p-2.5 bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200 rounded-xl text-xs font-semibold text-emerald-800 transition cursor-pointer"
+                                                        >
+                                                            <i class="fa-solid fa-sliders text-emerald-600"></i>
+                                                            <span>Adjust Stock</span>
+                                                        </button>
+                                                        <a href="{{ route('admin.inventory.edit', $item) }}" class="flex items-center justify-center gap-1.5 p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 transition">
                                                             <i class="fa-solid fa-pen-to-square text-purple-600"></i>
-                                                            <span>Edit Item / Adjust Stock</span>
+                                                            <span>Edit Item</span>
                                                         </a>
                                                         <form
                                                             action="{{ route('admin.inventory.archive', $item) }}"
@@ -715,7 +707,7 @@
                                                             onsubmit="return confirm('Archive {{ addslashes($item->name) }}?\n\nThis item will be removed from active inventory while its historical records are preserved.');"
                                                         >
                                                             @csrf
-                                                            <button type="submit" class="w-full flex items-center justify-center gap-2 p-3 bg-rose-50/60 hover:bg-rose-100/70 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 transition cursor-pointer">
+                                                            <button type="submit" class="w-full flex items-center justify-center gap-1.5 p-2.5 bg-rose-50/60 hover:bg-rose-100/70 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700 transition cursor-pointer">
                                                                 <i class="fa-solid fa-box-archive text-rose-600"></i>
                                                                 <span>Archive Item</span>
                                                             </button>
@@ -747,14 +739,14 @@
                                                                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs flex items-start justify-between gap-3">
                                                                     <div class="min-w-0">
                                                                         <div class="flex items-center gap-2">
-                                                                            <span class="font-bold text-slate-800 capitalize">{{ str_replace('_', ' ', $tx->transaction_type) }}</span>
+                                                                            <span class="font-bold text-slate-800 capitalize">{{ $tx->transaction_type === 'procurement' ? 'Stock Received' : str_replace('_', ' ', $tx->transaction_type) }}</span>
                                                                             @if($tx->booking_id)
                                                                                 <span class="text-[10px] font-mono bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-100">
                                                                                     Booking #{{ $tx->booking_id }}
                                                                                 </span>
                                                                             @endif
                                                                         </div>
-                                                                        <p class="text-slate-500 text-[11px] mt-0.5 truncate">{{ $tx->reason ?? 'Ledger update' }}</p>
+                                                                        <p class="text-slate-500 text-[11px] mt-0.5 truncate">{{ $tx->reason ?? 'Stock received' }}</p>
                                                                         <p class="text-slate-400 text-[10px] mt-0.5">{{ $tx->created_at?->format('M d, Y h:i A') }} &middot; By {{ $tx->performedByUser?->name ?? 'System' }}</p>
                                                                     </div>
                                                                     <div class="shrink-0 text-right">
@@ -787,7 +779,7 @@
                                                             <div class="p-3.5 hover:bg-slate-50/60 transition text-xs flex items-start justify-between gap-3">
                                                                 <div class="min-w-0">
                                                                     <div class="flex items-center gap-2">
-                                                                        <span class="font-bold text-slate-800 capitalize">{{ str_replace('_', ' ', $tx->transaction_type) }}</span>
+                                                                        <span class="font-bold text-slate-800 capitalize">{{ $tx->transaction_type === 'procurement' ? 'Stock Received' : str_replace('_', ' ', $tx->transaction_type) }}</span>
                                                                         @if($tx->booking_id)
                                                                             <span class="text-[10px] font-mono bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-100">
                                                                                 Booking #{{ $tx->booking_id }}
@@ -1126,6 +1118,735 @@
         </div>
     </div>
 
+    <!-- Receive Stock Modal -->
+    <div id="receiveStockModal" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="receiveStockModalTitle">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" aria-hidden="true" onclick="closeReceiveStockModal()"></div>
+
+        <!-- Modal Dialog -->
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-7 transform transition-all border border-slate-200">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                        <i class="fa-solid fa-boxes-packing text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 id="receiveStockModalTitle" class="text-lg font-bold text-gray-900">Receive Stock</h3>
+                        <p class="text-xs text-gray-500">Record physically received and procured inventory</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeReceiveStockModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form id="receiveStockForm" method="POST" action="" class="mt-4 space-y-4">
+                @csrf
+
+                <!-- Selected Item Summary Box -->
+                <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 text-xs">
+                    <div>
+                        <p id="modalItemName" class="font-bold text-slate-900 text-sm">—</p>
+                        <p class="text-slate-500 font-mono text-[11px] mt-0.5">
+                            Code: <span id="modalItemCode">—</span> &middot; Unit: <span id="modalItemUnit" class="font-semibold text-slate-700">—</span>
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-200 text-center">
+                        <div class="bg-white p-2 rounded-lg border border-slate-100">
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">Current On Hand</span>
+                            <span id="modalItemOnHand" class="font-extrabold text-slate-800 text-sm mt-0.5">0</span>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-slate-100">
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">Reserved for Bookings</span>
+                            <span id="modalItemReserved" class="font-extrabold text-amber-600 text-sm mt-0.5">0</span>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-slate-100">
+                            <span class="block text-[10px] font-bold text-slate-400 uppercase">To Procure</span>
+                            <span id="modalItemToProcure" class="font-extrabold text-rose-600 text-sm mt-0.5">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Client-side Error Box -->
+                <div id="modalClientError" class="hidden p-3 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold"></div>
+
+                @if($errors->has('quantity') || $errors->has('unit_cost') || $errors->has('notes') || $errors->has('receive_stock'))
+                    <div class="p-3 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-xs space-y-1">
+                        @foreach($errors->all() as $error)
+                            <p class="flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation"></i> {{ $error }}</p>
+                        @endforeach
+                    </div>
+                @endif
+
+                <!-- Quantity Received Field -->
+                <div>
+                    <label for="quantityReceivedInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        Quantity Received <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative rounded-xl shadow-2xs">
+                        <input
+                            type="number"
+                            id="quantityReceivedInput"
+                            name="quantity"
+                            step="any"
+                            min="0.01"
+                            required
+                            class="w-full py-2 px-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                            placeholder="e.g. 50"
+                        >
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <span id="modalInputUnit" class="text-xs font-semibold text-slate-400">units</span>
+                        </div>
+                    </div>
+                    <p id="modalUnitHint" class="text-[11px] text-slate-500 mt-1">Enter physical quantity entering Raflora stock.</p>
+                </div>
+
+                <!-- Unit Cost Field (Optional) -->
+                <div>
+                    <label for="unitCostInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        Unit Cost <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                    </label>
+                    <div class="relative rounded-xl shadow-2xs">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-xs font-bold text-slate-400">₱</span>
+                        </div>
+                        <input
+                            type="number"
+                            id="unitCostInput"
+                            name="unit_cost"
+                            step="0.01"
+                            min="0"
+                            class="w-full py-2 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                            placeholder="0.00"
+                        >
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-1">Leaves existing cost unchanged if left blank.</p>
+                </div>
+
+                <!-- Reference / Notes Field -->
+                <div>
+                    <label for="referenceNotesInput" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        Reference / Notes <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="referenceNotesInput"
+                        name="notes"
+                        maxlength="500"
+                        class="w-full py-2 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                        placeholder="e.g., Receipt #10492 / Supplier delivery batch"
+                    >
+                    <p class="text-[11px] text-slate-500 mt-1">Traceable operational reference recorded in the inventory transaction ledger.</p>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-gray-100">
+                    <button
+                        type="button"
+                        onclick="closeReceiveStockModal()"
+                        class="px-4 py-2 border border-gray-300 text-xs font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition cursor-pointer"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="submit"
+                        id="submitReceiveStockBtn"
+                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition inline-flex items-center gap-2 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-boxes-packing" aria-hidden="true"></i>
+                        <span>Receive Stock</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Inventory Item Modal -->
+    <div id="addInventoryItemModal" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="addInventoryItemModalTitle">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" aria-hidden="true" onclick="closeCreateModal()"></div>
+
+        <!-- Modal Dialog -->
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-4xl p-5 sm:p-7 transform transition-all border border-slate-200 my-auto max-h-[92vh] flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shrink-0">
+                        <i class="fa-solid fa-boxes-stacked text-base" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 id="addInventoryItemModalTitle" class="text-base sm:text-lg font-black text-slate-900 tracking-tight">Add Inventory Item</h3>
+                        <p class="text-xs text-slate-500">Add a new item to your inventory. Fill in the details below.</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeCreateModal()" class="rounded-xl p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <!-- Tab Navigation Bar -->
+            <div class="border-b border-slate-100 py-2.5 shrink-0 overflow-x-auto">
+                <nav class="flex space-x-2 text-xs font-semibold" aria-label="Modal Form Tabs">
+                    <button type="button" onclick="switchCreateModalTab('tab-create-basic')" id="btn-modal-tab-create-basic" class="modal-tab-btn px-3 py-1.5 text-rose-700 bg-rose-50/70 border border-rose-200 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition">
+                        <i class="fa-solid fa-file-lines text-xs"></i>
+                        <span>Basic Information</span>
+                    </button>
+                    <button type="button" onclick="switchCreateModalTab('tab-create-stock')" id="btn-modal-tab-create-stock" class="modal-tab-btn px-3 py-1.5 text-slate-500 hover:text-slate-800 border border-transparent rounded-xl flex items-center gap-1.5 shrink-0 transition">
+                        <i class="fa-solid fa-boxes-stacked text-xs"></i>
+                        <span>Stock & Usable Life</span>
+                    </button>
+                    <button type="button" onclick="switchCreateModalTab('tab-create-details')" id="btn-modal-tab-create-details" class="modal-tab-btn px-3 py-1.5 text-slate-500 hover:text-slate-800 border border-transparent rounded-xl flex items-center gap-1.5 shrink-0 transition">
+                        <i class="fa-solid fa-truck-ramp-box text-xs"></i>
+                        <span>Supplier & Location</span>
+                    </button>
+                    <button type="button" onclick="switchCreateModalTab('tab-create-images')" id="btn-modal-tab-create-images" class="modal-tab-btn px-3 py-1.5 text-slate-500 hover:text-slate-800 border border-transparent rounded-xl flex items-center gap-1.5 shrink-0 transition">
+                        <i class="fa-solid fa-image text-xs"></i>
+                        <span>Images</span>
+                    </button>
+                    <button type="button" onclick="switchCreateModalTab('tab-create-status')" id="btn-modal-tab-create-status" class="modal-tab-btn px-3 py-1.5 text-slate-500 hover:text-slate-800 border border-transparent rounded-xl flex items-center gap-1.5 shrink-0 transition">
+                        <i class="fa-solid fa-tags text-xs"></i>
+                        <span>Status & Tags</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Form Body (Scrollable) -->
+            <form action="{{ route('admin.inventory.store') }}" method="POST" enctype="multipart/form-data" id="addInventoryItemForm" class="overflow-y-auto flex-1 py-4 pr-1 space-y-5">
+                @csrf
+
+                <!-- TAB 1: BASIC INFORMATION -->
+                <div id="tab-create-basic" class="create-modal-tab-pane space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- Item Name -->
+                        <div class="sm:col-span-2">
+                            <label for="modal_create_name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Item Name <span class="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_name"
+                                name="name"
+                                required
+                                placeholder="e.g. Pink Rose (Fresh)"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            >
+                        </div>
+
+                        <!-- Item Code (Auto-generated & Locked) -->
+                        <div>
+                            <label for="modal_create_item_code" class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
+                                Item Code
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="modal_create_item_code"
+                                    readonly
+                                    disabled
+                                    value="Auto-generated"
+                                    class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-semibold text-slate-500 cursor-not-allowed pr-8 shadow-2xs"
+                                >
+                                <i class="fa-solid fa-lock absolute right-3 top-2.5 text-slate-400 text-xs"></i>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Authoritative code generated server-side.</p>
+                        </div>
+
+                        <!-- Category -->
+                        <div>
+                            <label for="modal_create_category" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Category <span class="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_category"
+                                name="category"
+                                required
+                                list="modalCategoriesList"
+                                placeholder="e.g. Fresh Flowers"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            >
+                            <datalist id="modalCategoriesList">
+                                @foreach($categories as $cat)
+                                    <option value="{{ $cat }}">{{ $cat }}</option>
+                                @endforeach
+                                <option value="Fresh Flowers">Fresh Flowers</option>
+                                <option value="Foliage">Foliage</option>
+                                <option value="Decor">Decor</option>
+                                <option value="Equipment">Equipment</option>
+                                <option value="Packaging">Packaging</option>
+                            </datalist>
+                        </div>
+
+                        <!-- Unit -->
+                        <div>
+                            <label for="modal_create_unit" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Unit <span class="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_unit"
+                                name="unit"
+                                value="pcs"
+                                required
+                                list="modalUnitsList"
+                                placeholder="e.g. stem, pcs, bunch"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            >
+                            <datalist id="modalUnitsList">
+                                <option value="stem">stem</option>
+                                <option value="pcs">pcs</option>
+                                <option value="bunch">bunch</option>
+                                <option value="block">block</option>
+                                <option value="roll">roll</option>
+                                <option value="set">set</option>
+                                <option value="box">box</option>
+                                <option value="tray">tray</option>
+                                <option value="meter">meter</option>
+                            </datalist>
+                        </div>
+
+                        <!-- Item Type: Perishable vs Non-Perishable Segmented Cards -->
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Item Type <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <label class="flex items-center gap-2 p-2 border rounded-xl cursor-pointer transition border-rose-400 bg-rose-50/60" id="modalLabelTypePerishable">
+                                    <input
+                                        type="radio"
+                                        name="item_type"
+                                        value="perishable"
+                                        checked
+                                        onchange="handleModalItemTypeChange('perishable')"
+                                        class="text-rose-600 focus:ring-rose-500 text-xs"
+                                    >
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-slate-800">Perishable</p>
+                                        <p class="text-[10px] text-slate-500 leading-tight">Consumable</p>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center gap-2 p-2 border rounded-xl cursor-pointer transition border-slate-200 hover:bg-slate-50" id="modalLabelTypeNonPerishable">
+                                    <input
+                                        type="radio"
+                                        name="item_type"
+                                        value="non_perishable"
+                                        onchange="handleModalItemTypeChange('non_perishable')"
+                                        class="text-emerald-600 focus:ring-emerald-500 text-xs"
+                                    >
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold text-slate-800">Non-Perishable</p>
+                                        <p class="text-[10px] text-slate-500 leading-tight">Returnable</p>
+                                    </div>
+                                </label>
+                            </div>
+                            <p id="modalItemTypeHelp" class="text-[10px] text-slate-400 mt-1">Fresh floral materials not expected to return post-event.</p>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="sm:col-span-3">
+                            <label for="modal_create_description" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Description <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <textarea
+                                id="modal_create_description"
+                                name="description"
+                                rows="2"
+                                maxlength="1000"
+                                placeholder="Describe item quality, color, origin, or usage notes..."
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: STOCK & USABLE LIFE -->
+                <div id="tab-create-stock" class="create-modal-tab-pane hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <!-- Initial Quantity -->
+                        <div>
+                            <label for="modal_create_initial_quantity" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Initial Quantity <span class="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                id="modal_create_initial_quantity"
+                                name="initial_quantity"
+                                value="0"
+                                required
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            >
+                            <p class="text-[10px] text-slate-400 mt-1">Starting physical count.</p>
+                        </div>
+
+                        <!-- Reorder Level -->
+                        <div>
+                            <label for="modal_create_reorder_level" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Reorder Level (Min Stock) <span class="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="number"
+                                step="any"
+                                min="0"
+                                id="modal_create_reorder_level"
+                                name="reorder_level"
+                                value="10"
+                                required
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            >
+                            <p class="text-[10px] text-slate-400 mt-1">Threshold for low-stock alerts.</p>
+                        </div>
+
+                        <!-- Unit Cost -->
+                        <div>
+                            <label for="modal_create_unit_cost" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Unit Cost (₱) <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-xs font-bold text-slate-400">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    id="modal_create_unit_cost"
+                                    name="unit_cost"
+                                    value="0.00"
+                                    required
+                                    class="w-full pl-7 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                >
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Cost per unit of measure.</p>
+                        </div>
+
+                        <!-- Received / Acquired Date -->
+                        <div>
+                            <label for="modal_create_received_date" id="modalLabelReceivedDate" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Received Date <span class="text-rose-500">*</span>
+                            </label>
+                            <input
+                                type="date"
+                                id="modal_create_received_date"
+                                name="received_date"
+                                value="{{ date('Y-m-d') }}"
+                                required
+                                onchange="calculateModalUsableUntil()"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            >
+                            <p id="modalHintReceivedDate" class="text-[10px] text-slate-400 mt-1">Date materials entered custody.</p>
+                        </div>
+
+                        <!-- Shelf Life / Usable Life Value + Unit -->
+                        <div>
+                            <label for="modal_create_usable_life_value" id="modalLabelUsableLife" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Shelf Life <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    id="modal_create_usable_life_value"
+                                    name="usable_life_value"
+                                    value="7"
+                                    required
+                                    oninput="calculateModalUsableUntil()"
+                                    class="w-20 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                >
+                                <select
+                                    id="modal_create_usable_life_unit"
+                                    name="usable_life_unit"
+                                    required
+                                    onchange="calculateModalUsableUntil()"
+                                    class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                >
+                                    <option value="days" selected>days</option>
+                                    <option value="weeks">weeks</option>
+                                    <option value="months">months</option>
+                                    <option value="years">years</option>
+                                </select>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Duration stock remains serviceable.</p>
+                        </div>
+
+                        <!-- Usable Until (Calculated Live Preview) -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="modal_create_usable_until" class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                    Usable Until
+                                </label>
+                                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                                    Auto-calculated
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    id="modal_create_usable_until"
+                                    readonly
+                                    disabled
+                                    value="{{ date('Y-m-d', strtotime('+7 days')) }}"
+                                    class="w-full px-3.5 py-2 bg-emerald-50/50 border border-emerald-200 rounded-xl text-xs font-mono font-bold text-emerald-900 cursor-not-allowed shadow-2xs pr-8"
+                                >
+                                <i class="fa-solid fa-calculator absolute right-3 top-2.5 text-emerald-600 text-xs"></i>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Authoritative calculation: Date + Duration.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: SUPPLIER & LOCATION (ADDITIONAL DETAILS) -->
+                <div id="tab-create-details" class="create-modal-tab-pane hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label for="modal_create_supplier_name" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Supplier Name <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_supplier_name"
+                                name="supplier_name"
+                                placeholder="e.g. Blooming Fields PH"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            >
+                        </div>
+                        <div>
+                            <label for="modal_create_supplier_contact_person" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Contact Person <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_supplier_contact_person"
+                                name="supplier_contact_person"
+                                placeholder="e.g. Ana Reyes"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            >
+                        </div>
+                        <div>
+                            <label for="modal_create_supplier_contact_number" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Contact Number <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_supplier_contact_number"
+                                name="supplier_contact_number"
+                                placeholder="e.g. 0917 123 4567"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            >
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label for="modal_create_storage_location" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Storage Location <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_storage_location"
+                                name="storage_location"
+                                placeholder="e.g. Cold Storage Room A, Shelf 2"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            >
+                        </div>
+
+                        <!-- Seasonal Substitutes -->
+                        <div class="sm:col-span-3 pt-2 border-t border-slate-100">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Seasonal Substitutes <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <p class="text-[11px] text-slate-500 mb-2">Configure fallback materials for seasonal availability and shortage mitigation.</p>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+                                <span class="text-slate-600">Need to configure comprehensive substitute mapping with package BOM?</span>
+                                <a href="{{ route('admin.inventory.create') }}" class="text-xs font-bold text-emerald-600 hover:text-emerald-700 inline-flex items-center gap-1">
+                                    <span>Open Dedicated Form</span>
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: IMAGES -->
+                <div id="tab-create-images" class="create-modal-tab-pane hidden space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                            Item Image <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                        </label>
+                        <input
+                            type="file"
+                            name="image"
+                            id="modal_create_image"
+                            accept="image/*"
+                            onchange="previewModalSelectedImage(this)"
+                            class="block w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 file:cursor-pointer border border-slate-200 rounded-xl p-2 bg-slate-50"
+                        >
+                        <p class="text-[10px] text-slate-400 mt-1">PNG, JPG, or WEBP up to 5MB.</p>
+                    </div>
+
+                    <div id="modalImagePreviewContainer" class="hidden pt-2">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Image Preview</p>
+                        <div class="relative w-40 h-40 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 shadow-2xs">
+                            <img id="modalImagePreviewImg" src="" alt="Selected Preview" class="w-full h-full object-cover">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: STATUS & TAGS -->
+                <div id="tab-create-status" class="create-modal-tab-pane hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Status -->
+                        <div>
+                            <label for="modal_create_status" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Catalog Status <span class="text-rose-500">*</span>
+                            </label>
+                            <select
+                                id="modal_create_status"
+                                name="status"
+                                required
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            >
+                                <option value="active" selected>Active — Available for new event planning</option>
+                                <option value="inactive">Inactive — Discontinued / Locked from planning</option>
+                            </select>
+                            <p class="text-[10px] text-slate-400 mt-1">Catalog status is distinct from individual stock usability.</p>
+                        </div>
+
+                        <!-- Tags -->
+                        <div>
+                            <label for="modal_create_tags" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                                Search Tags <span class="text-slate-400 font-normal text-[10px]">(Optional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="modal_create_tags"
+                                name="tags"
+                                placeholder="e.g. Wedding, Bouquet, Premium, Centerpiece"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                            >
+                            <p class="text-[10px] text-slate-400 mt-1">Comma-separated tags for filtering.</p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Footer Actions -->
+            <div class="flex items-center justify-between pt-4 border-t border-slate-100 shrink-0">
+                <button
+                    type="button"
+                    onclick="closeCreateModal()"
+                    class="px-4 py-2 border border-slate-300 text-xs font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition cursor-pointer"
+                >
+                    Cancel
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <button
+                        type="button"
+                        id="btnModalPrev"
+                        onclick="prevCreateModalTab()"
+                        class="hidden px-3.5 py-2 border border-slate-200 text-xs font-semibold rounded-xl text-slate-700 bg-white hover:bg-slate-50 transition cursor-pointer"
+                    >
+                        <i class="fa-solid fa-chevron-left text-[10px] mr-1"></i>
+                        <span>Previous</span>
+                    </button>
+                    <button
+                        type="button"
+                        id="btnModalNext"
+                        onclick="nextCreateModalTab()"
+                        class="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <span>Next</span>
+                        <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                    </button>
+                    <button
+                        type="button"
+                        id="btnModalSave"
+                        onclick="document.getElementById('addInventoryItemForm').submit();"
+                        class="hidden px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-check text-xs"></i>
+                        <span>Save Item</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adjust Stock Count Modal (Index Table & Drawer) -->
+    <div id="adjustStockModalIndex" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="adjustStockModalIndexTitle">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" aria-hidden="true" onclick="closeAdjustStockModal()"></div>
+
+        <!-- Modal Dialog -->
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-6 transform transition-all border border-slate-200">
+            <!-- Header -->
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-sliders"></i>
+                    </div>
+                    <div>
+                        <h3 id="adjustStockModalIndexTitle" class="text-base font-bold text-slate-900">Adjust Physical Stock</h3>
+                        <p id="adjustModalItemSubtitle" class="text-xs text-slate-500 font-medium">—</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAdjustStockModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition cursor-pointer">
+                    <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form id="adjustStockIndexForm" action="" method="POST" class="pt-4 space-y-4">
+                @csrf
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between text-xs">
+                    <span class="text-slate-500 font-medium uppercase tracking-wider text-[11px]">Current On Hand</span>
+                    <span id="adjustModalCurrentStock" class="font-black text-slate-800 text-sm">0</span>
+                </div>
+
+                <div>
+                    <label for="adjust_index_new_stock" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        New Count / Quantity <span class="text-rose-500">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        id="adjust_index_new_stock"
+                        name="new_stock"
+                        required
+                        placeholder="e.g. 100"
+                        class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                    >
+                </div>
+
+                <div>
+                    <label for="adjust_index_reason" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        Reason / Notes <span class="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                        id="adjust_index_reason"
+                        name="reason"
+                        rows="2"
+                        required
+                        maxlength="500"
+                        placeholder="e.g. Physical inventory cycle count correction"
+                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                    ></textarea>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2">
+                    <button type="button" onclick="closeAdjustStockModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                        Confirm Adjustment
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- UI Scripts -->
     <script>
         // Collapsible Filter Panel Toggle
@@ -1281,6 +2002,284 @@
             if (modal) modal.style.display = 'none';
         }
 
+        // Receive Stock Modal Handlers
+        function openReceiveStockModal(itemId, itemName, itemCode, unit, onHand, reserved, toProcure, unitCost) {
+            const modal = document.getElementById('receiveStockModal');
+            const form = document.getElementById('receiveStockForm');
+            if (!modal || !form) return;
+
+            form.action = '/admin/inventory/' + itemId + '/receive-stock';
+            document.getElementById('modalItemName').textContent = itemName;
+            document.getElementById('modalItemCode').textContent = itemCode;
+            document.getElementById('modalItemUnit').textContent = unit;
+            document.getElementById('modalItemOnHand').textContent = onHand;
+            document.getElementById('modalItemReserved').textContent = reserved;
+            document.getElementById('modalItemToProcure').textContent = toProcure;
+            document.getElementById('modalInputUnit').textContent = unit;
+
+            const discreteUnits = ['pcs', 'piece', 'pieces', 'stem', 'stems', 'block', 'blocks', 'bunch', 'bunches', 'unit', 'units', 'set', 'sets', 'box', 'boxes', 'roll', 'rolls', 'tray', 'trays', 'vase', 'vases', 'pot', 'pots'];
+            const isDiscrete = discreteUnits.includes((unit || '').toLowerCase().trim());
+            const qtyInput = document.getElementById('quantityReceivedInput');
+            const unitHint = document.getElementById('modalUnitHint');
+            if (qtyInput) {
+                qtyInput.value = '';
+                qtyInput.step = isDiscrete ? '1' : 'any';
+                qtyInput.placeholder = isDiscrete ? 'e.g. 50 (whole ' + unit + ')' : 'e.g. 50.00';
+            }
+            if (unitHint) {
+                unitHint.textContent = isDiscrete ? 'Must be a whole number for ' + unit + '.' : 'Enter physical quantity received in ' + unit + '.';
+            }
+
+            const costInput = document.getElementById('unitCostInput');
+            if (costInput) {
+                costInput.value = (unitCost && unitCost > 0) ? Number(unitCost).toFixed(2) : '';
+            }
+
+            const notesInput = document.getElementById('referenceNotesInput');
+            if (notesInput) {
+                notesInput.value = '';
+            }
+
+            const errorBox = document.getElementById('modalClientError');
+            if (errorBox) {
+                errorBox.classList.add('hidden');
+                errorBox.textContent = '';
+            }
+
+            const btn = document.getElementById('submitReceiveStockBtn');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-boxes-packing" aria-hidden="true"></i> <span>Receive Stock</span>';
+            }
+
+            modal.style.display = 'flex';
+            if (qtyInput) qtyInput.focus();
+        }
+
+        function closeReceiveStockModal() {
+            const modal = document.getElementById('receiveStockModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        document.getElementById('receiveStockForm')?.addEventListener('submit', function (e) {
+            const qtyInput = document.getElementById('quantityReceivedInput');
+            const unitText = document.getElementById('modalItemUnit')?.textContent || '';
+            const errorBox = document.getElementById('modalClientError');
+            const val = parseFloat(qtyInput?.value);
+
+            if (isNaN(val) || val <= 0) {
+                e.preventDefault();
+                if (errorBox) {
+                    errorBox.textContent = 'Quantity received must be greater than 0.';
+                    errorBox.classList.remove('hidden');
+                }
+                return false;
+            }
+
+            const discreteUnits = ['pcs', 'piece', 'pieces', 'stem', 'stems', 'block', 'blocks', 'bunch', 'bunches', 'unit', 'units', 'set', 'sets', 'box', 'boxes', 'roll', 'rolls', 'tray', 'trays', 'vase', 'vases', 'pot', 'pots'];
+            if (discreteUnits.includes(unitText.toLowerCase().trim()) && !Number.isInteger(val)) {
+                e.preventDefault();
+                if (errorBox) {
+                    errorBox.textContent = 'Quantity received must be a whole number for ' + unitText + '.';
+                    errorBox.classList.remove('hidden');
+                }
+                return false;
+            }
+
+            if (errorBox) {
+                errorBox.classList.add('hidden');
+            }
+            const btn = document.getElementById('submitReceiveStockBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Receiving...';
+            }
+        });
+
+        // Add Inventory Item Modal Handlers
+        const createModalTabs = ['tab-create-basic', 'tab-create-stock', 'tab-create-details', 'tab-create-images', 'tab-create-status'];
+        let currentCreateModalTabIndex = 0;
+
+        function openCreateModal() {
+            const modal = document.getElementById('addInventoryItemModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            switchCreateModalTab('tab-create-basic');
+            calculateModalUsableUntil();
+            const nameInput = document.getElementById('modal_create_name');
+            if (nameInput) nameInput.focus();
+        }
+
+        function closeCreateModal() {
+            const modal = document.getElementById('addInventoryItemModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function switchCreateModalTab(tabId) {
+            document.querySelectorAll('.create-modal-tab-pane').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(tabId);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.modal-tab-btn').forEach(btn => {
+                btn.className = 'modal-tab-btn px-3 py-1.5 text-slate-500 hover:text-slate-800 border border-transparent rounded-xl flex items-center gap-1.5 shrink-0 transition';
+            });
+            const activeBtn = document.getElementById('btn-modal-' + tabId);
+            if (activeBtn) {
+                activeBtn.className = 'modal-tab-btn px-3 py-1.5 text-rose-700 bg-rose-50/70 border border-rose-200 rounded-xl font-bold flex items-center gap-1.5 shrink-0 transition';
+            }
+
+            currentCreateModalTabIndex = createModalTabs.indexOf(tabId);
+            if (currentCreateModalTabIndex === -1) currentCreateModalTabIndex = 0;
+
+            const prevBtn = document.getElementById('btnModalPrev');
+            const nextBtn = document.getElementById('btnModalNext');
+            const saveBtn = document.getElementById('btnModalSave');
+
+            if (prevBtn) {
+                if (currentCreateModalTabIndex === 0) {
+                    prevBtn.classList.add('hidden');
+                } else {
+                    prevBtn.classList.remove('hidden');
+                }
+            }
+
+            if (nextBtn && saveBtn) {
+                if (currentCreateModalTabIndex === createModalTabs.length - 1) {
+                    nextBtn.classList.add('hidden');
+                    saveBtn.classList.remove('hidden');
+                } else {
+                    nextBtn.classList.remove('hidden');
+                    saveBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function nextCreateModalTab() {
+            if (currentCreateModalTabIndex < createModalTabs.length - 1) {
+                switchCreateModalTab(createModalTabs[currentCreateModalTabIndex + 1]);
+            }
+        }
+
+        function prevCreateModalTab() {
+            if (currentCreateModalTabIndex > 0) {
+                switchCreateModalTab(createModalTabs[currentCreateModalTabIndex - 1]);
+            }
+        }
+
+        function handleModalItemTypeChange(type) {
+            const isPerishable = type === 'perishable';
+            const pLabel = document.getElementById('modalLabelTypePerishable');
+            const npLabel = document.getElementById('modalLabelTypeNonPerishable');
+            const helpText = document.getElementById('modalItemTypeHelp');
+            const dateLabel = document.getElementById('modalLabelReceivedDate');
+            const dateHint = document.getElementById('modalHintReceivedDate');
+            const lifeLabel = document.getElementById('modalLabelUsableLife');
+
+            if (isPerishable) {
+                if (pLabel) pLabel.className = 'flex items-center gap-2 p-2 border rounded-xl cursor-pointer transition border-rose-400 bg-rose-50/60';
+                if (npLabel) npLabel.className = 'flex items-center gap-2 p-2 border rounded-xl cursor-pointer transition border-slate-200 hover:bg-slate-50';
+                if (helpText) helpText.textContent = 'Fresh floral materials not expected to return post-event.';
+                if (dateLabel) dateLabel.innerHTML = 'Received Date <span class="text-rose-500">*</span>';
+                if (dateHint) dateHint.textContent = 'Date materials entered custody.';
+                if (lifeLabel) lifeLabel.innerHTML = 'Shelf Life <span class="text-rose-500">*</span>';
+            } else {
+                if (pLabel) pLabel.className = 'flex items-center gap-2 p-2 border rounded-xl cursor-pointer transition border-slate-200 hover:bg-slate-50';
+                if (npLabel) npLabel.className = 'flex items-center gap-2 p-2 border rounded-xl cursor-pointer transition border-emerald-400 bg-emerald-50/60';
+                if (helpText) helpText.textContent = 'Reusable / Returnable assets expected to return post-event.';
+                if (dateLabel) dateLabel.innerHTML = 'Acquired Date <span class="text-rose-500">*</span>';
+                if (dateHint) dateHint.textContent = 'Date asset was procured / placed in service.';
+                if (lifeLabel) lifeLabel.innerHTML = 'Usable Life <span class="text-rose-500">*</span>';
+            }
+            calculateModalUsableUntil();
+        }
+
+        function calculateModalUsableUntil() {
+            const dateInput = document.getElementById('modal_create_received_date');
+            const valInput = document.getElementById('modal_create_usable_life_value');
+            const unitInput = document.getElementById('modal_create_usable_life_unit');
+            const outInput = document.getElementById('modal_create_usable_until');
+
+            if (!dateInput || !valInput || !unitInput || !outInput) return;
+
+            const dateStr = dateInput.value;
+            const val = parseInt(valInput.value, 10);
+            const unit = unitInput.value;
+
+            if (!dateStr || isNaN(val) || val <= 0) return;
+
+            const d = new Date(dateStr + 'T00:00:00');
+            if (isNaN(d.getTime())) return;
+
+            if (unit === 'days') d.setDate(d.getDate() + val);
+            else if (unit === 'weeks') d.setDate(d.getDate() + (val * 7));
+            else if (unit === 'months') d.setMonth(d.getMonth() + val);
+            else if (unit === 'years') d.setFullYear(d.getFullYear() + val);
+
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            outInput.value = `${yyyy}-${mm}-${dd}`;
+        }
+
+        function filterModalSubstitutes(query) {
+            const q = query.toLowerCase().trim();
+            document.querySelectorAll('.modal-substitute-item-row').forEach(row => {
+                const name = row.getAttribute('data-name') || '';
+                const cat = row.getAttribute('data-category') || '';
+                if (!q || name.includes(q) || cat.includes(q)) {
+                    row.classList.remove('hidden');
+                } else {
+                    row.classList.add('hidden');
+                }
+            });
+        }
+
+        function previewModalSelectedImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.getElementById('modalImagePreviewImg');
+                    const container = document.getElementById('modalImagePreviewContainer');
+                    if (img && container) {
+                        img.src = e.target.result;
+                        container.classList.remove('hidden');
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Adjust Stock Modal Handlers
+        function openAdjustStockModal(itemId, itemName, itemCode, itemUnit, currentStock) {
+            const modal = document.getElementById('adjustStockModalIndex');
+            const form = document.getElementById('adjustStockIndexForm');
+            if (!modal || !form) return;
+
+            form.action = '/admin/inventory/' + itemId + '/adjust-stock';
+            const subtitle = document.getElementById('adjustModalItemSubtitle');
+            if (subtitle) subtitle.textContent = `${itemName} (${itemCode})`;
+
+            const stockDisplay = document.getElementById('adjustModalCurrentStock');
+            if (stockDisplay) stockDisplay.textContent = `${currentStock} ${itemUnit}`;
+
+            const input = document.getElementById('adjust_index_new_stock');
+            if (input) {
+                input.value = '';
+                input.placeholder = currentStock;
+            }
+
+            const reason = document.getElementById('adjust_index_reason');
+            if (reason) reason.value = '';
+
+            modal.style.display = 'flex';
+            if (input) input.focus();
+        }
+
+        function closeAdjustStockModal() {
+            const modal = document.getElementById('adjustStockModalIndex');
+            if (modal) modal.style.display = 'none';
+        }
+
         // Click outside listener for CSV Tools popover
         document.addEventListener('click', function (e) {
             const container = document.getElementById('csvToolsContainer');
@@ -1292,13 +2291,22 @@
         // Keyboard navigation (Escape key closes modals and drawers)
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') {
+                const createModal = document.getElementById('addInventoryItemModal');
+                const adjustModal = document.getElementById('adjustStockModalIndex');
+                const receiveModal = document.getElementById('receiveStockModal');
                 const instructionsModal = document.getElementById('importInstructionsModal');
                 const uploadModal = document.getElementById('uploadCsvModal');
                 const csvMenu = document.getElementById('csvToolsMenu');
                 const csvBtn = document.getElementById('csvToolsButton');
                 const drawerContainer = document.getElementById('itemDrawerContainer');
 
-                if (instructionsModal && instructionsModal.style.display === 'flex') {
+                if (createModal && createModal.style.display === 'flex') {
+                    closeCreateModal();
+                } else if (adjustModal && adjustModal.style.display === 'flex') {
+                    closeAdjustStockModal();
+                } else if (receiveModal && receiveModal.style.display === 'flex') {
+                    closeReceiveStockModal();
+                } else if (instructionsModal && instructionsModal.style.display === 'flex') {
                     closeInstructionsModal();
                 } else if (uploadModal && uploadModal.style.display === 'flex') {
                     closeUploadModal();

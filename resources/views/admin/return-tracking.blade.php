@@ -1,13 +1,8 @@
-<x-admin-layout title="Return Tracking">
+<x-admin-layout
+    title="Return Tracking"
+    description="Track post-event asset returns, condition assessments, staff responsibility, and required damage/loss decisions."
+>
     <div class="space-y-6">
-        <!-- Page Header -->
-        <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-            <div>
-                <p class="text-xs font-bold tracking-wider text-purple-600 uppercase mb-1">OPERATIONS</p>
-                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Return Tracking</h1>
-                <p class="text-sm text-slate-500 mt-1">Track post-event asset returns, condition assessments, staff responsibility, and required damage/loss decisions.</p>
-            </div>
-        </div>
 
         @if(session('success'))
             <x-alert type="success" :inline="true">{{ session('success') }}</x-alert>

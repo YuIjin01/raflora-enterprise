@@ -415,10 +415,10 @@ class AdminInventoryRedesignTest extends TestCase
         $response->assertSee('id="item-drawer-template-' . $item->id . '"', false);
         $response->assertSee('STOCK SUMMARY');
         $response->assertSee('STOCK DEFINITIONS');
-        $response->assertSee('Physical stock currently recorded in inventory.');
-        $response->assertSee('Quantity committed to valid bookings.');
-        $response->assertSee('Stock remaining after valid reservations.');
-        $response->assertSee('Configured minimum stock threshold.');
+        $response->assertSee('Physical quantity currently in inventory.');
+        $response->assertSee('Quantity committed to valid event bookings.');
+        $response->assertSee('Additional quantity required to fulfill current reserved event demand.');
+        $response->assertSee('Configured minimum inventory threshold.');
         $response->assertSee('ITEM INFORMATION');
         $response->assertSee('Delphinium Blue');
         $response->assertSee('DEL-0101');
@@ -528,9 +528,9 @@ class AdminInventoryRedesignTest extends TestCase
         $response->assertOk();
         $response->assertSee('ITEM');
         $response->assertSee('CATEGORY');
-        $response->assertSee('CURRENT');
+        $response->assertSee('ON HAND');
         $response->assertSee('RESERVED');
-        $response->assertSee('AVAILABLE');
+        $response->assertSee('TO PROCURE');
         $response->assertSee('MINIMUM');
         $response->assertSee('STATUS');
         $response->assertSee('ACTION');

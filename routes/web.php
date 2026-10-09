@@ -387,6 +387,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::post('/inventory', [\App\Http\Controllers\Admin\InventoryController::class, 'store'])->name('admin.inventory.store');
     Route::get('/inventory/{inventoryItem}/edit', [\App\Http\Controllers\Admin\InventoryController::class, 'edit'])->name('admin.inventory.edit');
     Route::put('/inventory/{inventoryItem}', [\App\Http\Controllers\Admin\InventoryController::class, 'update'])->name('admin.inventory.update');
+    Route::post('/inventory/{inventoryItem}/receive-stock', [\App\Http\Controllers\Admin\InventoryController::class, 'receiveStock'])->name('admin.inventory.receive-stock');
+    Route::post('/inventory/{inventoryItem}/adjust-stock', [\App\Http\Controllers\Admin\InventoryController::class, 'adjustStock'])->name('admin.inventory.adjust-stock');
     Route::post('/inventory/{inventoryItem}/archive', [\App\Http\Controllers\Admin\InventoryController::class, 'archive'])->name('admin.inventory.archive');
     Route::post('/inventory/{id}/restore', [\App\Http\Controllers\Admin\InventoryController::class, 'restore'])->name('admin.inventory.restore');
 

@@ -41,6 +41,15 @@ class InventoryItem extends Model
         'unit_cost',
         'min_stock',
         'unit',
+        'status',
+        'description',
+        'usable_life_value',
+        'usable_life_unit',
+        'supplier_name',
+        'supplier_contact_person',
+        'supplier_contact_number',
+        'storage_location',
+        'tags',
     ];
 
     /**
@@ -55,6 +64,7 @@ class InventoryItem extends Model
             'current_stock' => 'decimal:2',
             'unit_cost' => 'decimal:2',
             'min_stock' => 'decimal:2',
+            'usable_life_value' => 'integer',
         ];
     }
 
@@ -173,6 +183,15 @@ class InventoryItem extends Model
     }
 
     /**
+     * Dynamically derive required procurement quantity to cover current reserved event demand:
+     * TO_PROCURE = max(0, RESERVED - ON_HAND)
+     */
+    public function getToProcureAttribute(): float
+    {
+        return max(0.0, (float) ($this->reserved_stock ?? 0) - (float) $this->current_stock);
+    }
+
+    /**
      * Get all packages that include this inventory item.
      */
     public function packages(): BelongsToMany
@@ -193,5 +212,65 @@ class InventoryItem extends Model
             'item_id',
             'substitute_id'
         );
+    }
+
+    /**
+     * Get all stock / procurement batch records for this item.
+     */
+    public function stocks(): HasMany
+    {
+        return $this->hasMany(InventoryStock::class, 'inventory_item_id');
+    }
+
+    /**
+     * Get all gallery images for this inventory item.
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(InventoryItemImage::class, 'inventory_item_id');
+    }
+
+    /**
+     * Get the latest stock / procurement batch.
+     */
+    public function latestStock()
+    {
+        return $this->hasOne(InventoryStock::class, 'inventory_item_id')->latestOfMany('received_date');
+    }
+
+    /**
+     * Scope query to only active inventory items.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    /**
+     * Determine if item is active.
+     */
+    public function isActive(): bool
+    {
+        return ($this->status ?? 'active') === 'active';
+    }
+
+    /**
+     * Calculate usable stock for a given event date.
+     */
+    public function getUsableStockForDate($eventDate = null): float
+    {
+        if (!$eventDate) {
+            return (float) $this->current_stock;
+        }
+
+        $targetDate = \Carbon\Carbon::parse($eventDate)->startOfDay();
+
+        if ($this->stocks()->exists()) {
+            return (float) $this->stocks()
+                ->whereDate('usable_until', '>=', $targetDate)
+                ->sum('quantity_remaining');
+        }
+
+        return (float) $this->current_stock;
     }
 }

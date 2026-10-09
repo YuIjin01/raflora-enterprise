@@ -19,6 +19,7 @@ class InventoryTransaction extends Model
      */
     protected $fillable = [
         'inventory_item_id',
+        'inventory_stock_id',
         'booking_id',
         'reference_transaction_id',
         'quantity_change',
@@ -70,5 +71,13 @@ class InventoryTransaction extends Model
     public function referenceTransaction(): BelongsTo
     {
         return $this->belongsTo(self::class, 'reference_transaction_id', 'id');
+    }
+
+    /**
+     * Get the stock batch associated with this transaction.
+     */
+    public function inventoryStock(): BelongsTo
+    {
+        return $this->belongsTo(InventoryStock::class, 'inventory_stock_id');
     }
 }

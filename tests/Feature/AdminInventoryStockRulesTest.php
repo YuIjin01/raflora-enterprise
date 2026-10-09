@@ -241,47 +241,53 @@ class AdminInventoryStockRulesTest extends TestCase
             'transaction_type' => 'adjustment',
         ]);
 
+        // Edit Item does not change stock
         $this->actingAs($admin)->put(route('admin.inventory.update', $inventoryItem), [
-            'name' => 'Vase',
+            'name' => 'Vase Updated',
             'category' => 'decor',
-            'current_stock' => 15,
             'min_stock' => 2,
             'unit_cost' => 100,
             'unit' => 'piece',
         ]);
+        $this->assertSame(10.0, (float) $inventoryItem->fresh()->current_stock);
 
+        // Adjust stock upwards creates adjustment transaction
+        $this->actingAs($admin)->post(route('admin.inventory.adjust-stock', $inventoryItem), [
+            'new_stock' => 15,
+            'reason' => 'Stock adjustment upward',
+        ]);
+
+        $this->assertSame(15.0, (float) $inventoryItem->fresh()->current_stock);
         $this->assertDatabaseHas('inventory_transactions', [
             'inventory_item_id' => $inventoryItem->id,
             'quantity_change' => 5,
             'transaction_type' => 'adjustment',
         ]);
 
-        $this->actingAs($admin)->put(route('admin.inventory.update', $inventoryItem), [
-            'name' => 'Vase',
-            'category' => 'decor',
-            'current_stock' => 12,
-            'min_stock' => 2,
-            'unit_cost' => 100,
-            'unit' => 'piece',
+        // Adjust stock downwards creates adjustment transaction
+        $this->actingAs($admin)->post(route('admin.inventory.adjust-stock', $inventoryItem), [
+            'new_stock' => 12,
+            'reason' => 'Stock adjustment downward',
         ]);
 
+        $this->assertSame(12.0, (float) $inventoryItem->fresh()->current_stock);
         $this->assertDatabaseHas('inventory_transactions', [
             'inventory_item_id' => $inventoryItem->id,
             'quantity_change' => -3,
             'transaction_type' => 'adjustment',
         ]);
 
-        // No-change update
+        // Metadata update preserves stock
         $txCount = \App\Models\InventoryTransaction::count();
         $this->actingAs($admin)->put(route('admin.inventory.update', $inventoryItem), [
-            'name' => 'Vase Updated',
+            'name' => 'Vase Final Name',
             'category' => 'decor',
-            'current_stock' => 12,
             'min_stock' => 2,
             'unit_cost' => 100,
             'unit' => 'piece',
         ]);
         $this->assertSame($txCount, \App\Models\InventoryTransaction::count());
+        $this->assertSame(12.0, (float) $inventoryItem->fresh()->current_stock);
     }
 
     public function test_historical_inventory_transaction_is_preserved_after_inventory_item_removal(): void
@@ -398,11 +404,12 @@ class AdminInventoryStockRulesTest extends TestCase
         $response->assertSeeText('stems');
         $response->assertSeeText('Perishable');
         
-        // For Test Sunflowers: 90 current, 15 reserved, 75 available, 50 min
+        // For Test Sunflowers: 90 on hand, 15 reserved, 0 to procure, 50 min
         // Assert they appear as raw numbers without units in the td
         $response->assertSeeText('90');
         $response->assertSeeText('15');
-        $response->assertSeeText('75');
+        $response->assertSeeText('0');
+        $response->assertSeeText('50');
         
         $response->assertSeeText('100');
     }

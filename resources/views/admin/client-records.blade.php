@@ -1,16 +1,8 @@
-<x-admin-layout title="Client Records">
+<x-admin-layout
+    title="Client Records"
+    description="Manage client information and review their booking activity."
+>
     <div class="mx-auto max-w-[1600px] space-y-6">
-        <!-- Page Header -->
-        <div class="flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
-            <div>
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">Client management</p>
-                <h1 class="serif mt-1 text-3xl font-bold text-slate-900">Client Records</h1>
-                <p class="mt-1 text-sm text-slate-500">Manage client information and review their booking activity.</p>
-            </div>
-            <span class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 px-3.5 py-1.5 text-xs font-bold tracking-wide">
-                {{ $clients->total() }} {{ Str::plural('Client', $clients->total()) }}
-            </span>
-        </div>
 
         <!-- Primary Toolbar: Search & Collapsible Filters -->
         <div class="bg-white rounded-2xl shadow-xs border border-gray-100 p-4 sm:p-5">
@@ -66,6 +58,13 @@
                                 Clear Filters
                             </a>
                         @endif
+                    </div>
+
+                    <!-- Client Count Badge -->
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 px-3.5 py-1.5 text-xs font-bold tracking-wide">
+                            {{ $clients->total() }} {{ Str::plural('Client', $clients->total()) }}
+                        </span>
                     </div>
                 </div>
 

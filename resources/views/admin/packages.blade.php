@@ -1,15 +1,7 @@
-<x-admin-layout title="Packages">
-    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 font-serif">Packages</h2>
-            <p class="text-sm text-gray-500 mt-1">Manage public booking packages, pricing, and master inventory mappings (BOM).</p>
-        </div>
-        <div>
-            <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 transition">
-                <i class="fa-solid fa-box-archive mr-2"></i> Archived Packages
-            </a>
-        </div>
-    </div>
+<x-admin-layout
+    title="Packages"
+    description="Manage public booking packages, pricing, and master inventory mappings (BOM)."
+>
 
     <!-- Tabs -->
     <div class="mb-6 border-b border-gray-200">

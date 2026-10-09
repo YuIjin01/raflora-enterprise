@@ -57,6 +57,10 @@ class InventoryController extends Controller
                   ->orWhere('category', 'like', "%{$search}%");
             });
         }
+
+        if (in_array($status, ['active', 'inactive'], true)) {
+            $query->where('status', $status);
+        }
         
         // Stock status filtering: handle both stock_level and status query parameters
         $effectiveStock = $stockLevel !== 'all' ? $stockLevel : ($status !== 'all' && in_array($status, ['in_stock', 'low', 'shortage']) ? $status : null);
@@ -133,6 +137,7 @@ class InventoryController extends Controller
         foreach ($inventoryItems as $item) {
             $item->reserved_stock = (float) ($item->reserved_stock ?? 0);
             $item->net_available = $item->current_stock - $item->reserved_stock;
+            $item->to_procure = max(0.0, $item->reserved_stock - (float) $item->current_stock);
             
             // Determine warning status for UI display
             if ($item->net_available < 0) {
@@ -165,7 +170,7 @@ class InventoryController extends Controller
     public function create(): View
     {
         $inventoryItems = InventoryItem::orderBy('name')->get();
-        $inventoryCategories = InventoryItem::select('category')->distinct()->pluck('category');
+        $inventoryCategories = InventoryItem::select('category')->distinct()->whereNotNull('category')->pluck('category');
         return view('admin.inventory.create', [
             'inventoryItems' => $inventoryItems,
             'inventoryCategories' => $inventoryCategories,
@@ -177,49 +182,157 @@ class InventoryController extends Controller
      */
     public function store(Request $request)
     {
+        abort_unless(Auth::check() && Auth::user()->role === 'admin', 403, 'Unauthorized.');
+
+        $isPerishable = $request->input('item_type') === 'perishable' 
+            || $request->boolean('is_perishable') 
+            || $request->input('item_type') === '1';
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:255',
-            'is_perishable' => 'boolean',
-            'current_stock' => 'required|numeric|min:0',
-            'unit_cost' => 'required|numeric|min:0',
-            'min_stock' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
+            'unit_cost' => 'required|numeric|min:0',
+            'min_stock' => 'nullable|numeric|min:0',
+            'reorder_level' => 'nullable|numeric|min:0',
+            'current_stock' => 'nullable|numeric|min:0',
+            'initial_quantity' => 'nullable|numeric|min:0',
+            'status' => 'nullable|in:active,inactive',
+            'description' => 'nullable|string|max:1000',
+            'received_date' => 'required|date',
+            'usable_life_value' => 'required|integer|min:1',
+            'usable_life_unit' => 'required|in:days,weeks,months,years',
+            'supplier_name' => 'nullable|string|max:255',
+            'supplier_contact_person' => 'nullable|string|max:255',
+            'supplier_contact_number' => 'nullable|string|max:50',
+            'storage_location' => 'nullable|string|max:255',
+            'tags' => 'nullable|string|max:500',
             'substitute_ids' => 'nullable|array',
             'substitute_ids.*' => 'exists:inventory_items,id',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:5120',
         ]);
 
-        $validated['is_perishable'] = $request->has('is_perishable');
+        $initialQuantity = (float) ($validated['initial_quantity'] ?? $validated['current_stock'] ?? 0);
+        $minStock = (float) ($validated['reorder_level'] ?? $validated['min_stock'] ?? 0);
 
+        // Discrete units whole number check
+        $discreteUnits = [
+            'pcs', 'piece', 'pieces', 'stem', 'stems', 'block', 'blocks',
+            'bunch', 'bunches', 'unit', 'units', 'set', 'sets', 'box', 'boxes',
+            'roll', 'rolls', 'tray', 'trays', 'vase', 'vases', 'pot', 'pots'
+        ];
+        $unitLower = strtolower(trim($validated['unit']));
+        if (in_array($unitLower, $discreteUnits, true)) {
+            if (floor($initialQuantity) != $initialQuantity) {
+                return back()->withErrors([
+                    'initial_quantity' => "Initial quantity for '{$validated['unit']}' must be a whole number."
+                ])->withInput();
+            }
+        }
+
+        $refDate = Carbon::parse($validated['received_date']);
+        $lifeVal = (int) $validated['usable_life_value'];
+        $lifeUnit = strtolower($validated['usable_life_unit']);
+        $usableUntil = match($lifeUnit) {
+            'days' => $refDate->copy()->addDays($lifeVal),
+            'weeks' => $refDate->copy()->addWeeks($lifeVal),
+            'months' => $refDate->copy()->addMonths($lifeVal),
+            'years' => $refDate->copy()->addYears($lifeVal),
+        };
+
+        $imagePath = null;
         if ($request->hasFile('image')) {
-            $validated['image_path'] = $request->file('image')->store('inventory-images', 'public');
+            $imagePath = $request->file('image')->store('inventory-images', 'public');
         }
 
-        $item = InventoryItem::create($validated);
-        
-        $prefix = strtoupper(substr($item->category ?? 'INV', 0, 3));
-        $code = $prefix . '-' . str_pad($item->id, 4, '0', STR_PAD_LEFT);
-        $i = 1;
-        while (\App\Models\InventoryItem::where('item_code', $code)->where('id', '!=', $item->id)->exists()) {
-            $code = $prefix . '-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) . '-' . $i++;
-        }
-        $item->update(['item_code' => $code]);
-        
-        if ((float) $item->current_stock != 0) {
-            \App\Models\InventoryTransaction::create([
-                'inventory_item_id' => $item->id,
-                'booking_id' => null,
-                'quantity_change' => (float) $item->current_stock,
-                'transaction_type' => 'adjustment',
-                'reason' => 'Initial stock on creation',
-                'performed_by' => \Illuminate\Support\Facades\Auth::id(),
+        $item = DB::transaction(function () use ($validated, $isPerishable, $initialQuantity, $minStock, $refDate, $lifeVal, $lifeUnit, $usableUntil, $imagePath) {
+            // Authoritative server-side unique item_code generation
+            $catClean = preg_replace('/[^A-Za-z]/', '', $validated['category'] ?? '');
+            $prefix = strtoupper(substr($catClean ?: 'INV', 0, 3));
+            if (strlen($prefix) < 2) {
+                $prefix = 'INV';
+            }
+            $nextId = (InventoryItem::max('id') ?? 0) + 1;
+            $code = $prefix . '-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            $seq = 1;
+            while (InventoryItem::where('item_code', $code)->exists()) {
+                $code = $prefix . '-' . str_pad($nextId + ($seq++), 4, '0', STR_PAD_LEFT);
+            }
+
+            $item = InventoryItem::create([
+                'name' => $validated['name'],
+                'item_code' => $code,
+                'category' => $validated['category'],
+                'unit' => $validated['unit'],
+                'is_perishable' => $isPerishable,
+                'current_stock' => $initialQuantity,
+                'unit_cost' => $validated['unit_cost'],
+                'min_stock' => $minStock,
+                'status' => $validated['status'] ?? 'active',
+                'description' => $validated['description'] ?? null,
+                'usable_life_value' => $lifeVal,
+                'usable_life_unit' => $lifeUnit,
+                'supplier_name' => $validated['supplier_name'] ?? null,
+                'supplier_contact_person' => $validated['supplier_contact_person'] ?? null,
+                'supplier_contact_number' => $validated['supplier_contact_number'] ?? null,
+                'storage_location' => $validated['storage_location'] ?? null,
+                'tags' => $validated['tags'] ?? null,
+                'image_path' => $imagePath,
             ]);
-        }
 
-        if (!empty($validated['substitute_ids'])) {
-            $item->substitutes()->sync($validated['substitute_ids']);
-        }
+            if ($imagePath) {
+                \App\Models\InventoryItemImage::create([
+                    'inventory_item_id' => $item->id,
+                    'image_path' => $imagePath,
+                    'is_primary' => true,
+                ]);
+            }
+
+            if ($initialQuantity > 0) {
+                $stock = \App\Models\InventoryStock::create([
+                    'inventory_item_id' => $item->id,
+                    'received_date' => $refDate->toDateString(),
+                    'quantity_received' => $initialQuantity,
+                    'quantity_remaining' => $initialQuantity,
+                    'usable_life_value' => $lifeVal,
+                    'usable_life_unit' => $lifeUnit,
+                    'usable_until' => $usableUntil->toDateString(),
+                    'unit_cost' => $item->unit_cost,
+                    'created_by' => Auth::id(),
+                ]);
+
+                \App\Models\InventoryTransaction::create([
+                    'inventory_item_id' => $item->id,
+                    'inventory_stock_id' => $stock->id,
+                    'booking_id' => null,
+                    'quantity_change' => $initialQuantity,
+                    'transaction_type' => 'procurement',
+                    'reason' => 'Initial stock on creation',
+                    'performed_by' => Auth::id(),
+                ]);
+            }
+
+            if (!empty($validated['substitute_ids'])) {
+                $item->substitutes()->sync($validated['substitute_ids']);
+            }
+
+            AuditLog::record(
+                Auth::id(),
+                'inventory_item_created',
+                "Created inventory item '{$item->name}' ({$item->item_code}) with initial stock {$initialQuantity} {$item->unit}.",
+                'inventory',
+                [
+                    'item_id' => $item->id,
+                    'item_code' => $item->item_code,
+                    'name' => $item->name,
+                    'is_perishable' => $item->is_perishable,
+                    'initial_stock' => $initialQuantity,
+                    'usable_until' => $usableUntil->toDateString(),
+                ]
+            );
+
+            return $item;
+        });
 
         return redirect()->route('admin.inventory.index')->with('success', 'Inventory item added successfully.');
     }
@@ -230,7 +343,7 @@ class InventoryController extends Controller
     public function edit(InventoryItem $inventoryItem): View
     {
         $inventoryItems = InventoryItem::where('id', '!=', $inventoryItem->id)->orderBy('name')->get();
-        $inventoryCategories = InventoryItem::select('category')->distinct()->pluck('category');
+        $inventoryCategories = InventoryItem::select('category')->distinct()->whereNotNull('category')->pluck('category');
         
         return view('admin.inventory.edit', [
             'inventoryItem' => $inventoryItem,
@@ -240,52 +353,292 @@ class InventoryController extends Controller
     }
 
     /**
-     * Update the specified inventory item.
+     * Update metadata for the specified inventory item.
+     * Note: current_stock is NEVER overwritten via normal edit.
      */
     public function update(Request $request, InventoryItem $inventoryItem)
     {
+        abort_unless(Auth::check() && Auth::user()->role === 'admin', 403, 'Unauthorized.');
+
+        $isPerishable = $request->has('item_type')
+            ? ($request->input('item_type') === 'perishable')
+            : ($request->has('is_perishable') ? $request->boolean('is_perishable') : $inventoryItem->is_perishable);
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:255',
-            'is_perishable' => 'boolean',
-            'current_stock' => 'required|numeric|min:0',
-            'unit_cost' => 'required|numeric|min:0',
-            'min_stock' => 'required|numeric|min:0',
             'unit' => 'required|string|max:50',
+            'unit_cost' => 'required|numeric|min:0',
+            'min_stock' => 'nullable|numeric|min:0',
+            'reorder_level' => 'nullable|numeric|min:0',
+            'status' => 'nullable|in:active,inactive',
+            'description' => 'nullable|string|max:1000',
+            'usable_life_value' => 'nullable|integer|min:1',
+            'usable_life_unit' => 'nullable|in:days,weeks,months,years',
+            'supplier_name' => 'nullable|string|max:255',
+            'supplier_contact_person' => 'nullable|string|max:255',
+            'supplier_contact_number' => 'nullable|string|max:50',
+            'storage_location' => 'nullable|string|max:255',
+            'tags' => 'nullable|string|max:500',
             'substitute_ids' => 'nullable|array',
             'substitute_ids.*' => 'exists:inventory_items,id',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|max:5120',
         ]);
 
-        $validated['is_perishable'] = $request->has('is_perishable');
-        
+        $minStock = (float) ($validated['reorder_level'] ?? $validated['min_stock'] ?? $inventoryItem->min_stock);
+
+        $imagePath = $inventoryItem->image_path;
         if ($request->hasFile('image')) {
             if ($inventoryItem->image_path && \Storage::disk('public')->exists($inventoryItem->image_path)) {
                 \Storage::disk('public')->delete($inventoryItem->image_path);
             }
-            $validated['image_path'] = $request->file('image')->store('inventory-images', 'public');
-        }
-        
-        $oldStock = (float) $inventoryItem->current_stock;
-
-        $inventoryItem->update($validated);
-        
-        $newStock = (float) $inventoryItem->current_stock;
-        
-        if ($oldStock !== $newStock) {
-            \App\Models\InventoryTransaction::create([
+            $imagePath = $request->file('image')->store('inventory-images', 'public');
+            
+            \App\Models\InventoryItemImage::create([
                 'inventory_item_id' => $inventoryItem->id,
-                'booking_id' => null,
-                'quantity_change' => $newStock - $oldStock,
-                'transaction_type' => 'adjustment',
-                'reason' => 'Admin manual stock update',
-                'performed_by' => \Illuminate\Support\Facades\Auth::id(),
+                'image_path' => $imagePath,
+                'is_primary' => true,
             ]);
         }
 
-        $inventoryItem->substitutes()->sync($validated['substitute_ids'] ?? []);
+        DB::transaction(function () use ($inventoryItem, $validated, $isPerishable, $minStock, $imagePath) {
+            // CRITICAL: current_stock and item_code are NEVER overwritten during normal edit
+            $inventoryItem->update([
+                'name' => $validated['name'],
+                'category' => $validated['category'],
+                'unit' => $validated['unit'],
+                'is_perishable' => $isPerishable,
+                'unit_cost' => $validated['unit_cost'],
+                'min_stock' => $minStock,
+                'status' => $validated['status'] ?? $inventoryItem->status ?? 'active',
+                'description' => $validated['description'] ?? null,
+                'usable_life_value' => $validated['usable_life_value'] ?? $inventoryItem->usable_life_value,
+                'usable_life_unit' => $validated['usable_life_unit'] ?? $inventoryItem->usable_life_unit,
+                'supplier_name' => $validated['supplier_name'] ?? null,
+                'supplier_contact_person' => $validated['supplier_contact_person'] ?? null,
+                'supplier_contact_number' => $validated['supplier_contact_number'] ?? null,
+                'storage_location' => $validated['storage_location'] ?? null,
+                'tags' => $validated['tags'] ?? null,
+                'image_path' => $imagePath,
+            ]);
+
+            $inventoryItem->substitutes()->sync($validated['substitute_ids'] ?? []);
+
+            AuditLog::record(
+                Auth::id(),
+                'inventory_item_updated',
+                "Updated metadata for inventory item '{$inventoryItem->name}' ({$inventoryItem->item_code}).",
+                'inventory',
+                [
+                    'item_id' => $inventoryItem->id,
+                    'item_code' => $inventoryItem->item_code,
+                    'name' => $inventoryItem->name,
+                    'status' => $inventoryItem->status,
+                    'current_stock' => $inventoryItem->current_stock, // Preserved!
+                ]
+            );
+        });
 
         return redirect()->route('admin.inventory.index')->with('success', 'Inventory item updated successfully.');
+    }
+
+    /**
+     * Explicit stock adjustment action.
+     */
+    public function adjustStock(Request $request, InventoryItem $inventoryItem)
+    {
+        abort_unless(Auth::check() && Auth::user()->role === 'admin', 403, 'Unauthorized.');
+
+        $validated = $request->validate([
+            'new_stock' => 'required|numeric|min:0',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $newStock = (float) $validated['new_stock'];
+
+        // Enforce discrete unit whole number rule
+        $discreteUnits = [
+            'pcs', 'piece', 'pieces', 'stem', 'stems', 'block', 'blocks',
+            'bunch', 'bunches', 'unit', 'units', 'set', 'sets', 'box', 'boxes',
+            'roll', 'rolls', 'tray', 'trays', 'vase', 'vases', 'pot', 'pots'
+        ];
+        $unitLower = strtolower(trim($inventoryItem->unit ?? 'pcs'));
+        if (in_array($unitLower, $discreteUnits, true)) {
+            if (floor($newStock) != $newStock) {
+                return back()->withErrors([
+                    'new_stock' => "Stock quantity for '{$inventoryItem->unit}' must be a whole number."
+                ])->withInput();
+            }
+        }
+
+        DB::transaction(function () use ($inventoryItem, $newStock, $validated) {
+            $locked = InventoryItem::where('id', $inventoryItem->id)->lockForUpdate()->firstOrFail();
+            $oldStock = (float) $locked->current_stock;
+            $diff = $newStock - $oldStock;
+
+            if ($diff != 0) {
+                $locked->current_stock = $newStock;
+                $locked->save();
+
+                InventoryTransaction::create([
+                    'inventory_item_id' => $locked->id,
+                    'booking_id' => null,
+                    'quantity_change' => $diff,
+                    'transaction_type' => 'adjustment',
+                    'reason' => $validated['reason'],
+                    'performed_by' => Auth::id(),
+                ]);
+
+                AuditLog::record(
+                    Auth::id(),
+                    'inventory_stock_adjusted',
+                    "Stock for '{$locked->name}' adjusted from {$oldStock} to {$newStock} {$locked->unit}. Reason: {$validated['reason']}",
+                    'inventory',
+                    [
+                        'item_id' => $locked->id,
+                        'previous_stock' => $oldStock,
+                        'new_stock' => $newStock,
+                        'difference' => $diff,
+                        'reason' => $validated['reason'],
+                    ]
+                );
+            }
+        });
+
+        return redirect()->route('admin.inventory.index')->with('success', 'Stock adjusted successfully.');
+    }
+
+    /**
+     * Record physical stock received / procured for an inventory item.
+     */
+    public function receiveStock(Request $request, InventoryItem $inventoryItem)
+    {
+        abort_unless(Auth::check() && Auth::user()->role === 'admin', 403, 'Unauthorized.');
+
+        $validated = $request->validate([
+            'quantity' => ['required', 'numeric', 'min:0.01'],
+            'unit_cost' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $quantity = (float) $validated['quantity'];
+
+        if ($quantity <= 0) {
+            return back()->withErrors(['quantity' => 'The quantity received must be greater than 0.'])->withInput();
+        }
+
+        // Enforce discrete unit whole number rule
+        $discreteUnits = [
+            'pcs', 'piece', 'pieces', 'stem', 'stems', 'block', 'blocks',
+            'bunch', 'bunches', 'unit', 'units', 'set', 'sets', 'box', 'boxes',
+            'roll', 'rolls', 'tray', 'trays', 'vase', 'vases', 'pot', 'pots'
+        ];
+        $unitLower = strtolower(trim($inventoryItem->unit ?? 'pcs'));
+        if (in_array($unitLower, $discreteUnits, true)) {
+            if (floor($quantity) != $quantity) {
+                return back()->withErrors([
+                    'quantity' => "The quantity received must be a whole number for unit '{$inventoryItem->unit}'."
+                ])->withInput();
+            }
+        }
+
+        $unitCost = isset($validated['unit_cost']) && $validated['unit_cost'] !== null && $validated['unit_cost'] !== ''
+            ? (float) $validated['unit_cost']
+            : null;
+        $notes = !empty($validated['notes']) ? trim($validated['notes']) : null;
+
+        try {
+            DB::transaction(function () use ($inventoryItem, $quantity, $unitCost, $notes) {
+                $lockedItem = InventoryItem::query()->lockForUpdate()->findOrFail($inventoryItem->id);
+                $adminId = Auth::id() ?? auth()->id();
+
+                $oldStock = (float) $lockedItem->current_stock;
+                $newStock = $oldStock + $quantity;
+
+                $lifeVal = (int) ($lockedItem->usable_life_value ?? ($lockedItem->is_perishable ? 7 : 3));
+                $lifeUnit = strtolower($lockedItem->usable_life_unit ?? ($lockedItem->is_perishable ? 'days' : 'years'));
+                $usableUntil = match($lifeUnit) {
+                    'days' => Carbon::today()->addDays($lifeVal),
+                    'weeks' => Carbon::today()->addWeeks($lifeVal),
+                    'months' => Carbon::today()->addMonths($lifeVal),
+                    'years' => Carbon::today()->addYears($lifeVal),
+                    default => Carbon::today()->addDays(7),
+                };
+
+                $stockBatch = \App\Models\InventoryStock::create([
+                    'inventory_item_id' => $lockedItem->id,
+                    'received_date' => Carbon::today()->toDateString(),
+                    'quantity_received' => $quantity,
+                    'quantity_remaining' => $quantity,
+                    'usable_life_value' => $lifeVal,
+                    'usable_life_unit' => $lifeUnit,
+                    'usable_until' => $usableUntil->toDateString(),
+                    'unit_cost' => $unitCost ?? $lockedItem->unit_cost,
+                    'created_by' => $adminId,
+                ]);
+
+                // 1. Traceable inventory transaction
+                InventoryTransaction::create([
+                    'inventory_item_id' => $lockedItem->id,
+                    'inventory_stock_id' => $stockBatch->id,
+                    'booking_id' => null,
+                    'quantity_change' => $quantity,
+                    'transaction_type' => 'procurement',
+                    'reason' => $notes ?: 'Procurement receipt',
+                    'performed_by' => $adminId,
+                ]);
+
+                // 2. Increase on-hand stock (and update unit cost if specified and positive)
+                $updateData = ['current_stock' => $newStock];
+                if ($unitCost !== null && $unitCost > 0) {
+                    $updateData['unit_cost'] = $unitCost;
+                }
+                $lockedItem->update($updateData);
+
+                // 3. Traceable audit log
+                $refText = $notes ? " (Reference: {$notes})" : '';
+                AuditLog::record(
+                    $adminId,
+                    'inventory_stock_received',
+                    "Received {$quantity} {$lockedItem->unit} of {$lockedItem->name}{$refText}",
+                    'inventory',
+                    [
+                        'inventory_item_id' => $lockedItem->id,
+                        'item_name' => $lockedItem->name,
+                        'quantity_received' => $quantity,
+                        'unit' => $lockedItem->unit,
+                        'unit_cost' => $unitCost,
+                        'reference' => $notes,
+                        'old_stock' => $oldStock,
+                        'new_stock' => $newStock,
+                    ]
+                );
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Receive stock transaction failed: ' . $e->getMessage());
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to receive stock: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->withErrors(['receive_stock' => 'Failed to record stock receipt. Please try again.'])->withInput();
+        }
+
+        if ($request->expectsJson() || $request->ajax()) {
+            $freshItem = $inventoryItem->fresh();
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock received successfully.',
+                'current_stock' => (float) $freshItem->current_stock,
+                'reserved_stock' => (float) $freshItem->reserved_stock,
+                'to_procure' => (float) $freshItem->to_procure,
+            ]);
+        }
+
+        return redirect()->route('admin.inventory.index')->with('success', 'Stock received successfully.');
     }
 
     public function archive(InventoryItem $inventoryItem)
