@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\InventoryItem;
+use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\AdminAlert;
 use App\Models\InventoryTransaction;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InventoryController extends Controller
 {
@@ -365,5 +367,410 @@ class InventoryController extends Controller
         }
 
         return redirect()->route('admin.notifications')->with('success', 'Inventory restocked successfully.');
+    }
+
+    /**
+     * Download the standard CSV template for inventory imports.
+     */
+    public function downloadTemplate(): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="inventory_template.csv"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        return response()->stream(function () {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['name', 'category', 'is_perishable', 'current_stock', 'unit_cost', 'min_stock', 'unit']);
+            fputcsv($handle, ['Red Roses', 'Flowers', 1, 200, '15.00', 50, 'stems']);
+            fputcsv($handle, ['White Roses', 'Flowers', 1, 150, '18.00', 50, 'stems']);
+            fputcsv($handle, ['Glass Vases (Tall)', 'Props', 0, 30, '250.00', 5, 'pcs']);
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Export the current inventory items as a CSV file matching the import format.
+     */
+    public function exportCsv(): StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="inventory_export_' . now()->format('Y-m-d') . '.csv"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $items = InventoryItem::orderBy('name')->get();
+
+        return response()->stream(function () use ($items) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['name', 'category', 'is_perishable', 'current_stock', 'unit_cost', 'min_stock', 'unit']);
+
+            foreach ($items as $item) {
+                $name = (string) $item->name;
+                if (preg_match('/^[=\+\-@]/', $name)) {
+                    $name = "'" . $name;
+                }
+
+                $category = (string) $item->category;
+                if (preg_match('/^[=\+\-@]/', $category)) {
+                    $category = "'" . $category;
+                }
+
+                $unit = (string) $item->unit;
+                if (preg_match('/^[=\+\-@]/', $unit)) {
+                    $unit = "'" . $unit;
+                }
+
+                fputcsv($handle, [
+                    $name,
+                    $category,
+                    $item->is_perishable ? 1 : 0,
+                    (float) $item->current_stock,
+                    number_format((float) $item->unit_cost, 2, '.', ''),
+                    (float) $item->min_stock,
+                    $unit,
+                ]);
+            }
+
+            fclose($handle);
+        }, 200, $headers);
+    }
+
+    /**
+     * Import inventory items from an uploaded CSV file with transactional upsert.
+     */
+    public function importCsv(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file',
+        ]);
+
+        $file = $request->file('csv_file');
+
+        if (!$file->isValid()) {
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'Uploaded file is invalid or corrupted.']);
+        }
+
+        $extension = strtolower($file->getClientOriginalExtension());
+        if ($extension !== 'csv') {
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'The uploaded file must be a CSV file (.csv).']);
+        }
+
+        $filePath = $file->getRealPath();
+        $handle = fopen($filePath, 'r');
+        if ($handle === false) {
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'Could not read the uploaded CSV file.']);
+        }
+
+        // Read header
+        $rawHeader = fgetcsv($handle);
+        if ($rawHeader === false || empty($rawHeader)) {
+            fclose($handle);
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'The uploaded CSV file is empty.']);
+        }
+
+        // Strip UTF-8 BOM if present
+        if (isset($rawHeader[0])) {
+            $rawHeader[0] = preg_replace('/^\xEF\xBB\xBF/', '', (string) $rawHeader[0]);
+        }
+
+        $header = array_map(fn($col) => trim(strtolower((string) $col)), $rawHeader);
+        $expectedHeader = ['name', 'category', 'is_perishable', 'current_stock', 'unit_cost', 'min_stock', 'unit'];
+
+        if ($header !== $expectedHeader) {
+            fclose($handle);
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'Invalid CSV header. Expected: ' . implode(',', $expectedHeader)]);
+        }
+
+        $rows = [];
+        $seenNames = [];
+        $rowNumber = 1;
+
+        while (($data = fgetcsv($handle)) !== false) {
+            $rowNumber++;
+
+            // Skip empty rows
+            if (empty($data) || (count($data) === 1 && $data[0] === null)) {
+                continue;
+            }
+            if (count(array_filter($data, fn($v) => trim((string)$v) !== '')) === 0) {
+                continue;
+            }
+
+            if (count($data) !== 7) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: Row has " . count($data) . " columns, expected 7."]);
+            }
+
+            // name
+            $name = trim((string) $data[0]);
+            if (str_starts_with($name, "'") && strlen($name) > 1 && in_array($name[1], ['=', '+', '-', '@'], true)) {
+                $name = substr($name, 1);
+            }
+
+            if ($name === '') {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: name is required."]);
+            }
+            if (mb_strlen($name) > 255) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: name cannot exceed 255 characters."]);
+            }
+
+            // Reject duplicate names within file
+            $nameKey = mb_strtolower($name);
+            if (isset($seenNames[$nameKey])) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: Duplicate item name '{$name}' found in the CSV file (first seen on row {$seenNames[$nameKey]})."]);
+            }
+            $seenNames[$nameKey] = $rowNumber;
+
+            // category
+            $category = trim((string) $data[1]);
+            if (str_starts_with($category, "'") && strlen($category) > 1 && in_array($category[1], ['=', '+', '-', '@'], true)) {
+                $category = substr($category, 1);
+            }
+            if ($category === '') {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: category is required."]);
+            }
+            if (mb_strlen($category) > 255) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: category cannot exceed 255 characters."]);
+            }
+
+            // is_perishable
+            $perishableRaw = strtolower(trim((string) $data[2]));
+            if (in_array($perishableRaw, ['1', 'true'], true)) {
+                $isPerishable = true;
+            } elseif (in_array($perishableRaw, ['0', 'false'], true)) {
+                $isPerishable = false;
+            } else {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: is_perishable must be 1, 0, true, or false."]);
+            }
+
+            // current_stock
+            $currentStockRaw = trim((string) $data[3]);
+            if ($currentStockRaw === '') {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: current_stock is required."]);
+            }
+            if (!is_numeric($currentStockRaw)) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: current_stock must be a number."]);
+            }
+            if ((float) $currentStockRaw < 0) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: current_stock cannot be negative."]);
+            }
+            $currentStock = (float) $currentStockRaw;
+
+            // unit_cost
+            $unitCostRaw = trim((string) $data[4]);
+            if ($unitCostRaw === '') {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: unit_cost is required."]);
+            }
+            if (!is_numeric($unitCostRaw)) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: unit_cost must be a number."]);
+            }
+            if ((float) $unitCostRaw < 0) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: unit_cost cannot be negative."]);
+            }
+            $unitCost = (float) $unitCostRaw;
+
+            // min_stock
+            $minStockRaw = trim((string) $data[5]);
+            if ($minStockRaw === '') {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: min_stock is required."]);
+            }
+            if (!is_numeric($minStockRaw)) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: min_stock must be a number."]);
+            }
+            if ((float) $minStockRaw < 0) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: min_stock cannot be negative."]);
+            }
+            $minStock = (float) $minStockRaw;
+
+            // unit
+            $unit = trim((string) $data[6]);
+            if (str_starts_with($unit, "'") && strlen($unit) > 1 && in_array($unit[1], ['=', '+', '-', '@'], true)) {
+                $unit = substr($unit, 1);
+            }
+            if ($unit === '') {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: unit is required."]);
+            }
+            if (mb_strlen($unit) > 50) {
+                fclose($handle);
+                return redirect()->route('admin.inventory.index')
+                    ->with('error', 'Inventory CSV import failed. No changes were made.')
+                    ->withErrors(['csv_file' => "Import failed on row {$rowNumber}: unit cannot exceed 50 characters."]);
+            }
+
+            $rows[] = [
+                'name' => $name,
+                'category' => $category,
+                'is_perishable' => $isPerishable,
+                'current_stock' => $currentStock,
+                'unit_cost' => $unitCost,
+                'min_stock' => $minStock,
+                'unit' => $unit,
+            ];
+        }
+
+        fclose($handle);
+
+        if (empty($rows)) {
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'The uploaded CSV file contains no data rows.']);
+        }
+
+        $createdCount = 0;
+        $updatedCount = 0;
+
+        try {
+            DB::transaction(function () use ($rows, &$createdCount, &$updatedCount) {
+                $adminId = Auth::id() ?? auth()->id();
+
+                foreach ($rows as $row) {
+                    $item = InventoryItem::withTrashed()->where('name', $row['name'])->first();
+
+                    if ($item) {
+                        if ($item->trashed()) {
+                            $item->restore();
+                        }
+
+                        $oldStock = (float) $item->current_stock;
+                        $item->update([
+                            'category' => $row['category'],
+                            'is_perishable' => $row['is_perishable'],
+                            'current_stock' => $row['current_stock'],
+                            'unit_cost' => $row['unit_cost'],
+                            'min_stock' => $row['min_stock'],
+                            'unit' => $row['unit'],
+                        ]);
+                        $newStock = (float) $item->current_stock;
+
+                        if ($oldStock !== $newStock) {
+                            InventoryTransaction::create([
+                                'inventory_item_id' => $item->id,
+                                'booking_id' => null,
+                                'quantity_change' => $newStock - $oldStock,
+                                'transaction_type' => 'adjustment',
+                                'reason' => 'Stock update from CSV import',
+                                'performed_by' => $adminId,
+                            ]);
+                        }
+
+                        $updatedCount++;
+                    } else {
+                        $newItem = InventoryItem::create([
+                            'name' => $row['name'],
+                            'category' => $row['category'],
+                            'is_perishable' => $row['is_perishable'],
+                            'current_stock' => $row['current_stock'],
+                            'unit_cost' => $row['unit_cost'],
+                            'min_stock' => $row['min_stock'],
+                            'unit' => $row['unit'],
+                        ]);
+
+                        $prefix = strtoupper(substr($newItem->category ?? 'INV', 0, 3));
+                        $code = $prefix . '-' . str_pad($newItem->id, 4, '0', STR_PAD_LEFT);
+                        $i = 1;
+                        while (InventoryItem::where('item_code', $code)->where('id', '!=', $newItem->id)->exists()) {
+                            $code = $prefix . '-' . str_pad($newItem->id, 4, '0', STR_PAD_LEFT) . '-' . $i++;
+                        }
+                        $newItem->update(['item_code' => $code]);
+
+                        if ((float) $newItem->current_stock != 0) {
+                            InventoryTransaction::create([
+                                'inventory_item_id' => $newItem->id,
+                                'booking_id' => null,
+                                'quantity_change' => (float) $newItem->current_stock,
+                                'transaction_type' => 'adjustment',
+                                'reason' => 'Initial stock on creation',
+                                'performed_by' => $adminId,
+                            ]);
+                        }
+
+                        $createdCount++;
+                    }
+                }
+
+                AuditLog::record(
+                    $adminId,
+                    'inventory_csv_imported',
+                    "Inventory CSV imported: {$createdCount} items created, {$updatedCount} items updated.",
+                    'inventory',
+                    ['created' => $createdCount, 'updated' => $updatedCount]
+                );
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Inventory CSV import transaction failed: ' . $e->getMessage());
+            return redirect()->route('admin.inventory.index')
+                ->with('error', 'Inventory CSV import failed. No changes were made.')
+                ->withErrors(['csv_file' => 'Import failed due to a database error.']);
+        }
+
+        return redirect()->route('admin.inventory.index')
+            ->with('success', "Inventory CSV imported successfully. {$createdCount} items created, {$updatedCount} items updated.");
     }
 }

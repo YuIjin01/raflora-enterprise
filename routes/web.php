@@ -373,6 +373,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     
     // Admin Inventory: Inventory management listing and CRUD
     Route::get('/inventory/archived', [\App\Http\Controllers\Admin\InventoryController::class, 'archived'])->name('admin.inventory.archived');
+    Route::get('/inventory/template', [\App\Http\Controllers\Admin\InventoryController::class, 'downloadTemplate'])->name('admin.inventory.template');
+    Route::get('/inventory/export', [\App\Http\Controllers\Admin\InventoryController::class, 'exportCsv'])->name('admin.inventory.export');
+    Route::post('/inventory/import', [\App\Http\Controllers\Admin\InventoryController::class, 'importCsv'])->name('admin.inventory.import');
     Route::get('/inventory', [\App\Http\Controllers\Admin\InventoryController::class, 'index'])->name('admin.inventory.index');
     Route::get('/inventory/create', [\App\Http\Controllers\Admin\InventoryController::class, 'create'])->name('admin.inventory.create');
     Route::post('/inventory', [\App\Http\Controllers\Admin\InventoryController::class, 'store'])->name('admin.inventory.store');
