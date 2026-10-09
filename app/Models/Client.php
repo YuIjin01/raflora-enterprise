@@ -32,4 +32,12 @@ class Client extends Model
     {
         return $this->hasMany(Booking::class, 'client_id', 'id');
     }
+
+    /**
+     * Compatibility accessor for client name.
+     */
+    public function getNameAttribute(): string
+    {
+        return (string) ($this->full_name ?? '');
+    }
 }
