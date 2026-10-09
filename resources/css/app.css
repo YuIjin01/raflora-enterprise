@@ -525,6 +525,70 @@
         color: var(--rf-info-700);
     }
 
+    /* Solid Opaque Toast Notifications (Zero Bleed-Through) */
+    #rf-toast-container {
+        z-index: 999999 !important;
+        isolation: isolate !important;
+        pointer-events: none;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        mix-blend-mode: normal !important;
+    }
+
+    .rf-toast-alert {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        background-image: none !important;
+        opacity: 1 !important;
+        isolation: isolate !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        mix-blend-mode: normal !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.14), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .rf-toast-alert::before,
+    .rf-toast-alert::after {
+        display: none !important;
+        content: none !important;
+    }
+
+    .rf-toast-alert.rf-toast-info,
+    .rf-toast-info {
+        background: #eff6ff !important;
+        background-color: #eff6ff !important;
+        background-image: none !important;
+        border-color: #93c5fd !important;
+        color: #1e3a8a !important;
+    }
+
+    .rf-toast-alert.rf-toast-success,
+    .rf-toast-success {
+        background: #ecfdf5 !important;
+        background-color: #ecfdf5 !important;
+        background-image: none !important;
+        border-color: #6ee7b7 !important;
+        color: #064e3b !important;
+    }
+
+    .rf-toast-alert.rf-toast-warning,
+    .rf-toast-warning {
+        background: #fffbeb !important;
+        background-color: #fffbeb !important;
+        background-image: none !important;
+        border-color: #fcd34d !important;
+        color: #78350f !important;
+    }
+
+    .rf-toast-alert.rf-toast-danger,
+    .rf-toast-danger {
+        background: #fff1f2 !important;
+        background-color: #fff1f2 !important;
+        background-image: none !important;
+        border-color: #fda4af !important;
+        color: #881337 !important;
+    }
+
     .rf-table {
         width: 100%;
         border-collapse: separate;

@@ -1,12 +1,14 @@
 <x-admin-layout title="Galleries">
-    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h2 class="text-xl font-bold text-gray-800">Galleries</h2>
-            <p class="text-sm text-gray-500">Manage galleries displayed on the guest gallery page.</p>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 font-serif">Galleries</h2>
+            <p class="text-sm text-gray-500 mt-1">Manage galleries displayed on the guest gallery page.</p>
         </div>
-        <a href="{{ route('admin.gallery.create') }}" class="btn-primary flex-shrink-0">
-            <i class="fa-solid fa-plus mr-2"></i> Add Gallery
-        </a>
+        <div>
+            <a href="{{ route('admin.gallery') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                <i class="fa-regular fa-image mr-2"></i> Active Galleries
+            </a>
+        </div>
     </div>
     <!-- Tabs -->
     <div class="mb-6 border-b border-gray-200">
@@ -20,56 +22,150 @@
         </nav>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-3 sm:p-4 mb-6">
-        <form method="GET" action="{{ route('admin.gallery.archived') }}" class="flex flex-col lg:flex-row gap-3 lg:items-center justify-between" id="filterForm">
-            <!-- Search Input -->
-            <div class="flex-1 relative w-full lg:w-auto">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                </div>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Search event type, theme, or keyword..." class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
-            </div>
-            
-            <!-- Dropdowns -->
-            <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
-                <div class="w-[calc(50%-4px)] sm:w-auto min-w-[130px]">
-                    <select name="event_type" class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition font-semibold text-slate-700 cursor-pointer" onchange="document.getElementById('filterForm').submit()">
-                        <option value="">All Event Types</option>
-                        @foreach($eventTypes as $type)
-                            <option value="{{ $type }}" {{ request('event_type') == $type ? 'selected' : '' }}>{{ $type }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="w-[calc(50%-4px)] sm:w-auto min-w-[130px]">
-                    <select name="theme" class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition font-semibold text-slate-700 cursor-pointer" onchange="document.getElementById('filterForm').submit()">
-                        <option value="">All Themes</option>
-                        @foreach($themes as $theme)
-                            <option value="{{ $theme }}" {{ request('theme') == $theme ? 'selected' : '' }}>{{ $theme }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="w-[calc(50%-4px)] sm:w-auto min-w-[120px]">
-                    <select name="year" class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition font-semibold text-slate-700 cursor-pointer" onchange="document.getElementById('filterForm').submit()">
-                        <option value="">All Years</option>
-                        @foreach($years as $year)
-                            <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="w-[calc(50%-4px)] sm:w-auto min-w-[120px]">
-                    <select name="sort" class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition font-semibold text-slate-700 cursor-pointer" onchange="document.getElementById('filterForm').submit()">
-                        <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest First</option>
-                        <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
-                    </select>
-                </div>
-                
-                <div class="w-full sm:w-auto mt-2 sm:mt-0 flex gap-2">
-                    <button type="submit" class="inline-flex flex-1 sm:flex-none items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-purple-600 hover:bg-purple-700 transition whitespace-nowrap">
-                        Search
+    <!-- Search & Filter Toolbar -->
+    <div class="bg-white rounded-2xl shadow-xs border border-gray-100 p-4 sm:p-5 mb-6 overflow-visible">
+        <form method="GET" action="{{ route('admin.gallery.archived') }}" id="filterForm">
+            <input type="hidden" name="filter_expanded" id="archivedGalleryFilterExpandedInput" value="{{ request('filter_expanded', '0') }}">
+
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Left: Search and Primary Controls -->
+                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
+                    <!-- Search Input -->
+                    <div class="relative flex-1 min-w-[200px] sm:min-w-[260px] max-w-sm">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input
+                            type="text"
+                            name="search"
+                            value="{{ request('search') }}"
+                            placeholder="Search event type, theme, or keyword..."
+                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                        >
+                    </div>
+
+                    @php
+                        $hasActiveArchivedGalleryFilters = request('event_type') || request('theme') || request('year') || (request('sort') && request('sort') !== 'latest');
+                        $isArchivedGalleryFilterOpen = request('filter_expanded') === '1';
+                    @endphp
+
+                    <!-- Show Filters Button -->
+                    <button
+                        type="button"
+                        id="archivedGalleryToggleFiltersBtn"
+                        onclick="toggleArchivedGalleryFilterPanel()"
+                        aria-expanded="{{ $isArchivedGalleryFilterOpen ? 'true' : 'false' }}"
+                        aria-controls="archivedGalleryFilterPanel"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ $hasActiveArchivedGalleryFilters ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                    >
+                        <i class="fa-solid fa-sliders text-xs {{ $hasActiveArchivedGalleryFilters ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                        <span id="archivedGalleryToggleFiltersText">{{ $isArchivedGalleryFilterOpen ? 'Hide Filters' : 'Show Filters' }}</span>
+                        @if($hasActiveArchivedGalleryFilters)
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                        @endif
+                        <i id="archivedGalleryFiltersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ $isArchivedGalleryFilterOpen ? 'rotate-180' : '' }}"></i>
                     </button>
-                    <a href="{{ route('admin.gallery') }}" class="inline-flex flex-1 sm:flex-none items-center justify-center px-4 py-2 border border-slate-200 text-sm font-medium rounded-xl text-slate-600 bg-white hover:bg-slate-50 transition whitespace-nowrap">
-                        Clear
+
+                    <!-- Search Button -->
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        <span>Search</span>
+                    </button>
+
+                    @if(request('search'))
+                        <a
+                            href="{{ route('admin.gallery.archived') }}"
+                            class="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                        >
+                            Clear
+                        </a>
+                    @endif
+                </div>
+
+                <!-- Right: Action Controls -->
+                <div class="flex items-center gap-2.5 shrink-0 self-end lg:self-center">
+                    <a href="{{ route('admin.gallery.create') }}" class="btn-primary inline-flex items-center gap-2 whitespace-nowrap">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Add Gallery</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Collapsible Filter Panel (Event Type, Theme, Year, Sort, Clear/Reset) -->
+            <div
+                id="archivedGalleryFilterPanel"
+                style="{{ $isArchivedGalleryFilterOpen ? 'display: block;' : 'display: none;' }}"
+                class="mt-4 pt-4 border-t border-gray-100"
+            >
+                <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3 sm:gap-4">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-filter text-purple-600 text-[11px]"></i> Filters & Sort:
+                    </span>
+
+                    <!-- Event Type -->
+                    <div class="relative min-w-[150px]">
+                        <select
+                            name="event_type"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            onchange="document.getElementById('filterForm').submit()"
+                        >
+                            <option value="">All Event Types</option>
+                            @foreach($eventTypes as $type)
+                                <option value="{{ $type }}" {{ request('event_type') == $type ? 'selected' : '' }}>{{ $type }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Theme -->
+                    <div class="relative min-w-[150px]">
+                        <select
+                            name="theme"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            onchange="document.getElementById('filterForm').submit()"
+                        >
+                            <option value="">All Themes</option>
+                            @foreach($themes as $theme)
+                                <option value="{{ $theme }}" {{ request('theme') == $theme ? 'selected' : '' }}>{{ $theme }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Year -->
+                    <div class="relative min-w-[130px]">
+                        <select
+                            name="year"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            onchange="document.getElementById('filterForm').submit()"
+                        >
+                            <option value="">All Years</option>
+                            @foreach($years as $year)
+                                <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="relative min-w-[140px]">
+                        <select
+                            name="sort"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            onchange="document.getElementById('filterForm').submit()"
+                        >
+                            <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest First</option>
+                            <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                        </select>
+                    </div>
+
+                    <!-- Clear / Reset -->
+                    <a
+                        href="{{ route('admin.gallery.archived') }}"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl transition shadow-2xs sm:ml-auto"
+                    >
+                        <i class="fa-solid fa-rotate-left text-[11px] text-gray-400"></i>
+                        <span>Reset Filters</span>
                     </a>
                 </div>
             </div>
@@ -155,6 +251,30 @@
     @endphp
 
     <script>
+        function toggleArchivedGalleryFilterPanel() {
+            const panel = document.getElementById('archivedGalleryFilterPanel');
+            const btn = document.getElementById('archivedGalleryToggleFiltersBtn');
+            const text = document.getElementById('archivedGalleryToggleFiltersText');
+            const chevron = document.getElementById('archivedGalleryFiltersChevron');
+            const input = document.getElementById('archivedGalleryFilterExpandedInput');
+            if (!panel) return;
+
+            const isHidden = panel.style.display === 'none' || panel.style.display === '';
+            if (isHidden) {
+                panel.style.display = 'block';
+                if (text) text.textContent = 'Hide Filters';
+                if (chevron) chevron.classList.add('rotate-180');
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+                if (input) input.value = '1';
+            } else {
+                panel.style.display = 'none';
+                if (text) text.textContent = 'Show Filters';
+                if (chevron) chevron.classList.remove('rotate-180');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+                if (input) input.value = '0';
+            }
+        }
+
         const galleryData = @json($lightboxData);
         
         let currentGalleryId = null;

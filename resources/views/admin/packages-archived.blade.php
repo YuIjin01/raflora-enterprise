@@ -1,8 +1,13 @@
 <x-admin-layout title="Packages">
-    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h2 class="text-xl font-bold text-gray-800">Packages</h2>
-            <p class="text-sm text-gray-500">Manage public booking packages, pricing, and master inventory mappings (BOM).</p>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 font-serif">Packages</h2>
+            <p class="text-sm text-gray-500 mt-1">Manage public booking packages, pricing, and master inventory mappings (BOM).</p>
+        </div>
+        <div>
+            <a href="{{ route('admin.packages.index') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                <i class="fa-solid fa-gift mr-2"></i> Active Packages
+            </a>
         </div>
     </div>
 
@@ -16,6 +21,141 @@
                 Archived Packages
             </a>
         </nav>
+    </div>
+
+    <!-- Search & Filter Toolbar -->
+    <div class="bg-white rounded-2xl shadow-xs border border-gray-100 p-4 sm:p-5 mb-6 overflow-visible">
+        <form method="GET" action="{{ route('admin.packages.archived') }}" id="archivedPackageFilterForm">
+            <input type="hidden" name="filter_expanded" id="archivedPackageFilterExpandedInput" value="{{ request('filter_expanded', '0') }}">
+
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Left: Search input, Show Filters toggle, Search button -->
+                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
+                    <!-- Keyword Search Input -->
+                    <div class="relative flex-1 min-w-[200px] sm:min-w-[260px] max-w-sm">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input
+                            type="text"
+                            name="search"
+                            id="archivedPackageSearchInput"
+                            value="{{ $currentSearch ?? request('search') }}"
+                            placeholder="Search package name, category, or keyword..."
+                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                        >
+                    </div>
+
+                    @php
+                        $hasActiveArchivedFilters = (($currentCategory ?? 'all') !== 'all') || (($currentSort ?? 'latest') !== 'latest');
+                        $isArchivedFilterOpen = request('filter_expanded') === '1';
+                    @endphp
+
+                    <!-- Show Filters Button -->
+                    <button
+                        type="button"
+                        id="archivedPackageToggleFiltersBtn"
+                        onclick="toggleArchivedPackageFilterPanel()"
+                        aria-expanded="{{ $isArchivedFilterOpen ? 'true' : 'false' }}"
+                        aria-controls="archivedPackageFilterPanel"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ $hasActiveArchivedFilters ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                    >
+                        <i class="fa-solid fa-sliders text-xs {{ $hasActiveArchivedFilters ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                        <span id="archivedPackageToggleFiltersText">{{ $isArchivedFilterOpen ? 'Hide Filters' : 'Show Filters' }}</span>
+                        @if($hasActiveArchivedFilters)
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                        @endif
+                        <i id="archivedPackageFiltersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ $isArchivedFilterOpen ? 'rotate-180' : '' }}"></i>
+                    </button>
+
+                    <!-- Search Submit Button -->
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        <span>Search</span>
+                    </button>
+
+                    @if(!empty($currentSearch))
+                        <a
+                            href="{{ route('admin.packages.archived') }}"
+                            class="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                        >
+                            Clear
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            <!-- Collapsible Filter Panel (Category, Sort, Reset) -->
+            <div
+                id="archivedPackageFilterPanel"
+                style="{{ $isArchivedFilterOpen ? 'display: block;' : 'display: none;' }}"
+                class="mt-4 pt-4 border-t border-gray-100"
+            >
+                <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3 sm:gap-4">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-filter text-purple-600 text-[11px]"></i> Filters & Sort:
+                    </span>
+
+                    <!-- Category Filter Dropdown -->
+                    <div class="relative min-w-[170px]">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-shapes text-xs"></i>
+                        </span>
+                        <select
+                            name="category"
+                            id="archivedPackageCategoryFilter"
+                            onchange="this.form.submit()"
+                            style="padding-left: 2.35rem; padding-right: 2rem;"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                        >
+                            <option value="all" {{ ($currentCategory ?? 'all') === 'all' ? 'selected' : '' }}>All Categories</option>
+                            @foreach($packageCategories as $cat)
+                                <option value="{{ $cat }}" {{ ($currentCategory ?? '') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                            @endforeach
+                        </select>
+                        <span class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Sort Dropdown -->
+                    <div class="relative min-w-[170px]">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-arrow-down-wide-short text-xs"></i>
+                        </span>
+                        <select
+                            name="sort"
+                            id="archivedPackageSortFilter"
+                            onchange="this.form.submit()"
+                            style="padding-left: 2.35rem; padding-right: 2rem;"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                        >
+                            <option value="latest" {{ ($currentSort ?? 'latest') === 'latest' ? 'selected' : '' }}>Latest First</option>
+                            <option value="oldest" {{ ($currentSort ?? '') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                            <option value="name_asc" {{ ($currentSort ?? '') === 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                            <option value="name_desc" {{ ($currentSort ?? '') === 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                            <option value="price_asc" {{ ($currentSort ?? '') === 'price_asc' ? 'selected' : '' }}>Price (Low to High)</option>
+                            <option value="price_desc" {{ ($currentSort ?? '') === 'price_desc' ? 'selected' : '' }}>Price (High to Low)</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Clear / Reset Link -->
+                    <a
+                        href="{{ route('admin.packages.archived') }}"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl transition shadow-2xs sm:ml-auto"
+                    >
+                        <i class="fa-solid fa-rotate-left text-[11px] text-gray-400"></i>
+                        <span>Reset Filters</span>
+                    </a>
+                </div>
+            </div>
+        </form>
     </div>
 
     <!-- Package Grid -->
@@ -80,8 +220,16 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
                 <i class="fa-solid fa-box-archive text-2xl text-slate-400"></i>
             </div>
-            <h3 class="text-lg font-medium text-slate-900">No archived packages</h3>
-            <p class="mt-1 text-sm text-slate-500 mb-6">Archived packages will appear here.</p>
+            @if(!empty($currentSearch) || (($currentCategory ?? 'all') !== 'all'))
+                <h3 class="text-lg font-medium text-slate-900">No matching archived packages found</h3>
+                <p class="mt-1 text-sm text-slate-500 mb-6">Try adjusting your keyword search or category filter.</p>
+                <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center px-4 py-2 border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl text-sm font-semibold transition">
+                    Clear Filters
+                </a>
+            @else
+                <h3 class="text-lg font-medium text-slate-900">No archived packages</h3>
+                <p class="mt-1 text-sm text-slate-500 mb-6">Archived packages will appear here.</p>
+            @endif
         </div>
     @endif
 
@@ -238,14 +386,26 @@
                 pkg.inventory_items.forEach(function(item) {
                     if (item.pivot && item.pivot.quantity > 0) {
                         hasInventory = true;
+                        const isArchived = Boolean(item.deleted_at);
                         invContainer.innerHTML += `
-                            <div class="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2.5 last:border-0 last:pb-0">
                                 <div>
-                                    <p class="text-[13px] font-semibold text-gray-700">${item.name}</p>
-                                    <p class="text-[11px] text-gray-500">${item.category}</p>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p class="text-[13px] font-semibold text-gray-800">${item.name}</p>
+                                        <span class="font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${item.item_code || 'N/A'}</span>
+                                        ${isArchived ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">Archived</span>' : ''}
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                                        <span>${item.category}</span>
+                                        <span>•</span>
+                                        <span>In Stock: <strong class="text-slate-700">${parseFloat(item.current_stock) || 0}</strong> ${item.unit}</span>
+                                    </div>
                                 </div>
-                                <div class="text-[13px] font-medium text-gray-700">
-                                    ${item.pivot.quantity} <span class="text-gray-500 font-normal">${item.unit}</span>
+                                <div class="text-right">
+                                    <div class="text-[13px] font-bold text-purple-700">
+                                        ${parseFloat(item.pivot.quantity)} <span class="text-gray-500 font-normal">${item.unit}</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400 uppercase tracking-wider">Required</span>
                                 </div>
                             </div>
                         `;
@@ -354,6 +514,30 @@
         function goToImage(index) {
             currentImageIndex = index;
             updateLightboxView();
+        }
+
+        function toggleArchivedPackageFilterPanel() {
+            const panel = document.getElementById('archivedPackageFilterPanel');
+            const btn = document.getElementById('archivedPackageToggleFiltersBtn');
+            const text = document.getElementById('archivedPackageToggleFiltersText');
+            const chevron = document.getElementById('archivedPackageFiltersChevron');
+            const input = document.getElementById('archivedPackageFilterExpandedInput');
+            if (!panel) return;
+
+            const isHidden = panel.style.display === 'none' || panel.style.display === '';
+            if (isHidden) {
+                panel.style.display = 'block';
+                if (text) text.textContent = 'Hide Filters';
+                if (chevron) chevron.classList.add('rotate-180');
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+                if (input) input.value = '1';
+            } else {
+                panel.style.display = 'none';
+                if (text) text.textContent = 'Show Filters';
+                if (chevron) chevron.classList.remove('rotate-180');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+                if (input) input.value = '0';
+            }
         }
 
         document.addEventListener('keydown', (e) => {

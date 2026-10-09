@@ -233,4 +233,226 @@ class AdminPackageManagementTest extends TestCase
         $response->assertSessionHas('success', 'Package updated successfully.');
         $response->assertSessionMissing('info');
     }
+
+    public function test_package_creation_and_editing_does_not_alter_inventory_stock()
+    {
+        $item1 = InventoryItem::create([
+            'name' => 'Red Roses',
+            'item_code' => 'ROSE-001',
+            'category' => 'Fresh Flowers',
+            'unit' => 'stems',
+            'current_stock' => 200,
+            'unit_cost' => 15.00,
+        ]);
+        $item2 = InventoryItem::create([
+            'name' => 'Floral Foam',
+            'item_code' => 'FOAM-001',
+            'category' => 'Supplies',
+            'unit' => 'blocks',
+            'current_stock' => 50,
+            'unit_cost' => 25.00,
+        ]);
+
+        // 1. Create Package with BOM
+        $responseCreate = $this->actingAs($this->admin)->post(route('admin.packages.store'), [
+            'title' => 'Romantic Bundle',
+            'category' => 'Anniversary',
+            'price' => 2500,
+            'inventory_items' => [
+                $item1->id => 50,
+                $item2->id => 5,
+            ],
+        ]);
+        $responseCreate->assertSessionHasNoErrors();
+
+        // Verify stock is untouched
+        $this->assertEquals(200, $item1->fresh()->current_stock);
+        $this->assertEquals(50, $item2->fresh()->current_stock);
+
+        $package = Package::where('title', 'Romantic Bundle')->first();
+        $this->assertNotNull($package);
+        $this->assertEquals(50, (float) $package->inventoryItems()->where('inventory_item_id', $item1->id)->first()->pivot->quantity);
+        $this->assertEquals(5, (float) $package->inventoryItems()->where('inventory_item_id', $item2->id)->first()->pivot->quantity);
+
+        // 2. Edit Package BOM quantities
+        $responseEdit = $this->actingAs($this->admin)->put(route('admin.packages.update', $package), [
+            'title' => 'Romantic Bundle Deluxe',
+            'category' => 'Anniversary',
+            'price' => 3500,
+            'inventory_items' => [
+                $item1->id => 100, // increased requirement
+                $item2->id => 10,
+            ],
+        ]);
+        $responseEdit->assertSessionHas('success');
+
+        // Verify stock remains untouched
+        $this->assertEquals(200, $item1->fresh()->current_stock);
+        $this->assertEquals(50, $item2->fresh()->current_stock);
+        $this->assertEquals(100, (float) $package->fresh()->inventoryItems()->where('inventory_item_id', $item1->id)->first()->pivot->quantity);
+    }
+
+    public function test_same_inventory_item_can_belong_to_multiple_packages_with_independent_quantities()
+    {
+        $sharedItem = InventoryItem::create([
+            'name' => 'White Lily',
+            'item_code' => 'LILY-001',
+            'category' => 'Fresh Flowers',
+            'unit' => 'stems',
+            'current_stock' => 150,
+        ]);
+
+        $pkg1 = Package::create(['title' => 'Pkg A', 'category' => 'Cat', 'price' => 1000]);
+        $pkg2 = Package::create(['title' => 'Pkg B', 'category' => 'Cat', 'price' => 2000]);
+
+        $this->actingAs($this->admin)->put(route('admin.packages.update', $pkg1), [
+            'title' => 'Pkg A',
+            'category' => 'Cat',
+            'price' => 1000,
+            'inventory_items' => [$sharedItem->id => 10],
+        ]);
+
+        $this->actingAs($this->admin)->put(route('admin.packages.update', $pkg2), [
+            'title' => 'Pkg B',
+            'category' => 'Cat',
+            'price' => 2000,
+            'inventory_items' => [$sharedItem->id => 30],
+        ]);
+
+        $this->assertEquals(10, (float) $pkg1->fresh()->inventoryItems()->where('inventory_item_id', $sharedItem->id)->first()->pivot->quantity);
+        $this->assertEquals(30, (float) $pkg2->fresh()->inventoryItems()->where('inventory_item_id', $sharedItem->id)->first()->pivot->quantity);
+        $this->assertEquals(150, $sharedItem->fresh()->current_stock);
+    }
+
+    public function test_removing_material_detaches_relationship_and_does_not_delete_inventory_item()
+    {
+        $itemA = InventoryItem::create(['name' => 'Item A', 'category' => 'Cat', 'unit' => 'pcs', 'current_stock' => 10]);
+        $itemB = InventoryItem::create(['name' => 'Item B', 'category' => 'Cat', 'unit' => 'pcs', 'current_stock' => 20]);
+
+        $package = Package::create(['title' => 'Detachable Pkg', 'category' => 'Cat', 'price' => 1000]);
+        $package->inventoryItems()->sync([
+            $itemA->id => ['quantity' => 2],
+            $itemB->id => ['quantity' => 4],
+        ]);
+
+        $this->assertCount(2, $package->fresh()->inventoryItems);
+
+        // Update with only Item A
+        $this->actingAs($this->admin)->put(route('admin.packages.update', $package), [
+            'title' => 'Detachable Pkg',
+            'category' => 'Cat',
+            'price' => 1000,
+            'inventory_items' => [$itemA->id => 2],
+        ]);
+
+        $package->refresh();
+        $this->assertCount(1, $package->inventoryItems);
+        $this->assertEquals($itemA->id, $package->inventoryItems->first()->id);
+
+        // Ensure Item B still exists in database and is not deleted
+        $this->assertDatabaseHas('inventory_items', ['id' => $itemB->id, 'deleted_at' => null]);
+        $this->assertEquals(20, $itemB->fresh()->current_stock);
+    }
+
+    public function test_archived_inventory_item_cannot_be_newly_selected_for_package()
+    {
+        $activeItem = InventoryItem::create(['name' => 'Active Rose', 'category' => 'Flowers', 'unit' => 'stems']);
+        $archivedItem = InventoryItem::create(['name' => 'Archived Orchid', 'category' => 'Flowers', 'unit' => 'stems']);
+        $archivedItem->delete(); // soft delete
+
+        // Attempt to create package with archived item
+        $responseCreate = $this->actingAs($this->admin)->post(route('admin.packages.store'), [
+            'title' => 'Archived Test Pkg',
+            'category' => 'Flowers',
+            'price' => 1500,
+            'inventory_items' => [$archivedItem->id => 10],
+        ]);
+        $responseCreate->assertSessionHasErrors('inventory_items.' . $archivedItem->id);
+        $this->assertDatabaseMissing('packages', ['title' => 'Archived Test Pkg']);
+
+        // Attempt to add archived item to an existing package
+        $package = Package::create(['title' => 'Existing Pkg', 'category' => 'Flowers', 'price' => 1500]);
+        $responseUpdate = $this->actingAs($this->admin)->put(route('admin.packages.update', $package), [
+            'title' => 'Existing Pkg',
+            'category' => 'Flowers',
+            'price' => 1500,
+            'inventory_items' => [
+                $activeItem->id => 5,
+                $archivedItem->id => 10,
+            ],
+        ]);
+        $responseUpdate->assertSessionHasErrors('inventory_items.' . $archivedItem->id);
+    }
+
+    public function test_existing_package_historical_relationship_with_archived_item_is_preserved()
+    {
+        $historicalItem = InventoryItem::create(['name' => 'Historical Flower', 'category' => 'Flowers', 'unit' => 'stems']);
+        $package = Package::create(['title' => 'Vintage Pkg', 'category' => 'Vintage', 'price' => 5000]);
+        $package->inventoryItems()->sync([$historicalItem->id => ['quantity' => 25]]);
+
+        // Soft-delete the inventory item
+        $historicalItem->delete();
+        $this->assertSoftDeleted('inventory_items', ['id' => $historicalItem->id]);
+
+        // Package still loads historical BOM via withoutGlobalScope SoftDeletingScope
+        $package->refresh();
+        $this->assertCount(1, $package->inventoryItems);
+        $this->assertEquals(25, (float) $package->inventoryItems->first()->pivot->quantity);
+        $this->assertEquals('Historical Flower', $package->inventoryItems->first()->name);
+
+        // Updating other package details retains the archived item mapping
+        $response = $this->actingAs($this->admin)->put(route('admin.packages.update', $package), [
+            'title' => 'Vintage Pkg Updated',
+            'category' => 'Vintage',
+            'price' => 5500,
+            'inventory_items' => [$historicalItem->id => 25],
+        ]);
+        $response->assertSessionHas('success');
+
+        $package->refresh();
+        $this->assertEquals('Vintage Pkg Updated', $package->title);
+        $this->assertCount(1, $package->inventoryItems);
+        $this->assertEquals(25, (float) $package->inventoryItems->first()->pivot->quantity);
+    }
+
+    public function test_unauthorized_users_cannot_manage_packages()
+    {
+        $clientUser = User::factory()->create(['role' => 'client']);
+        $item = InventoryItem::create(['name' => 'Rose', 'category' => 'Flowers', 'unit' => 'stems']);
+
+        // Guest attempts
+        $this->get(route('admin.packages.create'))->assertRedirect(route('login'));
+        $this->post(route('admin.packages.store'), ['title' => 'Test'])->assertRedirect(route('login'));
+
+        // Client attempts
+        $this->actingAs($clientUser)->get(route('admin.packages.create'))->assertForbidden();
+        $this->actingAs($clientUser)->post(route('admin.packages.store'), ['title' => 'Test'])->assertForbidden();
+    }
+
+    public function test_package_views_render_current_inventory_information()
+    {
+        $item = InventoryItem::create([
+            'name' => 'Carnations',
+            'item_code' => 'CAR-001',
+            'category' => 'Fresh Flowers',
+            'unit' => 'stems',
+            'current_stock' => 120,
+        ]);
+
+        $responseCreate = $this->actingAs($this->admin)->get(route('admin.packages.create'));
+        $responseCreate->assertOk();
+        $responseCreate->assertSee('Carnations');
+        $responseCreate->assertSee('CAR-001');
+        $responseCreate->assertSee('Available:');
+        $responseCreate->assertSee('Selected Materials (Bill of Materials)');
+
+        $package = Package::create(['title' => 'Carnation Pkg', 'category' => 'Flowers', 'price' => 1200]);
+        $package->inventoryItems()->sync([$item->id => ['quantity' => 20]]);
+
+        $responseEdit = $this->actingAs($this->admin)->get(route('admin.packages.edit', $package));
+        $responseEdit->assertOk();
+        $responseEdit->assertSee('Carnations');
+        $responseEdit->assertSee('CAR-001');
+        $responseEdit->assertSee('value="20"', false);
+    }
 }

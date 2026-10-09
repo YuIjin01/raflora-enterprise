@@ -335,6 +335,12 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
 
     // Admin Packages
     Route::get('/packages/archived', [\App\Http\Controllers\Admin\PackageController::class, 'archived'])->name('admin.packages.archived');
+    Route::get('/packages/template/packages', [\App\Http\Controllers\Admin\PackageController::class, 'downloadPackageTemplate'])->name('admin.packages.template.packages');
+    Route::get('/packages/template/materials', [\App\Http\Controllers\Admin\PackageController::class, 'downloadMaterialsTemplate'])->name('admin.packages.template.materials');
+    Route::get('/packages/export/packages', [\App\Http\Controllers\Admin\PackageController::class, 'exportPackagesCsv'])->name('admin.packages.export.packages');
+    Route::get('/packages/export/materials', [\App\Http\Controllers\Admin\PackageController::class, 'exportMaterialsCsv'])->name('admin.packages.export.materials');
+    Route::post('/packages/import/packages', [\App\Http\Controllers\Admin\PackageController::class, 'importPackagesCsv'])->name('admin.packages.import.packages');
+    Route::post('/packages/import/materials', [\App\Http\Controllers\Admin\PackageController::class, 'importMaterialsCsv'])->name('admin.packages.import.materials');
     Route::post('/packages/{package}/restore', [\App\Http\Controllers\Admin\PackageController::class, 'restore'])->name('admin.packages.restore');
     Route::post('/packages/{package}/archive', [\App\Http\Controllers\Admin\PackageController::class, 'archive'])->name('admin.packages.archive');
     Route::resource('packages', \App\Http\Controllers\Admin\PackageController::class)

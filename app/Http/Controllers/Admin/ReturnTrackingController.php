@@ -74,7 +74,7 @@ class ReturnTrackingController extends Controller
         });
     }
 
-    public function index()
+    public function index(Request $request)
     {
         // Auto-initialize returns for bookings requiring return audit (including cancelled bookings with active dispatches)
         $pendingReturnBookings = Booking::where(function ($q) {
@@ -93,13 +93,92 @@ class ReturnTrackingController extends Controller
             $this->initializeReturnForBooking($booking);
         }
 
-        $statusOrder = "CASE status WHEN 'Pending' THEN 1 WHEN 'Partially Returned' THEN 2 WHEN 'Completed' THEN 3 ELSE 4 END";
-        $returns = AssetReturn::with(['booking.client', 'inspectedByUser'])
-            ->orderByRaw($statusOrder)
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
+        $search = trim((string) $request->input('search', ''));
+        $status = (string) $request->input('status', 'all');
+        $eventDate = $request->input('event_date');
+        $sort = (string) $request->input('sort', 'default');
 
-        return view('admin.return-tracking', compact('returns'));
+        $query = AssetReturn::with(['booking.client', 'inspectedByUser']);
+
+        // Search booking # or client name/email
+        if ($search !== '') {
+            $cleanSearch = ltrim($search, '#');
+            $query->where(function ($q) use ($search, $cleanSearch) {
+                if (is_numeric($cleanSearch)) {
+                    $q->where('booking_id', (int) $cleanSearch);
+                } else {
+                    $q->whereHas('booking', function ($bQuery) use ($search) {
+                        $bQuery->where('event_type', 'like', "%{$search}%")
+                            ->orWhere('booking_number', 'like', "%{$search}%")
+                            ->orWhere('guest_name', 'like', "%{$search}%")
+                            ->orWhere('guest_email', 'like', "%{$search}%")
+                            ->orWhereHas('client', function ($cQuery) use ($search) {
+                                $cQuery->where('full_name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%");
+                            });
+                    });
+                }
+            });
+        }
+
+        // Status filter: Pending, Partially Returned, Completed
+        if ($status !== 'all' && in_array($status, ['Pending', 'Partially Returned', 'Completed'], true)) {
+            $query->where('status', $status);
+        }
+
+        // Event date filter
+        if (!empty($eventDate)) {
+            $query->whereHas('booking', function ($bQuery) use ($eventDate) {
+                $bQuery->whereDate('event_date', $eventDate);
+            });
+        }
+
+        // Sort ordering
+        switch ($sort) {
+            case 'latest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'oldest':
+                $query->orderBy('created_at', 'asc');
+                break;
+            case 'booking_id':
+                $query->orderBy('booking_id', 'desc');
+                break;
+            case 'event_date_asc':
+                $query->orderBy(
+                    Booking::select('event_date')->whereColumn('bookings.id', 'asset_returns.booking_id'),
+                    'asc'
+                );
+                break;
+            case 'event_date_desc':
+                $query->orderBy(
+                    Booking::select('event_date')->whereColumn('bookings.id', 'asset_returns.booking_id'),
+                    'desc'
+                );
+                break;
+            case 'default':
+            default:
+                $statusOrder = "CASE status WHEN 'Pending' THEN 1 WHEN 'Partially Returned' THEN 2 WHEN 'Completed' THEN 3 ELSE 4 END";
+                $query->orderByRaw($statusOrder)->orderBy('created_at', 'desc');
+                break;
+        }
+
+        $returns = $query->paginate(15)->withQueryString();
+
+        $currentSearch = $search;
+        $currentStatus = $status;
+        $currentEventDate = $eventDate;
+        $currentSort = $sort;
+        $hasActiveFilters = ($currentStatus !== 'all') || !empty($currentEventDate) || ($currentSort !== 'default');
+
+        return view('admin.return-tracking', compact(
+            'returns',
+            'currentSearch',
+            'currentStatus',
+            'currentEventDate',
+            'currentSort',
+            'hasActiveFilters'
+        ));
     }
 
     public function manage(Booking $booking)

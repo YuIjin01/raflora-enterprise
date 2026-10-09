@@ -170,13 +170,13 @@
                     @endif
                 </form>
 
-                <!-- Right: Action Controls (CSV Tools & Add Item) -->
+                <!-- Right: Action Controls (Inventory CSV Tools & Add Item) -->
                 <div class="flex items-center gap-2.5 shrink-0 self-end lg:self-center">
-                    <!-- CSV Tools Dropdown Container -->
+                    <!-- Inventory CSV Tools Dropdown Container -->
                     <div class="relative" id="csvToolsContainer">
                         <button type="button" id="csvToolsButton" onclick="toggleCsvDropdown()" aria-haspopup="true" aria-expanded="false" aria-controls="csvToolsMenu" class="inline-flex items-center gap-2 px-3.5 py-2 border border-emerald-600/70 hover:border-emerald-600 bg-white hover:bg-emerald-50/50 text-emerald-700 font-semibold text-sm rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer">
                             <i class="fa-regular fa-file-lines text-emerald-600 text-sm"></i>
-                            <span>CSV Tools</span>
+                            <span>Inventory Tools</span>
                             <i id="csvToolsChevron" class="fa-solid fa-chevron-down text-[10px] text-emerald-600 transition-transform duration-200"></i>
                         </button>
 
@@ -298,7 +298,7 @@
                                     <span class="text-gray-400">0</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-xl font-black text-right {{ $item->net_available < 0 ? 'text-red-600' : 'text-gray-900' }}">
+                            <td class="px-6 py-4 text-lg font-black text-right {{ $item->net_available < 0 ? 'text-red-600' : 'text-gray-900' }}">
                                 {{ (float) $item->net_available }}
                             </td>
                             <td class="px-6 py-4 text-lg font-medium text-gray-500 text-right">

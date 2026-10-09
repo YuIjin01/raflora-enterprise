@@ -1,12 +1,14 @@
 <x-admin-layout title="Packages">
-    <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-            <h2 class="text-xl font-bold text-gray-800">Packages</h2>
-            <p class="text-sm text-gray-500">Manage public booking packages, pricing, and master inventory mappings (BOM).</p>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 font-serif">Packages</h2>
+            <p class="text-sm text-gray-500 mt-1">Manage public booking packages, pricing, and master inventory mappings (BOM).</p>
         </div>
-        <a href="{{ route('admin.packages.create') }}" class="btn-primary flex-shrink-0 inline-block text-center">
-            <i class="fa-solid fa-plus mr-2"></i> Add Package
-        </a>
+        <div>
+            <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-700 transition">
+                <i class="fa-solid fa-box-archive mr-2"></i> Archived Packages
+            </a>
+        </div>
     </div>
 
     <!-- Tabs -->
@@ -19,6 +21,247 @@
                 Archived Packages
             </a>
         </nav>
+    </div>
+
+    <!-- Search & Filter Toolbar -->
+    <div class="bg-white rounded-2xl shadow-xs border border-gray-100 p-4 sm:p-5 mb-6 overflow-visible">
+        <form method="GET" action="{{ route('admin.packages.index') }}" id="packageFilterForm">
+            <input type="hidden" name="filter_expanded" id="packageFilterExpandedInput" value="{{ request('filter_expanded', '0') }}">
+
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <!-- Left: Search input, Show Filters toggle, Search button -->
+                <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1">
+                    <!-- Keyword Search Input -->
+                    <div class="relative flex-1 min-w-[200px] sm:min-w-[260px] max-w-sm">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input
+                            type="text"
+                            name="search"
+                            id="packageSearchInput"
+                            value="{{ $currentSearch ?? request('search') }}"
+                            placeholder="Search package name, category, or keyword..."
+                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                        >
+                    </div>
+
+                    @php
+                        $hasActivePackageFilters = (($currentCategory ?? 'all') !== 'all') || (($currentSort ?? 'latest') !== 'latest');
+                        $isPackageFilterOpen = request('filter_expanded') === '1';
+                    @endphp
+
+                    <!-- Show Filters Button -->
+                    <button
+                        type="button"
+                        id="packageToggleFiltersBtn"
+                        onclick="togglePackageFilterPanel()"
+                        aria-expanded="{{ $isPackageFilterOpen ? 'true' : 'false' }}"
+                        aria-controls="packageFilterPanel"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ $hasActivePackageFilters ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                    >
+                        <i class="fa-solid fa-sliders text-xs {{ $hasActivePackageFilters ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                        <span id="packageToggleFiltersText">{{ $isPackageFilterOpen ? 'Hide Filters' : 'Show Filters' }}</span>
+                        @if($hasActivePackageFilters)
+                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                        @endif
+                        <i id="packageFiltersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ $isPackageFilterOpen ? 'rotate-180' : '' }}"></i>
+                    </button>
+
+                    <!-- Search Submit Button -->
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                    >
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        <span>Search</span>
+                    </button>
+
+                    @if(!empty($currentSearch))
+                        <a
+                            href="{{ route('admin.packages.index') }}"
+                            class="px-3 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+                        >
+                            Clear
+                        </a>
+                    @endif
+                </div>
+
+                <!-- Right: Action Controls (Package Tools & Add Package) -->
+                <div class="flex items-center gap-2.5 shrink-0 self-end lg:self-center">
+                    <!-- Package Tools Dropdown Container -->
+                    <div class="relative" id="packageToolsContainer">
+                        <button type="button" id="packageToolsButton" onclick="togglePackageToolsDropdown()" aria-haspopup="true" aria-expanded="false" aria-controls="packageToolsMenu" class="inline-flex items-center gap-2 px-3.5 py-2 border border-purple-300 hover:border-purple-600 bg-white hover:bg-purple-50/50 text-purple-700 font-semibold text-sm rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
+                            <i class="fa-regular fa-file-lines text-purple-600 text-sm"></i>
+                            <span>Package Tools</span>
+                            <i id="packageToolsChevron" class="fa-solid fa-chevron-down text-[10px] text-purple-600 transition-transform duration-200"></i>
+                        </button>
+
+                        <!-- Popover Dropdown Menu -->
+                        <div id="packageToolsMenu" style="display:none; width: 660px; max-width: calc(100vw - 2rem);" role="region" aria-labelledby="packageToolsButton" class="absolute right-0 top-full mt-2.5 z-50 bg-white rounded-2xl shadow-xl border border-gray-100 p-4 sm:p-5 text-left transform transition-all">
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;" class="gap-4">
+                                <!-- Column 1: EXPORT -->
+                                <div>
+                                    <p class="text-[11px] font-bold tracking-wider text-gray-400 uppercase mb-2.5">EXPORT</p>
+                                    <div class="space-y-2">
+                                        <a href="{{ route('admin.packages.export.packages') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-purple-50/50 border border-transparent hover:border-purple-100 transition">
+                                            <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100 transition">
+                                                <i class="fa-solid fa-file-arrow-down text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Export Packages</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">Package master CSV</p>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('admin.packages.export.materials') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-purple-50/50 border border-transparent hover:border-purple-100 transition">
+                                            <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100 transition">
+                                                <i class="fa-solid fa-boxes-stacked text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Export Materials</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">Package BOM CSV</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <!-- Column 2: IMPORT -->
+                                <div>
+                                    <p class="text-[11px] font-bold tracking-wider text-gray-400 uppercase mb-2.5">IMPORT</p>
+                                    <div class="space-y-2">
+                                        <button type="button" onclick="closePackageToolsDropdown(); openImportPackagesModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 hover:bg-purple-100/70 transition cursor-pointer">
+                                            <div class="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-file-arrow-up text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-purple-950">Import Packages</p>
+                                                <p class="text-xs text-purple-700 mt-0.5">Upload package CSV</p>
+                                            </div>
+                                        </button>
+                                        <button type="button" onclick="closePackageToolsDropdown(); openImportMaterialsModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 hover:bg-purple-100/70 transition cursor-pointer">
+                                            <div class="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                                <i class="fa-solid fa-layer-group text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-purple-950">Import Materials</p>
+                                                <p class="text-xs text-purple-700 mt-0.5">Upload BOM CSV</p>
+                                            </div>
+                                        </button>
+                                        <button type="button" onclick="closePackageToolsDropdown(); openPackageInstructionsModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition cursor-pointer">
+                                            <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0 group-hover:bg-gray-200 transition">
+                                                <i class="fa-solid fa-circle-info text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Import Instructions</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">View specifications</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Column 3: TEMPLATES -->
+                                <div>
+                                    <p class="text-[11px] font-bold tracking-wider text-gray-400 uppercase mb-2.5">TEMPLATES</p>
+                                    <div class="space-y-2">
+                                        <a href="{{ route('admin.packages.template.packages') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition">
+                                            <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0 group-hover:bg-gray-200 transition">
+                                                <i class="fa-regular fa-file-lines text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Package Template</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">Blank packages.csv</p>
+                                            </div>
+                                        </a>
+                                        <a href="{{ route('admin.packages.template.materials') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition">
+                                            <div class="w-9 h-9 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center shrink-0 group-hover:bg-gray-200 transition">
+                                                <i class="fa-solid fa-table-list text-sm"></i>
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Materials Template</p>
+                                                <p class="text-xs text-gray-500 mt-0.5">Blank BOM CSV</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="{{ route('admin.packages.create') }}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        <span>Add Package</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Collapsible Filter Panel (Category, Sort, Reset) -->
+            <div
+                id="packageFilterPanel"
+                style="{{ $isPackageFilterOpen ? 'display: block;' : 'display: none;' }}"
+                class="mt-4 pt-4 border-t border-gray-100"
+            >
+                <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3 sm:gap-4">
+                    <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-filter text-purple-600 text-[11px]"></i> Filters & Sort:
+                    </span>
+
+                    <!-- Category Filter Dropdown -->
+                    <div class="relative min-w-[170px]">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-shapes text-xs"></i>
+                        </span>
+                        <select
+                            name="category"
+                            id="packageCategoryFilter"
+                            onchange="this.form.submit()"
+                            style="padding-left: 2.35rem; padding-right: 2rem;"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                        >
+                            <option value="all" {{ ($currentCategory ?? 'all') === 'all' ? 'selected' : '' }}>All Categories</option>
+                            @foreach($packageCategories as $cat)
+                                <option value="{{ $cat }}" {{ ($currentCategory ?? '') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                            @endforeach
+                        </select>
+                        <span class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Sort Dropdown -->
+                    <div class="relative min-w-[170px]">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-arrow-down-wide-short text-xs"></i>
+                        </span>
+                        <select
+                            name="sort"
+                            id="packageSortFilter"
+                            onchange="this.form.submit()"
+                            style="padding-left: 2.35rem; padding-right: 2rem;"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                        >
+                            <option value="latest" {{ ($currentSort ?? 'latest') === 'latest' ? 'selected' : '' }}>Latest First</option>
+                            <option value="oldest" {{ ($currentSort ?? '') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
+                            <option value="name_asc" {{ ($currentSort ?? '') === 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                            <option value="name_desc" {{ ($currentSort ?? '') === 'name_desc' ? 'selected' : '' }}>Name (Z-A)</option>
+                            <option value="price_asc" {{ ($currentSort ?? '') === 'price_asc' ? 'selected' : '' }}>Price (Low to High)</option>
+                            <option value="price_desc" {{ ($currentSort ?? '') === 'price_desc' ? 'selected' : '' }}>Price (High to Low)</option>
+                        </select>
+                        <span class="absolute inset-y-0 right-2.5 flex items-center pointer-events-none text-gray-400">
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </span>
+                    </div>
+
+                    <!-- Clear / Reset Link -->
+                    <a
+                        href="{{ route('admin.packages.index') }}"
+                        class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-100 border border-gray-200 rounded-xl transition shadow-2xs sm:ml-auto"
+                    >
+                        <i class="fa-solid fa-rotate-left text-[11px] text-gray-400"></i>
+                        <span>Reset Filters</span>
+                    </a>
+                </div>
+            </div>
+        </form>
     </div>
 
     <!-- Package Grid -->
@@ -88,11 +331,19 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-50 mb-4">
                 <i class="fa-solid fa-gift text-2xl text-slate-400"></i>
             </div>
-            <h3 class="text-lg font-medium text-slate-900">No active packages</h3>
-            <p class="mt-1 text-sm text-slate-500 mb-6">Get started by creating a new package.</p>
-            <a href="{{ route('admin.packages.create') }}" class="inline-flex items-center px-4 py-2 border border-slate-200 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 transition">
-                <i class="fa-solid fa-plus mr-2"></i> Add Package
-            </a>
+            @if(!empty($currentSearch) || (($currentCategory ?? 'all') !== 'all'))
+                <h3 class="text-lg font-medium text-slate-900">No matching packages found</h3>
+                <p class="mt-1 text-sm text-slate-500 mb-6">Try adjusting your keyword search or category filter.</p>
+                <a href="{{ route('admin.packages.index') }}" class="inline-flex items-center px-4 py-2 border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl text-sm font-semibold transition">
+                    Clear Filters
+                </a>
+            @else
+                <h3 class="text-lg font-medium text-slate-900">No active packages</h3>
+                <p class="mt-1 text-sm text-slate-500 mb-6">Get started by creating a new package.</p>
+                <a href="{{ route('admin.packages.create') }}" class="inline-flex items-center px-4 py-2 border border-slate-200 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-plus mr-2"></i> Add Package
+                </a>
+            @endif
         </div>
     @endif
 
@@ -209,6 +460,215 @@
         </div>
     </div>
 
+    <!-- Package Master CSV Import Modal -->
+    <div id="importPackagesModal" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="importPackagesModalTitle">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" aria-hidden="true" onclick="closeImportPackagesModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-7 transform transition-all border border-slate-200">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                        <i class="fa-solid fa-file-arrow-up text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 id="importPackagesModalTitle" class="text-lg font-bold text-gray-900">Import Packages CSV</h3>
+                        <p class="text-xs text-gray-500">Upload package master records to create or update packages</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeImportPackagesModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <form action="{{ route('admin.packages.import.packages') }}" method="POST" enctype="multipart/form-data" class="mt-5 space-y-4">
+                @csrf
+                <div>
+                    <label for="package_csv_file" class="block text-sm font-semibold text-gray-700 mb-1">
+                        Select Packages CSV File <span class="text-red-500">*</span>
+                    </label>
+                    <input type="file" name="csv_file" id="package_csv_file" accept=".csv,text/csv" required
+                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition">
+                </div>
+
+                <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <i class="fa-solid fa-circle-info text-purple-600" aria-hidden="true"></i>
+                        <span>Expected Columns</span>
+                    </div>
+                    <p class="text-xs font-mono text-slate-600 bg-white p-2 rounded border border-slate-200 break-all select-all">
+                        package_code, package_name, category, description, price, is_active, included_items
+                    </p>
+                    <ul class="text-xs text-slate-500 space-y-1 list-disc pl-4">
+                        <li><strong>Safe Upsert:</strong> Matches existing package by <code>package_code</code>; creates new package if code is new or blank.</li>
+                        <li><strong>Transactional:</strong> Import is atomic. If any row contains errors, all changes roll back.</li>
+                        <li><strong>Inclusions:</strong> Multiple client-facing items can be separated by semicolons (<code>;</code>).</li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                    <span>Need the template?</span>
+                    <a href="{{ route('admin.packages.template.packages') }}" class="text-purple-600 hover:text-purple-700 font-semibold inline-flex items-center gap-1">
+                        <i class="fa-solid fa-download" aria-hidden="true"></i> Download Package Template
+                    </a>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeImportPackagesModal()" class="px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition inline-flex items-center gap-2">
+                        <i class="fa-solid fa-upload" aria-hidden="true"></i> Upload Packages
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Package Materials (BOM) CSV Import Modal -->
+    <div id="importMaterialsModal" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="importMaterialsModalTitle">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" aria-hidden="true" onclick="closeImportMaterialsModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-7 transform transition-all border border-slate-200">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                        <i class="fa-solid fa-layer-group text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 id="importMaterialsModalTitle" class="text-lg font-bold text-gray-900">Import Materials CSV (BOM)</h3>
+                        <p class="text-xs text-gray-500">Map packages to existing Inventory Management items</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeImportMaterialsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <form action="{{ route('admin.packages.import.materials') }}" method="POST" enctype="multipart/form-data" class="mt-5 space-y-4">
+                @csrf
+                <div>
+                    <label for="materials_csv_file" class="block text-sm font-semibold text-gray-700 mb-1">
+                        Select Materials CSV File <span class="text-red-500">*</span>
+                    </label>
+                    <input type="file" name="csv_file" id="materials_csv_file" accept=".csv,text/csv" required
+                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition">
+                </div>
+
+                <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <i class="fa-solid fa-circle-info text-purple-600" aria-hidden="true"></i>
+                        <span>Expected Columns</span>
+                    </div>
+                    <p class="text-xs font-mono text-slate-600 bg-white p-2 rounded border border-slate-200 break-all select-all">
+                        package_code, item_code, quantity
+                    </p>
+                    <ul class="text-xs text-slate-500 space-y-1 list-disc pl-4">
+                        <li><strong>Item Code:</strong> Must match an existing Inventory Item code (e.g. <code>FRE-0001</code>).</li>
+                        <li><strong>Safe Definitions:</strong> Package BOM mapping does <em>not</em> deduct or reserve inventory stock.</li>
+                        <li><strong>Archived Items:</strong> Archived inventory items cannot be newly attached to packages.</li>
+                    </ul>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
+                    <span>Need the template?</span>
+                    <a href="{{ route('admin.packages.template.materials') }}" class="text-purple-600 hover:text-purple-700 font-semibold inline-flex items-center gap-1">
+                        <i class="fa-solid fa-download" aria-hidden="true"></i> Download Materials Template
+                    </a>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
+                    <button type="button" onclick="closeImportMaterialsModal()" class="px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition inline-flex items-center gap-2">
+                        <i class="fa-solid fa-upload" aria-hidden="true"></i> Upload Materials
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Package CSV Instructions Modal -->
+    <div id="packageInstructionsModal" style="display:none;" class="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="packageInstructionsModalTitle">
+        <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" aria-hidden="true" onclick="closePackageInstructionsModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 sm:p-7 transform transition-all border border-slate-200">
+            <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                        <i class="fa-solid fa-circle-info text-lg" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <h3 id="packageInstructionsModalTitle" class="text-lg font-bold text-gray-900">Package CSV Instructions</h3>
+                        <p class="text-xs text-gray-500">Master package details and Bill of Materials (BOM) guidelines</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closePackageInstructionsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition" aria-label="Close modal">
+                    <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="mt-5 space-y-4 text-sm text-gray-600 max-h-[70vh] overflow-y-auto pr-1">
+                <!-- Section 1: Package Master -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-700 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-gift"></i> 1. Package Master CSV (packages.csv)
+                    </h4>
+                    <p class="text-xs text-gray-500 mb-2">Defines package identity, pricing, categories, and client-facing highlights.</p>
+                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-mono text-xs text-purple-900 break-all select-all font-semibold mb-2">
+                        package_code,package_name,category,description,price,is_active,included_items
+                    </div>
+                    <ul class="text-xs text-gray-600 space-y-1 list-disc pl-4">
+                        <li><strong>package_code:</strong> Unique identifier (max 20 chars). If empty, auto-generated upon creation. Existing codes update matching packages.</li>
+                        <li><strong>package_name / title:</strong> Display title for clients and staff (required).</li>
+                        <li><strong>category:</strong> Event or bundle classification (e.g., Wedding, Corporate).</li>
+                        <li><strong>price:</strong> Retail package price in PHP (must be non-negative).</li>
+                        <li><strong>is_active:</strong> <code>1</code> for active or <code>0</code> for inactive.</li>
+                        <li><strong>included_items:</strong> Marketing highlights separated by semicolons (e.g. <code>Bridal Bouquet; 3 Corsages</code>).</li>
+                    </ul>
+                </div>
+
+                <!-- Section 2: Package Materials BOM -->
+                <div class="pt-3 border-t border-gray-100">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-700 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-layer-group"></i> 2. Package Materials CSV (package_materials.csv)
+                    </h4>
+                    <p class="text-xs text-gray-500 mb-2">Links packages to physical Inventory Management items (Bill of Materials).</p>
+                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-mono text-xs text-purple-900 break-all select-all font-semibold mb-2">
+                        package_code,item_code,quantity
+                    </div>
+                    <ul class="text-xs text-gray-600 space-y-1 list-disc pl-4">
+                        <li><strong>package_code:</strong> Must match an existing package code.</li>
+                        <li><strong>item_code:</strong> Must match an existing inventory item code (e.g., <code>FRE-0001</code>).</li>
+                        <li><strong>quantity:</strong> Amount required for this package (greater than zero; whole number for integer units).</li>
+                        <li><strong>Archived Items:</strong> Archived inventory items cannot be newly added to packages.</li>
+                    </ul>
+                </div>
+
+                <!-- Important Note -->
+                <div class="p-3.5 bg-purple-50/60 rounded-xl border border-purple-100 text-xs text-gray-700 space-y-1.5">
+                    <p class="font-bold text-purple-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-purple-600"></i> Inventory Safety Notice
+                    </p>
+                    <p class="text-gray-600">
+                        Package master records and BOM mappings are <strong>definition data</strong> only. Creating or importing packages never reduces <code>current_stock</code>, never creates reservations, and never alters client bookings or payments.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('admin.packages.template.packages') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition">
+                        <i class="fa-solid fa-download"></i> Package Template
+                    </a>
+                    <a href="{{ route('admin.packages.template.materials') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition">
+                        <i class="fa-solid fa-download"></i> Materials Template
+                    </a>
+                </div>
+                <button type="button" onclick="closePackageInstructionsModal()" class="px-4 py-2 border border-gray-300 text-xs font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         function openModal(id) {
             const modal = document.getElementById(id);
@@ -225,74 +685,6 @@
             document.body.classList.remove('overflow-hidden');
         }
         
-        // Add file listener
-        document.getElementById('add_images').addEventListener('change', function(e) {
-            const fileList = document.getElementById('add-file-list');
-            fileList.innerHTML = '';
-            for (let i = 0; i < this.files.length; i++) {
-                const p = document.createElement('p');
-                p.className = 'text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded-md inline-flex items-center gap-2 mr-2 mb-2 border border-green-200';
-                p.innerHTML = '<i class="fa-solid fa-image"></i> ' + this.files[i].name;
-                fileList.appendChild(p);
-            }
-        });
-
-        function toggleInvQty(mode, id) {
-            const checkbox = document.getElementById(mode + '_inv_check_' + id);
-            const qtyInput = document.getElementById(mode + '_inv_qty_' + id);
-            if (checkbox.checked) {
-                qtyInput.disabled = false;
-                qtyInput.required = true;
-                if (!qtyInput.value || parseFloat(qtyInput.value) <= 0) {
-                    qtyInput.value = '1';
-                }
-            } else {
-                qtyInput.disabled = true;
-                qtyInput.required = false;
-                qtyInput.value = '';
-            }
-            updateInvSummary(mode);
-        }
-
-        function updateInvSummary(mode) {
-            const checkboxes = document.querySelectorAll('.' + mode + '-inv-check:checked');
-            const summary = document.getElementById(mode + '_inv_summary');
-            if (summary) {
-                summary.textContent = checkboxes.length + ' inventory items selected';
-            }
-        }
-
-        function filterInventory(mode) {
-            const searchInput = document.getElementById(mode + '_inv_search').value.toLowerCase();
-            const categorySelect = document.getElementById(mode + '_inv_category').value.toLowerCase();
-            const rows = document.querySelectorAll('.' + mode + '-inv-row');
-            
-            rows.forEach(row => {
-                const name = row.dataset.name.toLowerCase();
-                const category = row.dataset.category.toLowerCase();
-                
-                const matchesSearch = name.includes(searchInput);
-                const matchesCategory = categorySelect === '' || category === categorySelect;
-                
-                if (matchesSearch && matchesCategory) {
-                    row.style.display = 'flex';
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
-
-        // Edit file listener
-            const fileList = document.getElementById('edit-file-list');
-            fileList.innerHTML = '';
-            for (let i = 0; i < this.files.length; i++) {
-                const p = document.createElement('p');
-                p.className = 'text-sm text-green-700 bg-green-50 px-3 py-1.5 rounded-md inline-flex items-center gap-2 mr-2 mb-2 border border-green-200';
-                p.innerHTML = '<i class="fa-solid fa-image"></i> ' + this.files[i].name;
-                fileList.appendChild(p);
-            }
-        });
-
         function openViewModal(pkg) {
             document.getElementById('view_title').innerText = pkg.title || 'N/A';
             document.getElementById('view_package_code').innerText = pkg.package_code || 'N/A';
@@ -318,14 +710,26 @@
                 pkg.inventory_items.forEach(function(item) {
                     if (item.pivot && item.pivot.quantity > 0) {
                         hasInventory = true;
+                        const isArchived = Boolean(item.deleted_at);
                         invContainer.innerHTML += `
-                            <div class="flex items-center justify-between border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                            <div class="flex items-center justify-between border-b border-gray-100 pb-2.5 last:border-0 last:pb-0">
                                 <div>
-                                    <p class="text-[13px] font-semibold text-gray-700">${item.name}</p>
-                                    <p class="text-[11px] text-gray-500">${item.category}</p>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p class="text-[13px] font-semibold text-gray-800">${item.name}</p>
+                                        <span class="font-mono text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">${item.item_code || 'N/A'}</span>
+                                        ${isArchived ? '<span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-1.5 py-0.5 rounded">Archived</span>' : ''}
+                                    </div>
+                                    <div class="flex items-center gap-2 text-[11px] text-gray-500 mt-0.5">
+                                        <span>${item.category}</span>
+                                        <span>•</span>
+                                        <span>In Stock: <strong class="text-slate-700">${parseFloat(item.current_stock) || 0}</strong> ${item.unit}</span>
+                                    </div>
                                 </div>
-                                <div class="text-[13px] font-medium text-gray-700">
-                                    ${item.pivot.quantity} <span class="text-gray-500 font-normal">${item.unit}</span>
+                                <div class="text-right">
+                                    <div class="text-[13px] font-bold text-purple-700">
+                                        ${parseFloat(item.pivot.quantity)} <span class="text-gray-500 font-normal">${item.unit}</span>
+                                    </div>
+                                    <span class="text-[10px] text-gray-400 uppercase tracking-wider">Required</span>
                                 </div>
                             </div>
                         `;
@@ -440,6 +844,149 @@
             if (e.key === 'Escape') closeLightbox();
             if (e.key === 'ArrowLeft') prevImage();
             if (e.key === 'ArrowRight') nextImage();
+        });
+
+        function togglePackageFilterPanel() {
+            const panel = document.getElementById('packageFilterPanel');
+            const btn = document.getElementById('packageToggleFiltersBtn');
+            const text = document.getElementById('packageToggleFiltersText');
+            const chevron = document.getElementById('packageFiltersChevron');
+            const input = document.getElementById('packageFilterExpandedInput');
+            if (!panel) return;
+
+            const isHidden = panel.style.display === 'none' || panel.style.display === '';
+            if (isHidden) {
+                panel.style.display = 'block';
+                if (text) text.textContent = 'Hide Filters';
+                if (chevron) chevron.classList.add('rotate-180');
+                if (btn) btn.setAttribute('aria-expanded', 'true');
+                if (input) input.value = '1';
+            } else {
+                panel.style.display = 'none';
+                if (text) text.textContent = 'Show Filters';
+                if (chevron) chevron.classList.remove('rotate-180');
+                if (btn) btn.setAttribute('aria-expanded', 'false');
+                if (input) input.value = '0';
+            }
+        }
+
+        // Package Tools Popover and Modal Controls
+        function togglePackageToolsDropdown() {
+            const menu = document.getElementById('packageToolsMenu');
+            const btn = document.getElementById('packageToolsButton');
+            if (!menu || !btn) return;
+
+            const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+            if (isExpanded) {
+                closePackageToolsDropdown();
+            } else {
+                openPackageToolsDropdown();
+            }
+        }
+
+        function openPackageToolsDropdown() {
+            const menu = document.getElementById('packageToolsMenu');
+            const btn = document.getElementById('packageToolsButton');
+            const chevron = document.getElementById('packageToolsChevron');
+            if (!menu || !btn) return;
+
+            menu.style.display = 'block';
+            btn.setAttribute('aria-expanded', 'true');
+            if (chevron) {
+                chevron.classList.add('rotate-180');
+            }
+        }
+
+        function closePackageToolsDropdown() {
+            const menu = document.getElementById('packageToolsMenu');
+            const btn = document.getElementById('packageToolsButton');
+            const chevron = document.getElementById('packageToolsChevron');
+            if (!menu || !btn) return;
+
+            menu.style.display = 'none';
+            btn.setAttribute('aria-expanded', 'false');
+            if (chevron) {
+                chevron.classList.remove('rotate-180');
+            }
+        }
+
+        function openImportPackagesModal() {
+            closePackageToolsDropdown();
+            const modal = document.getElementById('importPackagesModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const fileInput = document.getElementById('package_csv_file');
+                if (fileInput) fileInput.focus();
+            }
+        }
+
+        function closeImportPackagesModal() {
+            const modal = document.getElementById('importPackagesModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function openImportMaterialsModal() {
+            closePackageToolsDropdown();
+            const modal = document.getElementById('importMaterialsModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                const fileInput = document.getElementById('materials_csv_file');
+                if (fileInput) fileInput.focus();
+            }
+        }
+
+        function closeImportMaterialsModal() {
+            const modal = document.getElementById('importMaterialsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function openPackageInstructionsModal() {
+            closePackageToolsDropdown();
+            const modal = document.getElementById('packageInstructionsModal');
+            if (modal) {
+                modal.style.display = 'flex';
+            }
+        }
+
+        function closePackageInstructionsModal() {
+            const modal = document.getElementById('packageInstructionsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Click outside listener for Package Tools popover
+        document.addEventListener('click', function (e) {
+            const container = document.getElementById('packageToolsContainer');
+            if (container && !container.contains(e.target)) {
+                closePackageToolsDropdown();
+            }
+        });
+
+        // Keyboard navigation (Escape key closes modals and popover)
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                const instructionsModal = document.getElementById('packageInstructionsModal');
+                const packagesModal = document.getElementById('importPackagesModal');
+                const materialsModal = document.getElementById('importMaterialsModal');
+                const menu = document.getElementById('packageToolsMenu');
+                const btn = document.getElementById('packageToolsButton');
+
+                if (instructionsModal && instructionsModal.style.display === 'flex') {
+                    closePackageInstructionsModal();
+                } else if (packagesModal && packagesModal.style.display === 'flex') {
+                    closeImportPackagesModal();
+                } else if (materialsModal && materialsModal.style.display === 'flex') {
+                    closeImportMaterialsModal();
+                } else if (menu && menu.style.display === 'block') {
+                    closePackageToolsDropdown();
+                    if (btn) btn.focus();
+                }
+            }
         });
     </script>
 </x-admin-layout>

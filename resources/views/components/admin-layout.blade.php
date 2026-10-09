@@ -148,29 +148,6 @@
 
         <!-- Main Work Area -->
         <main class="flex-1 bg-gray-50 p-4 pb-12 sm:p-6" aria-label="Admin workspace content">
-            {{-- Flash Messages --}}
-            @if(session('success'))
-                <x-alert type="success">{{ session('success') }}</x-alert>
-            @endif
-            @if(session('error'))
-                <x-alert type="danger">{{ session('error') }}</x-alert>
-            @endif
-            @if(session('warning'))
-                <x-alert type="warning">{{ session('warning') }}</x-alert>
-            @endif
-            @if(session('info'))
-                <x-alert type="info">{{ session('info') }}</x-alert>
-            @endif
-            @if($errors->any())
-                <x-alert type="danger">
-                    <div class="font-semibold mb-1">Please fix the following errors:</div>
-                    <ul class="list-disc list-inside space-y-0.5 text-[13px]">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </x-alert>
-            @endif
 
             {{ $slot }}
         </main>
@@ -270,6 +247,32 @@
             });
         });
     </script>
+
+    {{-- Global Flash Messages Toast Container (Root Stacking Context) --}}
+    <div id="rf-toast-container" class="fixed top-4 right-4 sm:top-6 sm:right-6 z-[99999] flex flex-col gap-3 pointer-events-none w-[calc(100vw-2rem)] sm:w-96 max-w-full" style="isolation: isolate;">
+        @if(session('success'))
+            <x-alert type="success">{{ session('success') }}</x-alert>
+        @endif
+        @if(session('error'))
+            <x-alert type="danger">{{ session('error') }}</x-alert>
+        @endif
+        @if(session('warning'))
+            <x-alert type="warning">{{ session('warning') }}</x-alert>
+        @endif
+        @if(session('info'))
+            <x-alert type="info">{{ session('info') }}</x-alert>
+        @endif
+        @if($errors->any())
+            <x-alert type="danger">
+                <div class="font-semibold mb-1">Please fix the following errors:</div>
+                <ul class="list-disc list-inside space-y-0.5 text-[13px]">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </x-alert>
+        @endif
+    </div>
 
     <x-confirm-modal />
 </body>

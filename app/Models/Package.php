@@ -67,7 +67,8 @@ class Package extends Model
     {
         return $this->belongsToMany(InventoryItem::class, 'inventory_item_package')
             ->withPivot('quantity')
-            ->withTimestamps();
+            ->withTimestamps()
+            ->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class);
     }
 
     public function images()
