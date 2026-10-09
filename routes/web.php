@@ -195,6 +195,9 @@ Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
     Route::post('/bookings/{booking}/accept', [BookingController::class, 'acceptQuotation'])->name('bookings.accept');
     Route::post('/bookings/{booking}/request-changes', [BookingController::class, 'requestChanges'])->name('bookings.request-changes');
     Route::post('/bookings/{booking}/reply', [BookingController::class, 'replyToAdmin'])->name('bookings.reply');
+    Route::get('/bookings/{booking}/messages', [BookingController::class, 'getMessages'])->name('bookings.messages.index');
+    Route::post('/bookings/{booking}/messages', [BookingController::class, 'sendMessage'])->name('bookings.messages.store');
+    Route::post('/bookings/{booking}/messages/read', [BookingController::class, 'markMessagesRead'])->name('bookings.messages.read');
     Route::post('/bookings/{booking}/request-cancellation', [BookingController::class, 'requestCancellation'])->name('bookings.request-cancellation');
     Route::post('/bookings/{booking}/payment-reference', [BookingController::class, 'submitPaymentReference'])->name('bookings.payment.reference');
     Route::post('/bookings/{booking}/proposals/{presentation}/feedback', [BookingController::class, 'submitProposalFeedback'])->name('bookings.proposals.feedback');
@@ -279,29 +282,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::post('/email-change/verify', [AdminEmailChangeController::class, 'verifyOtp'])->middleware('throttle:6,1')->name('admin.email-change.verify');
     Route::post('/email-change/resend', [AdminEmailChangeController::class, 'resendOtp'])->middleware('throttle:3,1')->name('admin.email-change.resend');
 
-    // Admin Dashboard: Main admin panel overview
-    Route::get('/dashboard', function () {
-        $actionableStatuses = [
-            'pending',
-            'quotation_sent',
-            'payment_submitted',
-            'payment_pending',
-            'approved',
-            'admin_approved',
-            'change_requested',
-            'cancellation_requested',
-            'pending_return',
-            'pending_resolution',
-        ];
-
-        return view('admin.dashboard', [
-            'totalBookings'   => Booking::count(),
-            'pendingBookings' => Booking::whereIn('status', $actionableStatuses)->count(),
-            'totalUsers'      => User::count(),
-            'recentBookings'  => Booking::with('client')->latest()->limit(5)->get(),
-            'activeAlerts'    => \App\Models\AdminAlert::where('is_read', false)->latest()->limit(20)->get(),
-        ]);
-    })->name('admin.dashboard');
+    // Admin Dashboard: Main operational overview
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/notifications', [AdminBookingController::class, 'notifications'])->name('admin.notifications');
 
@@ -344,7 +326,7 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::post('/packages/{package}/restore', [\App\Http\Controllers\Admin\PackageController::class, 'restore'])->name('admin.packages.restore');
     Route::post('/packages/{package}/archive', [\App\Http\Controllers\Admin\PackageController::class, 'archive'])->name('admin.packages.archive');
     Route::resource('packages', \App\Http\Controllers\Admin\PackageController::class)
-        ->except(['show', 'destroy'])
+        ->except(['show'])
         ->names('admin.packages');
 
     // Admin Bookings: Booking management listing
@@ -362,6 +344,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::post('/bookings/{booking}/final-approve', [AdminBookingController::class, 'finalApproveQuotation'])->name('admin.bookings.final-approve');
     // Admin negotiation loop
     Route::post('/bookings/{booking}/reply', [AdminBookingController::class, 'reply'])->name('admin.bookings.reply');
+    Route::get('/bookings/{booking}/messages', [AdminBookingController::class, 'getMessages'])->name('admin.bookings.messages.index');
+    Route::post('/bookings/{booking}/messages', [AdminBookingController::class, 'sendMessage'])->name('admin.bookings.messages.store');
+    Route::post('/bookings/{booking}/messages/read', [AdminBookingController::class, 'markMessagesRead'])->name('admin.bookings.messages.read');
     Route::post('/bookings/{booking}/handle-cancellation', [AdminBookingController::class, 'handleCancellationRequest'])->name('admin.bookings.handle-cancellation');
     // Admin actions: verify payment, reject payment, and decline booking
     Route::post('/payments/{payment}/verify', [AdminBookingController::class, 'verifyPayment'])->name('admin.payments.verify');
@@ -399,34 +384,20 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::put('/return-tracking/{return}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'update'])->name('admin.return-tracking.update');
     Route::put('/return-tracking/{return}/assign', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'assign'])->name('admin.return-tracking.assign');
     Route::put('/return-tracking/{return}/approve', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'approve'])->name('admin.return-tracking.approve');
-    // Admin account management
+    // Admin account management & settings
     Route::get('/users', function () {
         return redirect()->route('admin.settings');
     })->name('admin.users');
-    Route::post('/account-management/password', function (Request $request) {
-        $validated = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', 'min:8'],
-        ]);
+    Route::post('/account-management/password', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'updatePassword'])->name('admin.account.password');
+    Route::post('/account-management/accounts', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'storeAccount'])->name('admin.account.accounts.store');
 
-        $request->user()->update(['password' => $validated['password']]);
-
-        return back()->with('success', 'Your password has been updated successfully.');
-    })->name('admin.account.password');
-    Route::post('/account-management/accounts', function (Request $request) {
-        abort_unless($request->user()->role === 'admin', 403);
-
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'in:admin,staff'],
-            'password' => ['required', 'confirmed', 'min:8'],
-        ]);
-
-        User::create($validated);
-
-        return back()->with('success', 'Account created successfully.');
-    })->name('admin.account.accounts.store');
+    // Admin Account Settings operations
+    Route::get('/settings', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'index'])->name('admin.settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('admin.settings.update');
+    Route::post('/settings/profile', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'updateProfile'])->name('admin.settings.profile.update');
+    Route::post('/settings/password', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'updatePassword'])->name('admin.settings.password.update');
+    Route::post('/settings/sessions/revoke-others', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'revokeOtherSessions'])->name('admin.settings.sessions.revoke-others');
+    Route::post('/settings/trusted-devices/revoke', [\App\Http\Controllers\Admin\AdminSettingsController::class, 'revokeTrustedDevice'])->name('admin.settings.trusted-devices.revoke');
     // Admin AI Analysis: Review AI suggested floral materials and pricing
     Route::get('/ai-analysis', [ReportController::class, 'aiAnalysis'])->name('admin.ai-analysis');
     // Admin Quotations: Manage price reconfirmation and quotations
@@ -436,9 +407,6 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::get('/reports', [ReportController::class, 'index'])->name('admin.reports');
     // Admin Client Records: View client history and records
     Route::get('/client-records', [\App\Http\Controllers\Admin\ClientRecordController::class, 'index'])->name('admin.client-records');
-    // Admin Account Management: preferences, accounts, and audit trail
-    Route::get('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('admin.settings');
-    Route::post('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('admin.settings.update');
 
     // Admin System Data Management: Business-data export, validated import, and synthetic demo datasets
     Route::get('/system-data/export', [\App\Http\Controllers\Admin\SystemDataController::class, 'export'])->name('admin.system-data.export');

@@ -15,6 +15,7 @@ class BookingMessage extends Model
         'visibility',
         'related_quotation_version',
         'submission_key',
+        'read_at',
         'attachment_path',
         'attachment_name',
         'attachment_category',
@@ -22,8 +23,18 @@ class BookingMessage extends Model
         'file_size',
     ];
 
+    protected $casts = [
+        'read_at' => 'datetime',
+        'related_quotation_version' => 'integer',
+    ];
+
     public function booking(): BelongsTo
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function isRead(): bool
+    {
+        return !is_null($this->read_at);
     }
 }

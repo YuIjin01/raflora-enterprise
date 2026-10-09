@@ -53,7 +53,12 @@
             <button type="button" onclick="switchTab('tab-materials')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-materials">Materials & Inventory</button>
             <button type="button" onclick="switchTab('tab-preparation')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-preparation">Preparation</button>
             <button type="button" onclick="switchTab('tab-staff')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-staff">Staff Assignment</button>
-            <button type="button" onclick="switchTab('tab-communication')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-communication">Communication</button>
+            <button type="button" onclick="switchTab('tab-communication')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition inline-flex items-center gap-1.5" data-target="tab-communication">
+                <span>Communication</span>
+                <span id="admin-comm-unread-badge" class="rounded-full bg-purple-100 text-purple-700 px-2 py-0.5 text-xs font-bold {{ ($unreadMessageCount ?? 0) > 0 ? '' : 'hidden' }}">
+                    {{ $unreadMessageCount ?? 0 }}
+                </span>
+            </button>
         </nav>
     </div>
 
@@ -867,72 +872,13 @@
         
     </div>
     <div id="tab-communication" class="tab-content hidden space-y-6">
-        <!-- SECTION 2.5: NEGOTIATION FEED -->
-        <section class="rf-panel mt-6 overflow-hidden p-5 sm:p-6" aria-labelledby="negotiation-heading">
-            <div class="flex items-center justify-between mb-4 border-b border-purple-50 pb-2">
-                <h2 id="negotiation-heading" class="text-lg font-bold text-gray-800">Communication &amp; Negotiation</h2>
-                @if($booking->status === 'cancellation_requested')
-                    <span class="rf-badge rf-badge--danger"><i class="fa-solid fa-exclamation-circle mr-1"></i> Cancellation Requested</span>
-                @elseif($booking->status === 'change_requested')
-                    <span class="rf-badge rf-badge--warning"><i class="fa-solid fa-sync mr-1"></i> Changes Requested</span>
-                @endif
-            </div>
-
-            <div class="space-y-4 max-h-[600px] overflow-y-auto mb-6 pr-2">
-                @forelse($bookingMessages as $message)
-                    <div class="flex {{ $message->sender_type === 'admin' ? 'justify-end' : 'justify-start' }}">
-                        <div class="max-w-xl rounded-lg p-4 {{ $message->sender_type === 'admin' ? 'bg-purple-50 border border-purple-100 rounded-tr-none' : 'bg-slate-50 border border-slate-200 rounded-tl-none' }}">
-                            <div class="flex items-center justify-between gap-4 mb-2">
-                                <span class="font-bold text-sm {{ $message->sender_type === 'admin' ? 'text-purple-900' : 'text-slate-800' }}">
-                                    {{ $message->sender_type === 'admin' ? 'Admin' : 'Client' }}
-                                </span>
-                                <span class="text-xs text-slate-500">{{ $message->created_at->format('M d, g:i A') }}</span>
-                            </div>
-                            <div class="text-sm {{ $message->sender_type === 'admin' ? 'text-purple-800' : 'text-slate-700' }} whitespace-pre-wrap break-words">{{ $message->message }}</div>
-                            @if($message->related_quotation_version)
-                                <div class="mt-2 text-xs font-semibold text-purple-600 bg-white px-2 py-1 rounded inline-block border border-purple-100">
-                                    Ref: Quotation v{{ $message->related_quotation_version }}
-                                </div>
-                            @endif
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-sm text-slate-500 text-center py-4">No messages yet.</p>
-                @endforelse
-            </div>
-
-            @if(in_array($booking->status, ['change_requested', 'cancellation_requested']))
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-5">
-                    <h3 class="font-bold text-yellow-800 mb-2">
-                        {{ $booking->status === 'cancellation_requested' ? 'Action Required: Cancellation Request' : 'Action Required: Change Request' }}
-                    </h3>
-                    @if($booking->status === 'change_requested')
-                        <form action="{{ route('admin.bookings.reply', $booking) }}" method="POST" class="space-y-3" onsubmit="if(this.submitted) return false; this.submitted = true; const btn = this.querySelector('button[type=submit]'); const orig = btn.innerHTML; btn.classList.add('pointer-events-none', 'opacity-50'); btn.innerHTML = 'Sending...'; setTimeout(() => { this.submitted = false; btn.classList.remove('pointer-events-none', 'opacity-50'); btn.innerHTML = orig; }, 5000); return true;">
-                            @csrf
-                            <input type="hidden" name="submission_key" value="{{ (string) \Illuminate\Support\Str::uuid() }}">
-                            <div>
-                                <label for="replyMessage" class="block text-sm font-semibold text-yellow-900">Your Reply / Note</label>
-                                <textarea id="replyMessage" name="message" rows="3" class="mt-1 w-full rounded-md border-yellow-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2" required></textarea>
-                            </div>
-                            <div class="flex justify-end gap-2">
-                                <button type="submit" name="action" value="reply_only" class="px-4 py-2 bg-yellow-600 text-white text-sm font-bold rounded hover:bg-yellow-700">Send Reply</button>
-                            </div>
-                        </form>
-                    @else
-                        <form action="{{ route('admin.bookings.handle-cancellation', $booking) }}" method="POST" class="space-y-3">
-                            @csrf
-                            <div>
-                                <label for="cancellationNote" class="block text-sm font-semibold text-yellow-900">Admin Note (Optional)</label>
-                                <textarea id="cancellationNote" name="admin_note" rows="2" class="mt-1 w-full rounded-md border-yellow-300 shadow-sm focus:border-yellow-500 focus:ring-yellow-500 text-sm p-2"></textarea>
-                            </div>
-                            <div class="flex justify-end gap-2">
-                                <button type="submit" name="action" value="deny" class="px-4 py-2 bg-white text-yellow-800 text-sm font-semibold border border-yellow-300 rounded hover:bg-yellow-100">Deny Request</button>
-                                <button type="submit" name="action" value="approve" class="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded hover:bg-red-700">Approve Cancellation</button>
-                            </div>
-                        </form>
-                    @endif
-                </div>
-            @endif
+        <x-booking-conversation 
+            :booking="$booking"
+            role="admin"
+            :booking-messages="$bookingMessages"
+            :unread-count="$unreadMessageCount ?? 0"
+            :active-quotation="$activeQuotation"
+        />
     </div>
 
     <script>
@@ -952,6 +898,10 @@
             if(activeBtn) {
                 activeBtn.classList.remove('border-transparent', 'text-slate-500');
                 activeBtn.classList.add('border-purple-500', 'text-purple-600');
+            }
+            if (tabId === 'tab-communication') {
+                const refreshBtn = document.getElementById('comm-refresh-btn');
+                if (refreshBtn) refreshBtn.click();
             }
         }
 

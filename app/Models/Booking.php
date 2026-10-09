@@ -197,6 +197,7 @@ class Booking extends Model
         return $this->belongsTo(Package::class, 'package_id', 'id');
     }
 
+
     /**
      * Get the client associated with this booking.
      */
@@ -384,6 +385,22 @@ class Booking extends Model
     public function staffChecklistItems(): HasMany
     {
         return $this->hasMany(StaffChecklistItem::class, 'booking_id', 'id');
+    }
+
+    /**
+     * Get all messages for this booking.
+     */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(BookingMessage::class, 'booking_id', 'id');
+    }
+
+    /**
+     * Backward-compatible alias for messages.
+     */
+    public function bookingMessages(): HasMany
+    {
+        return $this->messages();
     }
 
     public static function normalizeStatus(?string $status): ?string

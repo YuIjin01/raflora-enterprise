@@ -614,68 +614,16 @@
                                 </div>
                             @endif
 
-                            {{-- Communication Feed --}}
-                            @if((isset($bookingMessages) && $bookingMessages->count() > 0) || $booking->status === 'change_requested')
-                                <div class="p-5 sm:p-6 sm:p-8 bg-slate-50 border-t border-slate-200">
-                                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Discussion & Change Requests</h3>
-                                    
-                                    @if(isset($bookingMessages) && $bookingMessages->count() > 0)
-                                        <div class="space-y-4 mb-6">
-                                            @foreach($bookingMessages as $msg)
-                                                <div class="flex gap-3 {{ $msg->sender_type === 'client' ? 'justify-end' : 'justify-start' }}">
-                                                    <div class="max-w-[85%] rounded-2xl p-4 {{ $msg->sender_type === 'client' ? 'bg-emerald-600 text-white rounded-tr-sm' : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm' }}">
-                                                        <p class="text-xs font-semibold mb-1 opacity-80">{{ $msg->sender_type === 'client' ? 'You' : 'Admin' }} • {{ $msg->created_at->format('M j, g:i A') }}</p>
-                                                        <p class="text-sm whitespace-pre-wrap">{{ $msg->message }}</p>
-                                                        @if($msg->attachment_path)
-                                                            <div class="mt-2 pt-2 border-t {{ $msg->sender_type === 'client' ? 'border-emerald-500' : 'border-slate-100' }}">
-                                                                <p class="text-[10px] uppercase tracking-wider opacity-70 mb-1">Attachment ({{ ucwords(str_replace('_', ' ', $msg->attachment_category)) }})</p>
-                                                                <a href="{{ route('secure.attachment.show', $msg->id) }}" target="_blank" class="inline-flex items-center gap-1.5 text-sm font-medium hover:underline {{ $msg->sender_type === 'client' ? 'text-white' : 'text-emerald-600' }}">
-                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
-                                                                    {{ $msg->attachment_name }}
-                                                                </a>
-                                                            </div>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @endif
-
-                                    @if(!$isTerminal)
-                                        <form method="POST" action="{{ route('bookings.reply', $booking->id) }}" enctype="multipart/form-data" class="mt-4 flex flex-col gap-3">
-                                            @csrf
-                                            <textarea name="message" rows="2" class="rf-input text-sm w-full" placeholder="Type your message..." required></textarea>
-                                            
-                                            <div class="flex flex-col sm:flex-row gap-3">
-                                                <div class="w-full sm:w-1/3">
-                                                    <select name="visibility" class="rf-input text-sm w-full" required>
-                                                        <option value="client_admin">Message Admin (Private)</option>
-                                                        <option value="shared">Shared (Admin & Staff)</option>
-                                                    </select>
-                                                </div>
-                                                <div class="w-full sm:w-1/3">
-                                                    <select name="attachment_category" class="rf-input text-sm w-full" onchange="document.getElementById('attachment_input').required = this.value !== '';">
-                                                        <option value="">No Attachment</option>
-                                                        <option value="payment_proof">Payment Proof</option>
-                                                        <option value="inspiration_reference">Inspiration / Reference</option>
-                                                        <option value="proposal_quotation">Proposal / Quotation</option>
-                                                        <option value="event_venue">Event / Venue Document</option>
-                                                        <option value="other_booking_document">Other Document</option>
-                                                    </select>
-                                                </div>
-                                                <div class="w-full sm:w-1/3">
-                                                    <input type="file" name="attachment" id="attachment_input" class="rf-input text-sm w-full" accept=".jpg,.jpeg,.png,.webp,.pdf" onchange="if(this.value && !document.querySelector('select[name=attachment_category]').value) { document.querySelector('select[name=attachment_category]').value = 'other_booking_document'; }">
-                                                </div>
-                                            </div>
-                                            <p class="text-xs text-slate-500">Note: Attaching a Payment Proof does not automatically verify payment or confirm the booking.</p>
-
-                                            <div class="flex justify-end">
-                                                <button type="submit" class="rf-btn bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-6 py-2">Send Reply</button>
-                                            </div>
-                                        </form>
-                                    @endif
+                            {{-- Real-time Communication Component --}}
+                            <div class="p-5 sm:p-6 sm:p-8 bg-slate-50 border-t border-slate-200">
+                                    <x-booking-conversation 
+                                        :booking="$booking"
+                                        role="client"
+                                        :booking-messages="$bookingMessages"
+                                        :unread-count="$unreadMessageCount ?? 0"
+                                        :active-quotation="$activeQuotation"
+                                    />
                                 </div>
-                            @endif
                         </section>
                         
                         {{-- Modals --}}

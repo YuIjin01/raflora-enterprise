@@ -31,7 +31,14 @@
             @endphp
 
             @forelse($notificationItems as $notification)
-                <a href="{{ route('client.notifications.index') }}" class="block border-b border-slate-100 px-4 py-3 hover:bg-slate-50 transition {{ $notification->is_read ? 'bg-white' : 'bg-purple-50/60' }}">
+                @php
+                    $targetUrl = route('client.notifications.index');
+                    if ($notification->booking_id) {
+                        $isMsg = str_contains(strtolower($notification->title ?? ''), 'message');
+                        $targetUrl = route('bookings.analysis', ['booking' => $notification->booking_id]) . ($isMsg ? '#booking-conversation-root' : '');
+                    }
+                @endphp
+                <a href="{{ $targetUrl }}" class="block border-b border-slate-100 px-4 py-3 hover:bg-slate-50 transition {{ $notification->is_read ? 'bg-white' : 'bg-purple-50/60' }}">
                     <div class="flex items-start justify-between gap-3">
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold text-slate-800">{{ $notification->title }}</p>

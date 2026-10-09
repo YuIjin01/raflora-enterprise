@@ -593,18 +593,30 @@
                             <p class="text-xs text-rose-700 leading-relaxed">This booking request is no longer active.</p>
                         </div>
                     @elseif($rawStatus === 'quotation_sent')
-                        <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
-                            <div class="flex items-center gap-2 mb-1.5">
-                                <i class="fa-solid fa-file-invoice-dollar text-emerald-700"></i>
-                                <h4 class="text-sm font-bold uppercase tracking-wider text-emerald-900">YOUR QUOTATION IS READY</h4>
+                        @if($isBookingExpired)
+                            <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-center">
+                                <div class="flex items-center justify-center gap-2 mb-1.5">
+                                    <i class="fa-solid fa-clock-rotate-left text-rose-700"></i>
+                                    <h4 class="text-sm font-bold uppercase tracking-wider text-rose-900">Quotation Expired — Awaiting Update</h4>
+                                </div>
+                                <p class="text-xs text-rose-800 leading-relaxed">
+                                    This quotation has expired. Administration will review and provide an updated price quotation.
+                                </p>
                             </div>
-                            <p class="text-xs text-emerald-800 leading-relaxed mb-3">
-                                Your quotation is ready for review. To securely review and continue with your booking, claim this booking using your verified Raflora account.
-                            </p>
-                            <a href="{{ route('login', ['guest_token' => $token, 'email' => $booking->guest_email]) }}" class="inline-block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-xs">
-                                Log In / Register to Review &amp; Accept Quotation
-                            </a>
-                        </div>
+                        @else
+                            <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+                                <div class="flex items-center gap-2 mb-1.5">
+                                    <i class="fa-solid fa-file-invoice-dollar text-emerald-700"></i>
+                                    <h4 class="text-sm font-bold uppercase tracking-wider text-emerald-900">Official Quotation Ready</h4>
+                                </div>
+                                <p class="text-xs text-emerald-800 leading-relaxed mb-3">
+                                    Your official quotation is ready for review. To securely review and continue with your booking, claim this booking using your verified Raflora account.
+                                </p>
+                                <a href="{{ route('login', ['guest_token' => $token, 'email' => $booking->guest_email]) }}" class="inline-block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition shadow-xs">
+                                    Log In / Register to Review &amp; Accept Quotation
+                                </a>
+                            </div>
+                        @endif
                     @elseif($rawStatus === 'admin_approved')
                         <div class="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
                             <div class="flex items-center gap-2 mb-1.5">

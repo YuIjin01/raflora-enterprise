@@ -71,6 +71,11 @@ class Package extends Model
             ->withoutGlobalScope(\Illuminate\Database\Eloquent\SoftDeletingScope::class);
     }
 
+    public function bookings()
+    {
+        return $this->hasMany(\App\Models\Booking::class, 'package_id', 'id');
+    }
+
     public function images()
     {
         return $this->hasMany(PackageImage::class);

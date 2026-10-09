@@ -294,7 +294,7 @@
                 }
 
                 const selectedBookingId = new URLSearchParams(window.location.search).get('booking');
-                const analysisBase = "{{ url('/client/bookings/analysis') }}";
+                const analysisBase = "{{ url('/bookings/analysis') }}";
 
                 document.querySelectorAll('.view-details-btn').forEach((button) => {
                     const openNotification = () => {
@@ -306,8 +306,10 @@
                         const actionLink = document.getElementById('modalActionLink');
                         if (actionLink) {
                             if (notification.booking_id) {
-                                actionLink.href = analysisBase + '/' + notification.booking_id;
+                                const isMsg = (notification.title && notification.title.toLowerCase().includes('message'));
+                                actionLink.href = analysisBase + '/' + notification.booking_id + (isMsg ? '#booking-conversation-root' : '');
                                 actionLink.classList.remove('hidden');
+                                actionLink.textContent = isMsg ? 'Open Conversation' : 'Open Booking';
                             } else {
                                 actionLink.classList.add('hidden');
                             }

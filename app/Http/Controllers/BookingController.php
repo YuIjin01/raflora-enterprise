@@ -484,7 +484,8 @@ class BookingController extends Controller
             ? $activeQuotation->items_snapshot 
             : null;
 
-        $bookingMessages = \App\Models\BookingMessage::where('booking_id', $booking->id)->whereIn('visibility', ['client_admin', 'shared'])->orderBy('created_at')->get();
+        $bookingMessages = $booking->messages()->whereIn('visibility', ['client_admin', 'shared'])->orderBy('created_at')->get();
+        $unreadMessageCount = $bookingMessages->where('sender_type', 'admin')->whereNull('read_at')->count();
 
         // Load attached inventory items and compute total cost from pivot data when available
         $items = $booking->inventoryItems()->get();
@@ -559,7 +560,8 @@ class BookingController extends Controller
             'isExpired'        => $isExpired,
             'quotationValidUntil' => $quotationValidUntil,
             'presentations'    => $presentations,
-            'bookingMessages'  => $bookingMessages,
+            'bookingMessages'     => $bookingMessages,
+            'unreadMessageCount'  => $unreadMessageCount,
         ]);
     }
 
@@ -574,9 +576,22 @@ class BookingController extends Controller
             abort(403, 'Unauthorized access to this booking.');
         }
 
+        $unreadMessages = $booking->messages()
+            ->where('sender_type', 'admin')
+            ->whereNull('read_at')
+            ->count();
+
+        $latestMessage = $booking->messages()
+            ->whereIn('visibility', ['client_admin', 'shared'])
+            ->latest('id')
+            ->first();
+
         return response()->json([
             'status' => $booking->status,
             'updated_at' => $booking->updated_at?->toISOString(),
+            'unread_messages' => $unreadMessages,
+            'latest_message_id' => $latestMessage?->id,
+            'latest_message_at' => $latestMessage?->created_at?->toISOString(),
         ]);
     }
 
@@ -947,11 +962,19 @@ class BookingController extends Controller
             [
                 'message' => ['required', 'string', 'max:2000'],
                 'visibility' => ['required', 'string', 'in:client_admin,shared'],
+                'submission_key' => ['nullable', 'string', 'max:255'],
             ],
             \App\Services\BookingAttachmentService::getValidationRules(false)
         );
 
         $validated = $request->validate($rules);
+
+        if (!empty($validated['submission_key'])) {
+            $existing = $booking->messages()->where('submission_key', $validated['submission_key'])->first();
+            if ($existing) {
+                return redirect()->back()->with('success', 'Your message has been sent to the admin.');
+            }
+        }
 
         try {
             $messageData = [
@@ -960,6 +983,7 @@ class BookingController extends Controller
                 'sender_id' => $client->id,
                 'message' => $validated['message'],
                 'visibility' => $validated['visibility'],
+                'submission_key' => $validated['submission_key'] ?? null,
             ];
 
             $attachmentService->storeMessage(
@@ -969,11 +993,232 @@ class BookingController extends Controller
                 $validated['attachment_category'] ?? null
             );
 
+            AdminAlert::create([
+                'type' => 'client_message',
+                'title' => 'Client Message: Booking #' . $booking->id,
+                'message' => Str::limit($validated['message'], 150),
+                'booking_id' => $booking->id,
+                'is_read' => false,
+            ]);
+
+            return redirect()->back()->with('success', 'Your message has been sent to the admin.');
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
             return redirect()->back()->with('success', 'Your message has been sent to the admin.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Failed to submit client reply: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Unable to process your request. Please try again.');
         }
+    }
+
+    /**
+     * Return messages for client booking.
+     */
+    public function getMessages(Booking $booking): JsonResponse
+    {
+        $client = $this->resolveClient();
+
+        if ($booking->client_id !== $client?->id) {
+            abort(403, 'Unauthorized access to this booking.');
+        }
+
+        // Mark incoming admin messages as read upon opening the conversation
+        $booking->messages()
+            ->where('sender_type', 'admin')
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        $messages = $booking->messages()
+            ->whereIn('visibility', ['client_admin', 'shared'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $formatted = $messages->map(function ($msg) {
+            return [
+                'id' => $msg->id,
+                'booking_id' => $msg->booking_id,
+                'sender_type' => $msg->sender_type,
+                'sender_id' => $msg->sender_id,
+                'sender_label' => $msg->sender_type === 'client' ? 'You' : ($msg->sender_type === 'admin' ? 'Admin' : 'Staff'),
+                'is_mine' => $msg->sender_type === 'client',
+                'message' => $msg->message,
+                'visibility' => $msg->visibility,
+                'related_quotation_version' => $msg->related_quotation_version,
+                'submission_key' => $msg->submission_key,
+                'created_at' => $msg->created_at?->toISOString(),
+                'created_at_human' => $msg->created_at?->format('M j, g:i A'),
+                'read_at' => $msg->read_at?->toISOString(),
+                'is_read' => !is_null($msg->read_at),
+                'has_attachment' => !empty($msg->attachment_path),
+                'attachment_name' => $msg->attachment_name,
+                'attachment_category' => $msg->attachment_category,
+                'attachment_category_label' => $msg->attachment_category ? ucwords(str_replace('_', ' ', $msg->attachment_category)) : null,
+                'attachment_url' => $msg->attachment_path ? route('secure.attachment.show', $msg->id) : null,
+            ];
+        });
+
+        $unreadCount = $booking->messages()
+            ->where('sender_type', 'admin')
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'messages' => $formatted,
+            'unread_count' => $unreadCount,
+            'booking_status' => $booking->status,
+        ]);
+    }
+
+    /**
+     * Client sends a new message to Admin.
+     */
+    public function sendMessage(Request $request, Booking $booking, \App\Services\BookingAttachmentService $attachmentService): JsonResponse
+    {
+        $client = $this->resolveClient();
+
+        if ($booking->client_id !== $client?->id) {
+            abort(403, 'Unauthorized access to this booking.');
+        }
+
+        $rules = array_merge(
+            [
+                'message' => ['required', 'string', 'max:2000'],
+                'visibility' => ['nullable', 'string', 'in:client_admin,shared'],
+                'related_quotation_version' => ['nullable', 'integer'],
+                'submission_key' => ['nullable', 'string', 'max:255'],
+            ],
+            \App\Services\BookingAttachmentService::getValidationRules(false)
+        );
+
+        $validated = $request->validate($rules);
+        $visibility = $validated['visibility'] ?? 'client_admin';
+        $submissionKey = $validated['submission_key'] ?? null;
+
+        if (!empty($submissionKey)) {
+            $existing = $booking->messages()->where('submission_key', $submissionKey)->first();
+            if ($existing) {
+                return response()->json([
+                    'success' => true,
+                    'is_duplicate' => true,
+                    'message' => [
+                        'id' => $existing->id,
+                        'booking_id' => $existing->booking_id,
+                        'sender_type' => $existing->sender_type,
+                        'sender_label' => 'You',
+                        'is_mine' => true,
+                        'message' => $existing->message,
+                        'visibility' => $existing->visibility,
+                        'related_quotation_version' => $existing->related_quotation_version,
+                        'submission_key' => $existing->submission_key,
+                        'created_at' => $existing->created_at?->toISOString(),
+                        'created_at_human' => $existing->created_at?->format('M j, g:i A'),
+                        'read_at' => $existing->read_at?->toISOString(),
+                        'is_read' => !is_null($existing->read_at),
+                        'has_attachment' => !empty($existing->attachment_path),
+                        'attachment_name' => $existing->attachment_name,
+                        'attachment_category' => $existing->attachment_category,
+                        'attachment_url' => $existing->attachment_path ? route('secure.attachment.show', $existing->id) : null,
+                    ],
+                ]);
+            }
+        }
+
+        try {
+            $messageData = [
+                'booking_id' => $booking->id,
+                'sender_type' => 'client', // SERVER-DERIVED
+                'sender_id' => $client->id, // SERVER-DERIVED
+                'message' => $validated['message'],
+                'visibility' => $visibility,
+                'related_quotation_version' => $validated['related_quotation_version'] ?? null,
+                'submission_key' => $submissionKey,
+            ];
+
+            $message = $attachmentService->storeMessage(
+                $booking,
+                $messageData,
+                $request->file('attachment'),
+                $validated['attachment_category'] ?? null
+            );
+
+            AdminAlert::create([
+                'type' => 'client_message',
+                'title' => 'Client Message: Booking #' . $booking->id,
+                'message' => Str::limit($validated['message'], 150),
+                'booking_id' => $booking->id,
+                'is_read' => false,
+            ]);
+
+            $this->logAuditEvent('booking', 'client_message_sent', $booking, 'Client sent a message', Auth::id());
+
+            return response()->json([
+                'success' => true,
+                'message' => [
+                    'id' => $message->id,
+                    'booking_id' => $message->booking_id,
+                    'sender_type' => $message->sender_type,
+                    'sender_label' => 'You',
+                    'is_mine' => true,
+                    'message' => $message->message,
+                    'visibility' => $message->visibility,
+                    'related_quotation_version' => $message->related_quotation_version,
+                    'submission_key' => $message->submission_key,
+                    'created_at' => $message->created_at?->toISOString(),
+                    'created_at_human' => $message->created_at?->format('M j, g:i A'),
+                    'read_at' => null,
+                    'is_read' => false,
+                    'has_attachment' => !empty($message->attachment_path),
+                    'attachment_name' => $message->attachment_name,
+                    'attachment_category' => $message->attachment_category,
+                    'attachment_url' => $message->attachment_path ? route('secure.attachment.show', $message->id) : null,
+                ],
+            ], 201);
+        } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+            $existing = $booking->messages()->where('submission_key', $submissionKey)->first();
+            if ($existing) {
+                return response()->json([
+                    'success' => true,
+                    'is_duplicate' => true,
+                    'message' => [
+                        'id' => $existing->id,
+                        'booking_id' => $existing->booking_id,
+                        'sender_type' => $existing->sender_type,
+                        'sender_label' => 'You',
+                        'is_mine' => true,
+                        'message' => $existing->message,
+                        'created_at' => $existing->created_at?->toISOString(),
+                        'created_at_human' => $existing->created_at?->format('M j, g:i A'),
+                    ],
+                ]);
+            }
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Failed to send client message: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'Unable to send message.'], 500);
+        }
+    }
+
+    /**
+     * Mark messages read for client.
+     */
+    public function markMessagesRead(Booking $booking): JsonResponse
+    {
+        $client = $this->resolveClient();
+
+        if ($booking->client_id !== $client?->id) {
+            abort(403, 'Unauthorized access to this booking.');
+        }
+
+        $affected = $booking->messages()
+            ->where('sender_type', 'admin')
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'marked_read' => $affected,
+            'unread_count' => 0,
+        ]);
     }
 
     public function requestCancellation(Request $request, Booking $booking): RedirectResponse

@@ -5,6 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }} — Raflora Enterprises</title>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -129,9 +130,7 @@
                         </div>
                         <span class="rf-sidebar-label text-sm truncate">Notifications</span>
                         @if($unreadAlerts > 0)
-                            <span class="rf-nav-badge-pill ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-rose-600 text-[10px] font-bold text-white shadow-2xs">
-                                {{ $unreadAlerts > 99 ? '99+' : $unreadAlerts }}
-                            </span>
+                            <span class="rf-nav-badge-pill ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ $unreadAlerts > 99 ? '99+' : $unreadAlerts }}</span>
                         @endif
                         <span class="rf-collapsed-tooltip">Notifications</span>
                     </a>

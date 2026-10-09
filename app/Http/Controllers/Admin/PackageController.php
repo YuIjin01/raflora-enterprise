@@ -20,7 +20,21 @@ class PackageController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = Package::with(['inventoryItems', 'images'])->where('is_archived', false);
+        $status = (string) $request->input('status', 'active');
+        $query = Package::with(['inventoryItems', 'images']);
+
+        if ($status === 'archived') {
+            $query->where('is_archived', true);
+        } elseif ($status === 'all') {
+            // show all packages
+        } elseif ($status === 'inactive') {
+            $query->where(function ($q) {
+                $q->where('is_active', false)->orWhere('is_archived', true);
+            });
+        } else {
+            // default active view
+            $query->where('is_archived', false);
+        }
 
         if ($request->filled('search')) {
             $search = trim((string) $request->input('search'));
@@ -50,18 +64,34 @@ class PackageController extends Controller
         };
 
         $packages = $query->get();
-        $packageCategories = Package::select('category')->distinct()->whereNotNull('category')->where('category', '!=', '')->pluck('category')->sort()->values();
+
+        $categoryCounts = Package::where('is_archived', false)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->select('category', DB::raw('count(*) as count'))
+            ->groupBy('category')
+            ->orderBy('category')
+            ->pluck('count', 'category')
+            ->toArray();
+
+        $totalActiveCount = Package::where('is_archived', false)->count();
+        $packageCategories = collect(array_keys($categoryCounts))->sort()->values();
+
         $inventoryItems = \App\Models\InventoryItem::orderBy('category')->orderBy('name')->get();
         $inventoryCategories = \App\Models\InventoryItem::select('category')->distinct()->pluck('category')->filter()->values();
 
         return view('admin.packages', [
             'packages' => $packages,
             'packageCategories' => $packageCategories,
+            'categoryCounts' => $categoryCounts,
+            'totalActiveCount' => $totalActiveCount,
             'inventoryItems' => $inventoryItems,
             'inventoryCategories' => $inventoryCategories,
             'currentSearch' => $request->input('search', ''),
             'currentCategory' => $request->input('category', 'all'),
+            'currentStatus' => $status,
             'currentSort' => $sort,
+            'currentView' => $request->input('view', 'grid'),
         ]);
     }
 
@@ -163,10 +193,10 @@ class PackageController extends Controller
             'category' => 'required|string|max:50',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'included_items' => 'nullable|string', // Still keeping text as fallback/description
+            'included_items' => 'nullable',
             'images' => 'nullable|array',
             'images.*' => 'nullable|image|max:2048',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable',
             'inventory_items' => 'nullable|array',
             'inventory_items.*' => [
                 'required',
@@ -185,7 +215,6 @@ class PackageController extends Controller
                     }
                     $integerUnits = ['pcs', 'stems', 'bunches', 'rolls', 'blocks', 'sets', 'units'];
                     if (in_array(strtolower($item->unit), $integerUnits)) {
-                        // Check if value has decimals
                         if (floor($value) != $value) {
                             $fail("Quantity must be a whole number for {$item->unit}.");
                         }
@@ -194,38 +223,66 @@ class PackageController extends Controller
             ],
         ]);
 
-        $itemsText = array_filter(array_map('trim', explode(',', $validated['included_items'] ?? '')));
-
-        $isActive = $request->has('is_active') ? $request->boolean('is_active') : true;
-
-        $package = Package::create([
-            'title' => $validated['title'],
-            'category' => $validated['category'] ?? null,
-            'description' => $validated['description'] ?? null,
-            'price' => $validated['price'],
-            'included_items' => $itemsText,
-            'is_active' => $isActive,
-        ]);
-
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                $imagePath = $image->store('packages', 'public');
-                \App\Models\PackageImage::create([
-                    'package_id' => $package->id,
-                    'image_path' => $imagePath,
-                ]);
+        $rawInclusions = $request->input('included_items');
+        if (is_array($rawInclusions)) {
+            $itemsText = array_values(array_filter(array_map('trim', $rawInclusions)));
+        } elseif (is_string($rawInclusions)) {
+            $trimmed = trim($rawInclusions);
+            if (str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($trimmed, true);
+                $itemsText = is_array($decoded) ? array_values(array_filter(array_map('trim', $decoded))) : [];
+            } else {
+                $itemsText = array_values(array_filter(array_map('trim', explode(',', $trimmed))));
             }
+        } else {
+            $itemsText = [];
         }
 
-        // Sync physical inventory BOM mapping
-        if (!empty($validated['inventory_items'])) {
-            $syncData = [];
-            foreach ($validated['inventory_items'] as $itemId => $quantity) {
-                if ($quantity > 0) {
-                    $syncData[$itemId] = ['quantity' => $quantity];
+        $isActive = $request->has('is_active') ? $request->boolean('is_active') : true;
+        $uploadedFiles = [];
+
+        try {
+            DB::beginTransaction();
+
+            $package = Package::create([
+                'title' => $validated['title'],
+                'category' => $validated['category'] ?? null,
+                'description' => $validated['description'] ?? null,
+                'price' => $validated['price'],
+                'included_items' => $itemsText,
+                'is_active' => $isActive,
+                'is_archived' => false,
+            ]);
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $imagePath = $image->store('packages', 'public');
+                    $uploadedFiles[] = $imagePath;
+                    \App\Models\PackageImage::create([
+                        'package_id' => $package->id,
+                        'image_path' => $imagePath,
+                    ]);
                 }
             }
-            $package->inventoryItems()->sync($syncData);
+
+            // Sync physical inventory BOM mapping
+            if (!empty($validated['inventory_items'])) {
+                $syncData = [];
+                foreach ($validated['inventory_items'] as $itemId => $quantity) {
+                    if ($quantity > 0) {
+                        $syncData[$itemId] = ['quantity' => $quantity];
+                    }
+                }
+                $package->inventoryItems()->sync($syncData);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            foreach ($uploadedFiles as $path) {
+                Storage::disk('public')->delete($path);
+            }
+            throw $e;
         }
 
         return back()->with('success', 'Package created successfully.');
@@ -241,11 +298,11 @@ class PackageController extends Controller
             'category' => 'required|string|max:50',
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'included_items' => 'nullable|string',
+            'included_items' => 'nullable',
             'images' => 'nullable|array',
             'images.*' => 'nullable|image|max:2048',
             'remove_images' => 'nullable|string',
-            'is_active' => 'boolean',
+            'is_active' => 'nullable',
             'inventory_items' => 'nullable|array',
             'inventory_items.*' => [
                 'required',
@@ -277,12 +334,26 @@ class PackageController extends Controller
             ],
         ]);
 
+        $rawInclusions = $request->input('included_items');
+        if (is_array($rawInclusions)) {
+            $itemsText = array_values(array_filter(array_map('trim', $rawInclusions)));
+        } elseif (is_string($rawInclusions)) {
+            $trimmed = trim($rawInclusions);
+            if (str_starts_with($trimmed, '[')) {
+                $decoded = json_decode($trimmed, true);
+                $itemsText = is_array($decoded) ? array_values(array_filter(array_map('trim', $decoded))) : [];
+            } else {
+                $itemsText = array_values(array_filter(array_map('trim', explode(',', $trimmed))));
+            }
+        } else {
+            $itemsText = [];
+        }
+
+        $isActive = $request->has('is_active') ? $request->boolean('is_active') : $package->is_active;
+
         $hasChanges = false;
-        $itemsText = array_filter(array_map('trim', explode(',', $validated['included_items'] ?? '')));
-        // Normalize for comparison
         $newItemsText = implode(',', $itemsText);
         $oldItemsText = implode(',', $package->included_items ?? []);
-        $isActive = $request->boolean('is_active');
 
         if (
             $package->title !== $validated['title'] ||
@@ -290,45 +361,9 @@ class PackageController extends Controller
             $package->description !== ($validated['description'] ?? null) ||
             (float) $package->price !== (float) $validated['price'] ||
             $oldItemsText !== $newItemsText ||
-            (bool) $package->is_active !== $isActive
+            (bool) $package->is_active !== (bool) $isActive
         ) {
             $hasChanges = true;
-            $package->title = $validated['title'];
-            $package->category = $validated['category'] ?? null;
-            $package->description = $validated['description'] ?? null;
-            $package->price = $validated['price'];
-            $package->included_items = $itemsText;
-            $package->is_active = $isActive;
-            $package->save();
-        }
-
-        if ($request->filled('remove_images')) {
-            $hasChanges = true;
-            $removeParam = $request->remove_images;
-            if (str_starts_with(trim($removeParam), '[')) {
-                $removeImageIds = json_decode($removeParam, true) ?: [];
-            } else {
-                $removeImageIds = array_filter(explode(',', $removeParam));
-            }
-            $imagesToRemove = \App\Models\PackageImage::whereIn('id', $removeImageIds)
-                ->where('package_id', $package->id)
-                ->get();
-                
-            foreach ($imagesToRemove as $img) {
-                Storage::disk('public')->delete($img->image_path);
-                $img->delete();
-            }
-        }
-
-        if ($request->hasFile('images')) {
-            $hasChanges = true;
-            foreach ($request->file('images') as $image) {
-                $imagePath = $image->store('packages', 'public');
-                \App\Models\PackageImage::create([
-                    'package_id' => $package->id,
-                    'image_path' => $imagePath,
-                ]);
-            }
         }
 
         // Check BOM changes
@@ -361,11 +396,73 @@ class PackageController extends Controller
 
         if ($bomChanged) {
             $hasChanges = true;
-            $package->inventoryItems()->sync($newSyncData);
+        }
+
+        if ($request->filled('remove_images') || $request->hasFile('images')) {
+            $hasChanges = true;
         }
 
         if (!$hasChanges) {
             return back()->with('info', 'No changes were made to this package.');
+        }
+
+        $uploadedFiles = [];
+        $imagesToDeleteOnSuccess = [];
+
+        try {
+            DB::beginTransaction();
+
+            $package->title = $validated['title'];
+            $package->category = $validated['category'] ?? null;
+            $package->description = $validated['description'] ?? null;
+            $package->price = $validated['price'];
+            $package->included_items = $itemsText;
+            $package->is_active = $isActive;
+            $package->save();
+
+            if ($request->filled('remove_images')) {
+                $removeParam = $request->remove_images;
+                if (str_starts_with(trim($removeParam), '[')) {
+                    $removeImageIds = json_decode($removeParam, true) ?: [];
+                } else {
+                    $removeImageIds = array_filter(explode(',', $removeParam));
+                }
+                $imagesToRemove = \App\Models\PackageImage::whereIn('id', $removeImageIds)
+                    ->where('package_id', $package->id)
+                    ->get();
+
+                foreach ($imagesToRemove as $img) {
+                    $imagesToDeleteOnSuccess[] = $img->image_path;
+                    $img->delete();
+                }
+            }
+
+            if ($request->hasFile('images')) {
+                foreach ($request->file('images') as $image) {
+                    $imagePath = $image->store('packages', 'public');
+                    $uploadedFiles[] = $imagePath;
+                    \App\Models\PackageImage::create([
+                        'package_id' => $package->id,
+                        'image_path' => $imagePath,
+                    ]);
+                }
+            }
+
+            if ($bomChanged) {
+                $package->inventoryItems()->sync($newSyncData);
+            }
+
+            DB::commit();
+
+            foreach ($imagesToDeleteOnSuccess as $delPath) {
+                Storage::disk('public')->delete($delPath);
+            }
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            foreach ($uploadedFiles as $path) {
+                Storage::disk('public')->delete($path);
+            }
+            throw $e;
         }
 
         return back()->with('success', 'Package updated successfully.');
@@ -377,6 +474,7 @@ class PackageController extends Controller
     public function archive(Package $package): RedirectResponse
     {
         $package->is_archived = true;
+        $package->is_active = false;
         $package->save();
 
         return back()->with('success', 'Package archived successfully.');
@@ -388,9 +486,34 @@ class PackageController extends Controller
     public function restore(Package $package): RedirectResponse
     {
         $package->is_archived = false;
+        $package->is_active = true;
         $package->save();
 
         return back()->with('success', 'Package restored successfully.');
+    }
+
+    /**
+     * Permanently delete the specified package if safe.
+     */
+    public function destroy(Package $package): RedirectResponse
+    {
+        if ($package->bookings()->exists()) {
+            return back()->with('error', 'Cannot permanently delete package "' . $package->title . '" because historical bookings reference it. Please archive the package instead to protect historical booking records.');
+        }
+
+        DB::transaction(function () use ($package) {
+            foreach ($package->images as $img) {
+                Storage::disk('public')->delete($img->image_path);
+                $img->delete();
+            }
+            if ($package->image_path) {
+                Storage::disk('public')->delete($package->image_path);
+            }
+            $package->inventoryItems()->detach();
+            $package->delete();
+        });
+
+        return back()->with('success', 'Package permanently deleted.');
     }
 
     /**
