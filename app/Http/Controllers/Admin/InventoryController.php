@@ -25,11 +25,19 @@ class InventoryController extends Controller
         // Get the requested category filter
         $category = $request->query('category', 'all');
         $status = $request->query('status', 'all');
+        $stockLevel = $request->query('stock_level', 'all');
         $perishable = $request->query('perishable', 'all');
+        $sort = $request->query('sort', 'default');
         $search = $request->query('search');
 
-        // Fetch all inventory items with substitutes and reserved stock calculation
-        $query = InventoryItem::with('substitutes')->withSum(['bookings as reserved_stock' => function ($query) {
+        // Fetch all inventory items with substitutes, packages, and transactions
+        $query = InventoryItem::with([
+            'substitutes',
+            'packages',
+            'inventoryTransactions' => function ($q) {
+                $q->with(['booking', 'performedByUser'])->latest();
+            }
+        ])->withSum(['bookings as reserved_stock' => function ($query) {
             $query->whereDate('bookings.event_date', '>=', Carbon::today())
                   ->whereNotIn('bookings.status', ['cancelled', 'completed', 'declined']);
         }], 'booking_items.quantity');
@@ -45,25 +53,43 @@ class InventoryController extends Controller
         if ($search) {
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('item_code', 'like', "%{$search}%");
+                  ->orWhere('item_code', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%");
             });
         }
         
-        if ($status !== 'all') {
+        // Stock status filtering: handle both stock_level and status query parameters
+        $effectiveStock = $stockLevel !== 'all' ? $stockLevel : ($status !== 'all' && in_array($status, ['in_stock', 'low', 'shortage']) ? $status : null);
+
+        if ($effectiveStock || ($status !== 'all')) {
             $query->groupBy('inventory_items.id');
         }
 
-        if ($status === 'in_stock') {
+        if ($effectiveStock === 'in_stock') {
             $query->havingRaw('(current_stock - COALESCE(reserved_stock, 0)) > min_stock');
-        } elseif ($status === 'low') {
+        } elseif ($effectiveStock === 'low') {
             $query->havingRaw('(current_stock - COALESCE(reserved_stock, 0)) <= min_stock AND (current_stock - COALESCE(reserved_stock, 0)) >= 0');
-        } elseif ($status === 'shortage') {
+        } elseif ($effectiveStock === 'shortage') {
             $query->havingRaw('(current_stock - COALESCE(reserved_stock, 0)) < 0');
         }
 
-        $query->orderByRaw('CASE WHEN (current_stock - COALESCE(reserved_stock, 0)) < 0 THEN 2 WHEN (current_stock - COALESCE(reserved_stock, 0)) <= min_stock THEN 1 ELSE 0 END DESC')
-              ->orderByRaw('CASE WHEN (current_stock - COALESCE(reserved_stock, 0)) <= min_stock THEN min_stock - (current_stock - COALESCE(reserved_stock, 0)) ELSE 0 END DESC')
-              ->orderBy('name');
+        // Apply sort
+        if ($sort === 'name_asc') {
+            $query->orderBy('name', 'asc');
+        } elseif ($sort === 'name_desc') {
+            $query->orderBy('name', 'desc');
+        } elseif ($sort === 'stock_desc') {
+            $query->orderBy('current_stock', 'desc');
+        } elseif ($sort === 'stock_asc') {
+            $query->orderBy('current_stock', 'asc');
+        } elseif ($sort === 'category_asc') {
+            $query->orderBy('category', 'asc')->orderBy('name', 'asc');
+        } else {
+            // Default smart shortage-priority sort
+            $query->orderByRaw('CASE WHEN (current_stock - COALESCE(reserved_stock, 0)) < 0 THEN 2 WHEN (current_stock - COALESCE(reserved_stock, 0)) <= min_stock THEN 1 ELSE 0 END DESC')
+                  ->orderByRaw('CASE WHEN (current_stock - COALESCE(reserved_stock, 0)) <= min_stock THEN min_stock - (current_stock - COALESCE(reserved_stock, 0)) ELSE 0 END DESC')
+                  ->orderBy('name');
+        }
               
         // Use subquery count to correctly handle HAVING clauses on aliases with pagination
         $page = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
@@ -79,7 +105,7 @@ class InventoryController extends Controller
         );
 
         // Get unique categories for the filter dropdown
-        $categories = InventoryItem::select('category')->distinct()->pluck('category');
+        $categories = InventoryItem::select('category')->distinct()->whereNotNull('category')->pluck('category');
 
         // Compute system-wide stats for cards (unfiltered)
         $allStatsItems = InventoryItem::withSum(['bookings as reserved_stock' => function ($q) {
@@ -123,7 +149,9 @@ class InventoryController extends Controller
             'categories' => $categories,
             'currentCategory' => $category,
             'currentStatus' => $status,
+            'currentStockLevel' => $stockLevel,
             'currentPerishable' => $perishable,
+            'currentSort' => $sort,
             'totalItemsCount' => $totalItemsCount,
             'inStockCount' => $inStockCount,
             'lowStockCount' => $lowStockCount,
