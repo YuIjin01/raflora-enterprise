@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Log;
@@ -1300,25 +1301,45 @@ class BookingController extends Controller
         $scaleContext = trim($scaleContext) ?: "Single order/bouquet delivery - no scale multiplier applied";
 
         $tempPath = $request->file('inspiration_image')->store('bookings/temp-analysis', 'local');
-        $fullPath = storage_path('app/private/' . $tempPath);
+        $fullPath = Storage::disk('local')->path($tempPath);
         $uploadedHash = @sha1_file($fullPath) ?: null;
+        $originalFilename = $request->file('inspiration_image')->getClientOriginalName();
 
         try {
             $vision = new GeminiVisionService();
-            $validation = $vision->validateImage($fullPath);
+
+            $valCacheKey = $uploadedHash ? "gemini_val_{$uploadedHash}_{$originalFilename}" : null;
+            if ($valCacheKey && Cache::has($valCacheKey)) {
+                $validation = Cache::get($valCacheKey);
+            } else {
+                $validation = $vision->validateImage($fullPath);
+                if ($valCacheKey && !empty($validation['is_valid'])) {
+                    Cache::put($valCacheKey, $validation, now()->addHours(2));
+                }
+            }
 
             if (!$validation['is_valid']) {
+                $errorType = $validation['error_type'] ?? 'image_quality';
+                $isQuotaError = in_array($errorType, ['service', 'rate_limit', 'quota'], true);
+
                 return response()->json([
                     'success' => false,
+                    'error_type' => $errorType,
+                    'is_quota_error' => $isQuotaError,
                     'message' => $validation['rejection_reason'] ?? 'The image is not clear enough for reliable analysis. Please upload a clearer image.',
                 ], 422);
             }
 
             $templateResult = $this->findCompletedBookingTemplate($uploadedHash);
             $completedTemplateReused = false;
+            $contextHash = md5(($request->input('event_type') ?? '') . '|' . ($scaleContext ?? '') . '|' . ($request->input('special_requests') ?? ''));
+            $anaCacheKey = $uploadedHash ? "gemini_ana_{$uploadedHash}_{$originalFilename}_{$contextHash}" : null;
+
             if ($templateResult) {
                 $analysisResult = $templateResult;
                 $completedTemplateReused = true;
+            } elseif ($anaCacheKey && Cache::has($anaCacheKey)) {
+                $analysisResult = Cache::get($anaCacheKey);
             } else {
                 $analysisResult = $vision->analyzeImageFromPath(
                     $fullPath,
@@ -1328,6 +1349,9 @@ class BookingController extends Controller
                     $venue,
                     $scaleContext
                 );
+                if ($anaCacheKey && !empty($analysisResult['analysis']['suggested_materials'])) {
+                    Cache::put($anaCacheKey, $analysisResult, now()->addHours(2));
+                }
             }
 
             $imageMeta = [
@@ -1421,9 +1445,14 @@ class BookingController extends Controller
                 Storage::disk('local')->delete($tempPath);
             }
 
+            $failureType = GeminiVisionService::classifyFailure($e);
+            $isQuotaError = in_array($failureType, ['service', 'rate_limit', 'quota'], true);
+
             return response()->json([
                 'success' => false,
-                'message' => GeminiVisionService::failureMessageForType(GeminiVisionService::classifyFailure($e)),
+                'error_type' => $failureType,
+                'is_quota_error' => $isQuotaError,
+                'message' => GeminiVisionService::failureMessageForType($failureType),
             ], 422);
         }
     }

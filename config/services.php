@@ -46,4 +46,10 @@ return [
         'api_url' => env('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models'),
     ],
 
+    'brevo' => [
+        'key' => env('BREVO_API_KEY'),
+        'timeout' => (float) env('BREVO_API_TIMEOUT', 15),
+        'connect_timeout' => (float) env('BREVO_API_CONNECT_TIMEOUT', 5),
+    ],
+
 ];

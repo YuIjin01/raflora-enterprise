@@ -565,6 +565,8 @@
             reader.readAsDataURL(file);
         }
 
+        let currentClientFile = null;
+
         function renderClientError(message = null) {
             if (fileInput) fileInput.value = '';
             if (!contentTarget) return;
@@ -576,12 +578,39 @@
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </div>
                     <p class="text-sm font-bold text-slate-800">This image could not be analyzed.</p>
-                    <p class="text-xs text-slate-400 mt-1">${detailText}</p>
+                    <p class="text-xs text-slate-500 mt-1">${detailText}</p>
                 </div>`;
         }
 
+        function renderClientQuotaError(message = null) {
+            if (!contentTarget) return;
+            const detailText = message || "Your image was uploaded successfully, but Raflora's AI service is currently busy. Please try again shortly.";
+            contentTarget.innerHTML = `
+                <div class="flex flex-col items-center p-3 text-center">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-bold text-amber-900">AI analysis temporarily unavailable</p>
+                    <p class="text-xs text-amber-800 mt-1 max-w-sm">${detailText}</p>
+                    <button type="button" onclick="event.stopPropagation(); retryClientAnalysis();" class="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-xs transition">
+                        <span>↻ Retry Analysis</span>
+                    </button>
+                </div>`;
+        }
+
+        window.retryClientAnalysis = function() {
+            if (!currentClientFile || analysisPending) return;
+            renderClientPreview(currentClientFile);
+            analyzeClientImage(currentClientFile);
+        };
+
         function analyzeClientImage(file) {
             if (!file) return;
+            if (analysisPending) return;
+
+            currentClientFile = file;
             setStatus('warning', '<span class="inline-flex items-center gap-2"><svg class="inline w-4 h-4 mr-1 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>Analyzing design elements with AI...</span>');
             analysisPending = true;
             imageValid = false;
@@ -614,7 +643,12 @@
             })
             .then(async res => {
                 const data = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(data.message || `AI analysis failed`);
+                if (!res.ok) {
+                    const err = new Error(data.message || `AI analysis failed`);
+                    err.data = data;
+                    err.status = res.status;
+                    throw err;
+                }
                 return data;
             })
             .then(data => {
@@ -628,13 +662,37 @@
                     if (analysisNonceInput) analysisNonceInput.value = data.analysis_nonce || '';
                     setStatus('success', '✓ Image analyzed successfully. Material suggestions prepared for staff quotation review.');
                 } else {
-                    imageValid = false; analysisPending = false; updateSubmitState(); resetAnalysisPayload(); renderClientError(data.message || 'Please choose a clearer floral or event photo.');
-                    setStatus('error', '✗ ' + (data.message || 'Image rejected.'));
+                    imageValid = false;
+                    analysisPending = false;
+                    updateSubmitState();
+                    resetAnalysisPayload();
+                    const isQuota = Boolean(data.is_quota_error || data.error_type === 'service' || data.error_type === 'rate_limit');
+                    if (isQuota) {
+                        renderClientQuotaError(data.message);
+                        setStatus('warning', 'Raflora\'s AI service is currently busy. Please click "Retry Analysis" shortly.');
+                    } else {
+                        renderClientError(data.message || 'Please choose a clearer floral or event photo.');
+                        setStatus('error', '✗ ' + (data.message || 'Image rejected.'));
+                    }
                 }
             })
             .catch(err => {
-                imageValid = false; analysisPending = false; updateSubmitState(); resetAnalysisPayload(); renderClientError(err.message || 'Image analysis could not be completed because of a connection problem. Please check your internet connection and try again.');
-                setStatus('error', '✗ ' + (err.message || 'Image analysis could not be completed because of a connection problem. Please check your internet connection and try again.'));
+                imageValid = false;
+                analysisPending = false;
+                updateSubmitState();
+                resetAnalysisPayload();
+                const errData = err.data || {};
+                const isQuota = Boolean(errData.is_quota_error || errData.error_type === 'service' || errData.error_type === 'rate_limit' || err.status === 429 || err.status === 503);
+                if (isQuota) {
+                    renderClientQuotaError(errData.message);
+                    setStatus('warning', 'Raflora\'s AI service is currently busy. Please click "Retry Analysis" shortly.');
+                } else if (errData.error_type === 'connection' || err.message?.includes('connection')) {
+                    renderClientError('AI analysis could not be completed because of a connection problem. Please check your internet connection and try again.');
+                    setStatus('error', '✗ AI analysis could not be completed because of a connection problem. Please check your internet connection and try again.');
+                } else {
+                    renderClientError(err.message || 'Please choose a clearer floral or event photo.');
+                    setStatus('error', '✗ ' + (err.message || 'Image rejected.'));
+                }
             });
         }
 

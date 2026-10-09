@@ -12,13 +12,21 @@ class GeminiVisionService
      * Ordered free-tier fallback models.
      * @var string[]
      */
+    /**
+     * Ordered supported models: prefers current GA Flash-Lite model for high-throughput,
+     * low-cost structured vision analysis, with Flash and legacy fallbacks.
+     * @var string[]
+     */
     protected array $fallbackModels = [
+        'gemini-3.5-flash-lite',
         'gemini-3.5-flash',
-        'gemini-3.1-flash-lite',
         'gemini-2.5-flash',
-        'gemini-2.5-flash-lite',
-        'gemini-1.5-flash',
     ];
+
+    /**
+     * Maximum consecutive quota/rate-limit failures before failing fast to protect API quota.
+     */
+    protected int $maxConsecutiveQuotaFailures = 2;
 
     protected string $apiUrl;
     protected ?string $apiKey;
@@ -28,6 +36,61 @@ class GeminiVisionService
         // Base URL is built per-model when calling the Google Gemini REST endpoint.
         $this->apiUrl = (string) (config('services.gemini.api_url') ?: 'https://generativelanguage.googleapis.com/v1beta/models');
         $this->apiKey = config('services.gemini.api_key');
+    }
+
+    public function getFallbackModels(): array
+    {
+        return $this->fallbackModels;
+    }
+
+    public function setFallbackModels(array $models): self
+    {
+        $this->fallbackModels = $models;
+        return $this;
+    }
+
+    /**
+     * Determine if an HTTP response or body indicates a retryable rate limit or service error.
+     */
+    public function isRetryableRateLimit(int $status, string $body): bool
+    {
+        return $status === 429
+            || $status === 503
+            || stripos($body, 'RESOURCE_EXHAUSTED') !== false
+            || stripos($body, 'UNAVAILABLE') !== false
+            || stripos($body, 'quota') !== false
+            || stripos($body, 'rate limit') !== false;
+    }
+
+    /**
+     * Compute and execute controlled exponential backoff with jitter for retryable 429/503 responses.
+     */
+    public function handleRetryBackoff(?int $retryAfterHeader, int $attempt): float
+    {
+        if ($retryAfterHeader !== null && $retryAfterHeader > 0) {
+            $delay = min(3.0, (float) $retryAfterHeader);
+        } else {
+            $base = 0.5 * (2 ** min($attempt, 3));
+            $jitter = mt_rand(0, 150) / 1000;
+            $delay = min(2.5, $base + $jitter);
+        }
+
+        Log::info("GeminiVisionService: Controlled backoff for {$delay}s (attempt {$attempt}) on rate limit/service busy.");
+        $this->sleepBackoff($delay);
+
+        return $delay;
+    }
+
+    /**
+     * Sleep helper for backoff, bypassed during automated unit tests.
+     */
+    protected function sleepBackoff(float $seconds): void
+    {
+        if (app()->runningUnitTests()) {
+            return;
+        }
+
+        usleep((int) ($seconds * 1000000));
     }
 
     /**
@@ -99,8 +162,11 @@ PROMPT;
 
         $lastException = null;
         $lastFailureType = 'analysis';
+        $consecutiveQuotaFailures = 0;
+        $attempt = 0;
 
         foreach ($this->fallbackModels as $model) {
+            $attempt++;
             try {
                 if (empty($this->apiKey)) {
                     throw new \Exception('GEMINI_API_KEY is not configured in environment.');
@@ -136,9 +202,18 @@ PROMPT;
                 $status = $response->status();
                 $body = $response->body();
 
-                if ($status === 429 || $status === 503 || stripos($body, 'RESOURCE_EXHAUSTED') !== false || stripos($body, 'UNAVAILABLE') !== false || stripos($body, 'quota') !== false) {
+                if ($this->isRetryableRateLimit($status, $body)) {
                     $lastFailureType = 'service';
-                    Log::warning("Image validation: Quota reached for {$model}. Trying next model.");
+                    $consecutiveQuotaFailures++;
+                    Log::warning("Image validation: Quota/rate-limit reached for {$model} (status={$status}).");
+
+                    if ($consecutiveQuotaFailures >= $this->maxConsecutiveQuotaFailures) {
+                        Log::warning("Image validation: Quota exhausted across models; stopping early to protect API quota.");
+                        break;
+                    }
+
+                    $retryAfter = $response->header('Retry-After');
+                    $this->handleRetryBackoff($retryAfter ? (int) $retryAfter : null, $attempt);
                     continue;
                 }
 
@@ -201,7 +276,13 @@ PROMPT;
                     $lastFailureType = 'connection';
                 } elseif (stripos($msg, 'RESOURCE_EXHAUSTED') !== false || stripos($msg, 'UNAVAILABLE') !== false || stripos($msg, 'quota') !== false || stripos($msg, '429') !== false || stripos($msg, '503') !== false || stripos($msg, 'rate limit') !== false) {
                     $lastFailureType = 'service';
-                    Log::warning("Image validation: Quota/limit for {$model}. Trying next.");
+                    $consecutiveQuotaFailures++;
+                    Log::warning("Image validation: Quota/limit for {$model}.");
+                    if ($consecutiveQuotaFailures >= $this->maxConsecutiveQuotaFailures) {
+                        Log::warning("Image validation: Quota exhausted across models; stopping early.");
+                        break;
+                    }
+                    $this->handleRetryBackoff(null, $attempt);
                     continue;
                 } else {
                     $lastFailureType = 'analysis';
@@ -915,8 +996,11 @@ PROMPT;
         }
 
         $lastException = null;
+        $consecutiveQuotaFailures = 0;
+        $attempt = 0;
 
         foreach ($this->fallbackModels as $model) {
+            $attempt++;
             try {
                 // Build Google Gemini v1beta endpoint for the specific model and include API key in query
                 if (empty($this->apiKey)) {
@@ -956,8 +1040,15 @@ PROMPT;
                 $body = $response->body();
 
                 // Detect quota / rate limit or temporary unavailability by status or response content
-                if ($status === 429 || $status === 503 || stripos($body, 'RESOURCE_EXHAUSTED') !== false || stripos($body, 'UNAVAILABLE') !== false || stripos($body, 'quota') !== false) {
-                    Log::warning("Quota reached for {$model}. Failing over to next model.");
+                if ($this->isRetryableRateLimit($status, $body)) {
+                    $consecutiveQuotaFailures++;
+                    Log::warning("Quota/rate-limit reached for {$model} (status={$status}).");
+                    if ($consecutiveQuotaFailures >= $this->maxConsecutiveQuotaFailures) {
+                        Log::warning("Quota exhausted across models; failing fast to protect API quota.");
+                        throw new \Exception("Gemini quota exhausted across models (status={$status}): {$body}");
+                    }
+                    $retryAfter = $response->header('Retry-After');
+                    $this->handleRetryBackoff($retryAfter ? (int) $retryAfter : null, $attempt);
                     continue; // try next model
                 }
 
@@ -1082,7 +1173,13 @@ PROMPT;
                 // If exception message indicates quota or temporary capacity, continue; else rethrow
                 $msg = $e->getMessage();
                 if (stripos($msg, 'RESOURCE_EXHAUSTED') !== false || stripos($msg, 'UNAVAILABLE') !== false || stripos($msg, 'quota') !== false || stripos($msg, '429') !== false || stripos($msg, '503') !== false) {
-                    Log::warning("Quota/limit detected for {$model}: {$msg}. Failing over to next model.");
+                    $consecutiveQuotaFailures++;
+                    Log::warning("Quota/limit detected for {$model}: {$msg}.");
+                    if ($consecutiveQuotaFailures >= $this->maxConsecutiveQuotaFailures) {
+                        Log::warning("Quota exhausted across models; failing fast to protect API quota.");
+                        throw $e;
+                    }
+                    $this->handleRetryBackoff(null, $attempt);
                     continue;
                 }
 

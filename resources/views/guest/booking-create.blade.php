@@ -2679,16 +2679,40 @@
                         <div class="text-[10px] text-slate-500">${matsCount} materials detected</div>
                     `;
                 } else if (img.status === 'failed') {
-                    statusBadgeHtml = `
-                        <div class="mt-1.5 flex items-center gap-1 text-[11px] text-rose-600 font-semibold">
-                            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
-                            <span>Analysis failed</span>
-                        </div>
-                        <p class="text-[10px] text-slate-500 leading-tight mt-0.5">Unable to analyze this image</p>
-                        <button type="button" onclick="event.stopPropagation(); retryUploadedImage('${img.id}')" class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition">
-                            <span>↻ Retry</span>
-                        </button>
-                    `;
+                    if (img.isQuotaError) {
+                        statusBadgeHtml = `
+                            <div class="mt-1.5 flex items-center gap-1 text-[11px] text-amber-700 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>AI service busy</span>
+                            </div>
+                            <p class="text-[10px] text-amber-800 leading-tight mt-0.5">Your image was uploaded successfully, but Raflora's AI service is currently busy. Please try again shortly.</p>
+                            <button type="button" onclick="event.stopPropagation(); retryUploadedImage('${img.id}')" class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-300 transition">
+                                <span>↻ Retry Analysis</span>
+                            </button>
+                        `;
+                    } else if (img.errorType === 'connection') {
+                        statusBadgeHtml = `
+                            <div class="mt-1.5 flex items-center gap-1 text-[11px] text-amber-700 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                <span>Connection problem</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 leading-tight mt-0.5">AI analysis could not be completed because of a connection problem. Please try again.</p>
+                            <button type="button" onclick="event.stopPropagation(); retryUploadedImage('${img.id}')" class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition">
+                                <span>↻ Retry</span>
+                            </button>
+                        `;
+                    } else {
+                        statusBadgeHtml = `
+                            <div class="mt-1.5 flex items-center gap-1 text-[11px] text-rose-600 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                <span>Analysis failed</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 leading-tight mt-0.5">${img.errorMessage || 'Unable to analyze this image'}</p>
+                            <button type="button" onclick="event.stopPropagation(); retryUploadedImage('${img.id}')" class="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-200 transition">
+                                <span>↻ Retry</span>
+                            </button>
+                        `;
+                    }
                 } else {
                     statusBadgeHtml = `
                         <div class="mt-1.5 flex items-center gap-1 text-[11px] text-amber-600 font-semibold">
@@ -2749,9 +2773,11 @@
         window.retryUploadedImage = function(id) {
             const img = uploadedImages.find(i => i.id === id);
             if (!img) return;
+            if (img.status === 'uploading') return;
             
             img.status = 'pending';
             img.errorMessage = null;
+            img.isQuotaError = false;
             renderUploadedGrid();
             saveGuestDraft();
             processUploadQueue();
@@ -2864,7 +2890,9 @@
                     saveGuestDraft();
                 } else {
                     imageItem.status = 'failed';
-                    imageItem.errorMessage = data.message || 'Image analysis failed.';
+                    imageItem.isQuotaError = Boolean(data.is_quota_error || data.error_type === 'service' || data.error_type === 'rate_limit');
+                    imageItem.errorType = data.error_type || (imageItem.isQuotaError ? 'service' : 'analysis');
+                    imageItem.errorMessage = data.message || (imageItem.isQuotaError ? "Your image was uploaded successfully, but Raflora's AI service is currently busy. Please try again shortly." : 'Image analysis failed.');
                     syncAnalysisHiddenInputs();
                     renderUploadedGrid();
                     saveGuestDraft();
@@ -2872,7 +2900,9 @@
             })
             .catch(err => {
                 imageItem.status = 'failed';
-                imageItem.errorMessage = 'Network error while analyzing image.';
+                imageItem.isQuotaError = false;
+                imageItem.errorType = 'connection';
+                imageItem.errorMessage = 'AI analysis could not be completed because of a connection problem. Please try again.';
                 syncAnalysisHiddenInputs();
                 renderUploadedGrid();
                 saveGuestDraft();
@@ -2886,6 +2916,8 @@
         }
 
         function processUploadQueue() {
+            if (isAiAnalyzing) return;
+
             const nextPending = uploadedImages.find(i => i.status === 'pending');
             const progressCard = document.getElementById('ai-progress-card');
 
@@ -2923,6 +2955,10 @@
             }
 
             filesToAdd.forEach(file => {
+                // Prevent duplicate upload of identical file already in list
+                const isDuplicate = uploadedImages.some(i => i.file && i.file.name === file.name && i.file.size === file.size && i.file.lastModified === file.lastModified);
+                if (isDuplicate) return;
+
                 const item = {
                     id: 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 8),
                     file: file,
@@ -2932,6 +2968,8 @@
                     status: 'pending',
                     statusText: 'Waiting in queue...',
                     errorMessage: null,
+                    isQuotaError: false,
+                    errorType: null,
                     analysisToken: null,
                     tempPath: null,
                     nonce: null,

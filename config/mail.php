@@ -39,6 +39,10 @@ return [
 
     'mailers' => [
 
+        'brevo_api' => [
+            'transport' => 'brevo_api',
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
