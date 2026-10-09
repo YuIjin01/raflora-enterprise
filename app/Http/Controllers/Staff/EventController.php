@@ -224,7 +224,7 @@ class EventController extends Controller
             $updates[] = [$returnItem, $returnedQuantity, $qGood, $qDamaged, $qLost, $data['notes'] ?? null];
         }
 
-        DB::transaction(function () use ($updates, $returnRecord, $validated): void {
+        DB::transaction(function () use ($updates, $returnRecord, $validated, $request, $booking): void {
             foreach ($updates as [$returnItem, $returnedQuantity, $qGood, $qDamaged, $qLost, $notes]) {
                 $returnItem->update([
                     'quantity_returned' => $returnedQuantity,
@@ -237,8 +237,18 @@ class EventController extends Controller
 
             $returnRecord->update([
                 'status' => 'Partially Returned',
+                'assigned_staff_id' => $returnRecord->assigned_staff_id ?? $request->user()->id,
                 'notes' => $validated['notes'] ?? $returnRecord->notes,
                 'return_date' => now(),
+            ]);
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'return_quantities_recorded',
+                'module' => 'return_tracking',
+                'details' => "Physical return quantities recorded by staff {$request->user()->name} for return {$returnRecord->reference} (booking #{$booking->id})",
+                'entity_type' => AssetReturn::class,
+                'entity_id' => $returnRecord->id,
             ]);
         });
 
@@ -277,13 +287,18 @@ class EventController extends Controller
             }
         }
 
-        DB::transaction(function () use ($validated, $returnRecord, $request): void {
+        DB::transaction(function () use ($validated, $returnRecord, $request, $booking): void {
+            $hasDamageOrLost = false;
             foreach ($validated['items'] as $returnItemId => $data) {
                 $returnItem = ReturnItem::where('return_id', $returnRecord->id)->whereKey($returnItemId)->first();
                 $returnItem->update([
                     'condition' => $data['condition'],
                     'notes' => $data['notes'] ?? null,
                 ]);
+
+                if (in_array($data['condition'], ['damaged', 'lost', 'mixed'], true)) {
+                    $hasDamageOrLost = true;
+                }
 
                 if (!empty($data['evidence'])) {
                     foreach ($request->file('items.' . $returnItemId . '.evidence') as $file) {
@@ -298,6 +313,20 @@ class EventController extends Controller
                     }
                 }
             }
+
+            $returnRecord->update([
+                'inspected_by' => $returnRecord->inspected_by ?? $request->user()->id,
+                'approval_status' => $hasDamageOrLost ? 'pending' : $returnRecord->approval_status,
+            ]);
+
+            AuditLog::create([
+                'user_id' => $request->user()->id,
+                'action' => 'return_inspection_submitted',
+                'module' => 'return_tracking',
+                'details' => "Material condition inspection submitted by {$request->user()->name} for return {$returnRecord->reference} (booking #{$booking->id})",
+                'entity_type' => AssetReturn::class,
+                'entity_id' => $returnRecord->id,
+            ]);
         });
 
         return back()->with('success', 'Condition observations recorded for Admin review.');

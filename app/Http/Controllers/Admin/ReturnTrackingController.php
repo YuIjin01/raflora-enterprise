@@ -11,6 +11,7 @@ use App\Models\ReturnItem;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\AuditLog;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class ReturnTrackingController extends Controller
@@ -52,8 +53,10 @@ class ReturnTrackingController extends Controller
         return DB::transaction(function () use ($booking, $hardwareItems) {
             $return = AssetReturn::create([
                 'booking_id' => $booking->id,
+                'assigned_staff_id' => $booking->staff_id ?? null,
                 'status' => 'Pending',
                 'total_damage_charge' => 0,
+                'approval_status' => 'not_required',
             ]);
 
             foreach ($hardwareItems as $bookingItem) {
@@ -95,17 +98,36 @@ class ReturnTrackingController extends Controller
 
         $search = trim((string) $request->input('search', ''));
         $status = (string) $request->input('status', 'all');
+        $staffFilter = (string) $request->input('staff', 'all');
+        $inspectorFilter = (string) $request->input('inspector', 'all');
+        $approvalFilter = (string) $request->input('approval', 'all');
         $eventDate = $request->input('event_date');
         $sort = (string) $request->input('sort', 'default');
 
-        $query = AssetReturn::with(['booking.client', 'inspectedByUser']);
+        $query = AssetReturn::with([
+            'booking.client',
+            'inspectedByUser',
+            'assignedStaff',
+            'inspector',
+            'approver',
+            'returnItems.inventoryItem',
+            'returnItems.evidences',
+        ]);
 
-        // Search booking # or client name/email
+        // Search booking #, return reference (e.g. RT-008), or client name/email
         if ($search !== '') {
             $cleanSearch = ltrim($search, '#');
-            $query->where(function ($q) use ($search, $cleanSearch) {
-                if (is_numeric($cleanSearch)) {
-                    $q->where('booking_id', (int) $cleanSearch);
+            $rtId = null;
+            if (preg_match('/^rt[-_]?0*([0-9]+)$/i', $search, $matches)) {
+                $rtId = (int) $matches[1];
+            }
+
+            $query->where(function ($q) use ($search, $cleanSearch, $rtId) {
+                if ($rtId !== null) {
+                    $q->where('id', $rtId);
+                } elseif (is_numeric($cleanSearch)) {
+                    $q->where('booking_id', (int) $cleanSearch)
+                      ->orWhere('id', (int) $cleanSearch);
                 } else {
                     $q->whereHas('booking', function ($bQuery) use ($search) {
                         $bQuery->where('event_type', 'like', "%{$search}%")
@@ -124,6 +146,25 @@ class ReturnTrackingController extends Controller
         // Status filter: Pending, Partially Returned, Completed
         if ($status !== 'all' && in_array($status, ['Pending', 'Partially Returned', 'Completed'], true)) {
             $query->where('status', $status);
+        }
+
+        // Staff filter
+        if ($staffFilter === 'unassigned') {
+            $query->whereNull('assigned_staff_id');
+        } elseif ($staffFilter !== 'all' && is_numeric($staffFilter)) {
+            $query->where('assigned_staff_id', (int) $staffFilter);
+        }
+
+        // Inspector filter
+        if ($inspectorFilter === 'unassigned') {
+            $query->whereNull('inspected_by');
+        } elseif ($inspectorFilter !== 'all' && is_numeric($inspectorFilter)) {
+            $query->where('inspected_by', (int) $inspectorFilter);
+        }
+
+        // Approval filter
+        if ($approvalFilter !== 'all' && in_array($approvalFilter, ['not_required', 'pending', 'approved', 'rejected'], true)) {
+            $query->where('approval_status', $approvalFilter);
         }
 
         // Event date filter
@@ -146,13 +187,13 @@ class ReturnTrackingController extends Controller
                 break;
             case 'event_date_asc':
                 $query->orderBy(
-                    Booking::select('event_date')->whereColumn('bookings.id', 'asset_returns.booking_id'),
+                    Booking::select('event_date')->whereColumn('bookings.id', 'returns.booking_id'),
                     'asc'
                 );
                 break;
             case 'event_date_desc':
                 $query->orderBy(
-                    Booking::select('event_date')->whereColumn('bookings.id', 'asset_returns.booking_id'),
+                    Booking::select('event_date')->whereColumn('bookings.id', 'returns.booking_id'),
                     'desc'
                 );
                 break;
@@ -165,16 +206,68 @@ class ReturnTrackingController extends Controller
 
         $returns = $query->paginate(15)->withQueryString();
 
+        // Operational metrics
+        $totalReturnsCount = AssetReturn::count();
+        $pendingInspectionCount = AssetReturn::where('status', 'Pending')->count();
+        $forApprovalCount = AssetReturn::where('approval_status', 'pending')->count();
+        $completedReturnsCount = AssetReturn::where('status', 'Completed')->count();
+
+        // Eligible users for assignments
+        $eligibleStaff = User::whereIn('role', ['staff', 'admin'])->orderBy('role', 'desc')->orderBy('name')->get();
+        $eligibleInspectors = User::whereIn('role', ['admin', 'staff'])->orderBy('role', 'asc')->orderBy('name')->get();
+
+        // Eager load Action History (AuditLog records) for the paginated returns
+        $returnIds = $returns->pluck('id')->filter()->all();
+        $bookingIds = $returns->pluck('booking_id')->filter()->all();
+        $allReturnItemIds = ReturnItem::whereIn('return_id', $returnIds)->pluck('id')->all();
+
+        $auditLogs = AuditLog::with('user')
+            ->where(function ($q) use ($returnIds, $bookingIds, $allReturnItemIds) {
+                $q->where(fn ($sub) => $sub->where('entity_type', AssetReturn::class)->whereIn('entity_id', $returnIds))
+                  ->orWhere(fn ($sub) => $sub->where('entity_type', Booking::class)->whereIn('entity_id', $bookingIds)->where('module', 'return_tracking'))
+                  ->orWhere(fn ($sub) => $sub->where('entity_type', ReturnItem::class)->whereIn('entity_id', $allReturnItemIds));
+            })
+            ->latest()
+            ->get();
+
+        foreach ($returns as $ret) {
+            $itemIds = $ret->returnItems->pluck('id')->all();
+            $retAuditLogs = $auditLogs->filter(function ($log) use ($ret, $itemIds) {
+                if ($log->entity_type === AssetReturn::class && (int) $log->entity_id === (int) $ret->id) return true;
+                if ($log->entity_type === Booking::class && (int) $log->entity_id === (int) $ret->booking_id) return true;
+                if ($log->entity_type === ReturnItem::class && in_array((int) $log->entity_id, $itemIds, true)) return true;
+                return false;
+            })->values();
+            $ret->setRelation('auditLogs', $retAuditLogs);
+        }
+
         $currentSearch = $search;
         $currentStatus = $status;
+        $currentStaff = $staffFilter;
+        $currentInspector = $inspectorFilter;
+        $currentApproval = $approvalFilter;
         $currentEventDate = $eventDate;
         $currentSort = $sort;
-        $hasActiveFilters = ($currentStatus !== 'all') || !empty($currentEventDate) || ($currentSort !== 'default');
+        $hasActiveFilters = ($currentStatus !== 'all')
+            || ($currentStaff !== 'all')
+            || ($currentInspector !== 'all')
+            || ($currentApproval !== 'all')
+            || !empty($currentEventDate)
+            || ($currentSort !== 'default');
 
         return view('admin.return-tracking', compact(
             'returns',
+            'totalReturnsCount',
+            'pendingInspectionCount',
+            'forApprovalCount',
+            'completedReturnsCount',
+            'eligibleStaff',
+            'eligibleInspectors',
             'currentSearch',
             'currentStatus',
+            'currentStaff',
+            'currentInspector',
+            'currentApproval',
             'currentEventDate',
             'currentSort',
             'hasActiveFilters'
@@ -562,12 +655,46 @@ class ReturnTrackingController extends Controller
                     ? 'Completed'
                     : 'Partially Returned';
 
+                $hasDamagedOrLost = $return->returnItems()->where(function ($q) {
+                    $q->where('quantity_damaged', '>', 0)
+                      ->orWhere('quantity_lost', '>', 0)
+                      ->orWhereIn('condition', ['damaged', 'lost', 'mixed']);
+                })->exists();
+
+                $approvalStatus = $return->approval_status ?? 'not_required';
+                $approvedBy = $return->approved_by;
+                $approvedAt = $return->approved_at;
+
+                if (!$hasDamagedOrLost) {
+                    $approvalStatus = 'not_required';
+                } else {
+                    if (!$hasOutstandingItems) {
+                        $approvalStatus = 'approved';
+                        $approvedBy = auth()->id();
+                        $approvedAt = now();
+                    } elseif ($approvalStatus === 'not_required') {
+                        $approvalStatus = 'pending';
+                    }
+                }
+
                 $return->update([
                     'status' => $newStatus,
                     'total_damage_charge' => $totalDamageCharge,
                     'notes' => $request->notes,
-                    'inspected_by' => auth()->id(),
+                    'inspected_by' => $return->inspected_by ?? auth()->id(),
                     'return_date' => now(),
+                    'approval_status' => $approvalStatus,
+                    'approved_by' => $approvedBy,
+                    'approved_at' => $approvedAt,
+                ]);
+
+                AuditLog::create([
+                    'user_id' => auth()->id(),
+                    'action' => 'return_reconciled',
+                    'module' => 'return_tracking',
+                    'details' => "Return {$return->reference} inventory reconciled (status: {$newStatus}, total damage charge: ₱" . number_format($totalDamageCharge, 2) . ")",
+                    'entity_type' => AssetReturn::class,
+                    'entity_id' => $return->id,
                 ]);
 
                 if ($booking) {
@@ -641,5 +768,142 @@ class ReturnTrackingController extends Controller
         }
 
         return redirect()->route('admin.return-tracking')->with('success', 'Return record updated successfully.');
-    } 
+    }
+
+    public function assign(Request $request, AssetReturn $return)
+    {
+        $validated = $request->validate([
+            'assigned_staff_id' => 'nullable|exists:users,id',
+            'inspector_id' => 'nullable|exists:users,id',
+        ]);
+
+        if (!empty($validated['assigned_staff_id'])) {
+            $staff = User::findOrFail($validated['assigned_staff_id']);
+            if (!in_array($staff->role, ['staff', 'admin'], true)) {
+                return back()->with('error', 'Assigned staff must have an authorized staff or administrator account.');
+            }
+        }
+
+        if (!empty($validated['inspector_id'])) {
+            $inspector = User::findOrFail($validated['inspector_id']);
+            if (!in_array($inspector->role, ['staff', 'admin'], true)) {
+                return back()->with('error', 'Inspector must have an authorized staff or administrator account.');
+            }
+        }
+
+        $changes = [];
+        $oldStaffId = $return->assigned_staff_id;
+        $newStaffId = array_key_exists('assigned_staff_id', $validated)
+            ? ($validated['assigned_staff_id'] ? (int) $validated['assigned_staff_id'] : null)
+            : $oldStaffId;
+
+        $oldInspectorId = $return->inspected_by;
+        $newInspectorId = array_key_exists('inspector_id', $validated)
+            ? ($validated['inspector_id'] ? (int) $validated['inspector_id'] : null)
+            : $oldInspectorId;
+
+        if ($oldStaffId !== $newStaffId) {
+            $return->assigned_staff_id = $newStaffId;
+            $newStaffUser = $newStaffId ? User::find($newStaffId) : null;
+            $staffName = $newStaffUser ? $newStaffUser->name : 'Unassigned';
+
+            AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'return_staff_assigned',
+                'module' => 'return_tracking',
+                'details' => "Assigned staff changed to '{$staffName}' for return {$return->reference}",
+                'entity_type' => AssetReturn::class,
+                'entity_id' => $return->id,
+            ]);
+            $changes[] = 'Staff assignment updated';
+        }
+
+        if ($oldInspectorId !== $newInspectorId) {
+            $return->inspected_by = $newInspectorId;
+            $newInspectorUser = $newInspectorId ? User::find($newInspectorId) : null;
+            $inspectorName = $newInspectorUser ? $newInspectorUser->name : 'Unassigned';
+
+            AuditLog::create([
+                'user_id' => auth()->id(),
+                'action' => 'return_inspector_assigned',
+                'module' => 'return_tracking',
+                'details' => "Inspector changed to '{$inspectorName}' for return {$return->reference}",
+                'entity_type' => AssetReturn::class,
+                'entity_id' => $return->id,
+            ]);
+            $changes[] = 'Inspector assignment updated';
+        }
+
+        if (!empty($changes)) {
+            $return->save();
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Return assignments updated successfully.',
+                'assigned_staff' => $return->assignedStaff ? ['id' => $return->assignedStaff->id, 'name' => $return->assignedStaff->name] : null,
+                'inspector' => $return->inspector ? ['id' => $return->inspector->id, 'name' => $return->inspector->name] : null,
+            ]);
+        }
+
+        return back()->with('success', 'Return assignments updated successfully.');
+    }
+
+    public function approve(Request $request, AssetReturn $return)
+    {
+        $validated = $request->validate([
+            'decision' => 'required|string|in:approved,rejected',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $decision = $validated['decision'];
+        $reason = $validated['reason'] ?? null;
+
+        if ($return->approval_status === 'approved' && $decision === 'approved') {
+            return back()->with('info', 'This return damage/loss adjudication has already been approved.');
+        }
+
+        $return->update([
+            'approval_status' => $decision,
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
+        ]);
+
+        if ($decision === 'approved') {
+            foreach ($return->returnItems as $item) {
+                if ($item->charge_decision === 'pending' && ($item->quantity_damaged > 0 || $item->quantity_lost > 0)) {
+                    $item->update([
+                        'charge_decision' => ((float) $item->damage_charge > 0) ? 'charge' : 'no_charge',
+                        'charge_decision_by' => auth()->id(),
+                        'charge_decision_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        AuditLog::create([
+            'user_id' => auth()->id(),
+            'action' => $decision === 'approved' ? 'return_damage_approved' : 'return_damage_rejected',
+            'module' => 'return_tracking',
+            'details' => ($decision === 'approved' ? 'Damage/loss adjudication approved' : 'Damage/loss adjudication rejected') .
+                " by " . auth()->user()->name . " for return {$return->reference}" .
+                ((float) $return->total_damage_charge > 0 ? " (Total damage charge: ₱" . number_format($return->total_damage_charge, 2) . ")" : "") .
+                ($reason ? " Reason: {$reason}" : ""),
+            'entity_type' => AssetReturn::class,
+            'entity_id' => $return->id,
+        ]);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Adjudication decision '{$decision}' recorded successfully.",
+                'approval_status' => $return->approval_status,
+                'approved_by' => auth()->user()->name,
+                'approved_at' => $return->approved_at?->format('M d, Y h:i A'),
+            ]);
+        }
+
+        return back()->with('success', "Adjudication decision '{$decision}' recorded successfully.");
+    }
 }
