@@ -151,6 +151,59 @@
             </div>
         </section>
 
+        @if($isAdmin)
+        <section class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
+                            <i class="fa-solid fa-database" aria-hidden="true"></i>
+                        </span>
+                        <h3 class="text-lg font-bold text-slate-900">System Data Management</h3>
+                    </div>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Import or export Raflora business data for controlled testing, staging, and demo setup.
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <a href="{{ route('admin.system-data.export') }}" class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-700">
+                        <i class="fa-solid fa-file-export" aria-hidden="true"></i> Export System Data
+                    </a>
+                    <a href="{{ route('admin.system-data.demo') }}" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                        <i class="fa-solid fa-cloud-arrow-down text-purple-600" aria-hidden="true"></i> Download Demo Dataset
+                    </a>
+                    <button type="button" data-open-modal="systemDataImportModal" class="inline-flex items-center gap-2 rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-800">
+                        <i class="fa-solid fa-file-import" aria-hidden="true"></i> Import System Data
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 gap-4 rounded-lg bg-slate-50 p-4 text-xs text-slate-600 md:grid-cols-3">
+                <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-shield-halved mt-0.5 text-purple-600" aria-hidden="true"></i>
+                    <div>
+                        <strong class="text-slate-800">Sensitive Data Protected:</strong>
+                        <p class="mt-0.5 text-slate-500">Passwords, hashes, API keys, sessions, and recovery codes are never exported.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-diagram-project mt-0.5 text-purple-600" aria-hidden="true"></i>
+                    <div>
+                        <strong class="text-slate-800">Relational Reference Mapping:</strong>
+                        <p class="mt-0.5 text-slate-500">Foreign keys are resolved through dataset references and natural business keys.</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-2.5">
+                    <i class="fa-solid fa-rotate mt-0.5 text-purple-600" aria-hidden="true"></i>
+                    <div>
+                        <strong class="text-slate-800">Atomic Transactions:</strong>
+                        <p class="mt-0.5 text-slate-500">Pre-import schema validation ensures all-or-nothing execution without partial states.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        @endif
+
     </div>
 
     <div id="passwordModal" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="passwordModalTitle">
@@ -263,6 +316,110 @@
         </div>
     @endif
 
+    @if($isAdmin)
+        <div id="systemDataImportModal" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="systemDataImportModalTitle">
+            <div class="absolute inset-0 bg-slate-950/50" data-close-modal="systemDataImportModal"></div>
+            <div class="relative mx-auto flex min-h-full max-w-2xl items-center justify-center p-4">
+                <div class="w-full max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-2xl">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <h3 id="systemDataImportModalTitle" class="text-xl font-bold text-slate-900">Import System Data</h3>
+                            <p class="mt-1 text-sm text-slate-500">Upload a system data archive (.zip) to validate and preview before importing.</p>
+                        </div>
+                        <button type="button" data-close-modal="systemDataImportModal" class="text-2xl leading-none text-slate-400 hover:text-slate-700" aria-label="Close">&times;</button>
+                    </div>
+
+                    <!-- Step 1: File selection & Preview Trigger -->
+                    <div class="mt-5 space-y-4">
+                        <div>
+                            <label for="dataset_zip_file" class="block text-sm font-semibold text-slate-700">Select Dataset Archive (.zip)</label>
+                            <input type="file" id="dataset_zip_file" accept=".zip,application/zip" class="mt-1.5 block w-full rounded-lg border border-slate-200 p-2 text-sm text-slate-700 file:mr-3 file:rounded-md file:border-0 file:bg-purple-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-purple-700 hover:file:bg-purple-100">
+                            <p class="mt-1 text-xs text-slate-500">Accepted format: Raflora System Data (.zip) with manifest.json and entity files.</p>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="btnPreviewDataset" class="inline-flex items-center gap-2 rounded-lg bg-purple-700 px-4 py-2 text-xs font-bold text-white hover:bg-purple-800 transition">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Upload &amp; Preview
+                            </button>
+                            <span id="previewLoadingIndicator" class="hidden text-xs text-slate-500">
+                                <i class="fa-solid fa-circle-notch fa-spin text-purple-600 mr-1"></i> Validating archive structure &amp; relationships...
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Error Alert -->
+                    <div id="importErrorsContainer" class="hidden mt-5 rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700" role="alert">
+                        <div class="flex items-start gap-2">
+                            <i class="fa-solid fa-triangle-exclamation mt-0.5 text-red-600"></i>
+                            <div>
+                                <strong class="font-bold text-red-800">Validation Errors:</strong>
+                                <ul id="importErrorsList" class="mt-1.5 list-disc pl-4 space-y-1"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Warnings Alert -->
+                    <div id="importWarningsContainer" class="hidden mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700" role="alert">
+                        <div class="flex items-start gap-2">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5 text-amber-600"></i>
+                            <div>
+                                <strong class="font-bold text-amber-800">Warnings:</strong>
+                                <ul id="importWarningsList" class="mt-1 list-disc pl-4 space-y-0.5"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Preview Results -->
+                    <div id="importPreviewContainer" class="hidden mt-5 space-y-4 border-t border-slate-100 pt-4">
+                        <div class="grid grid-cols-2 gap-3 rounded-lg bg-slate-50 p-3 text-xs md:grid-cols-4">
+                            <div>
+                                <span class="text-slate-400">Dataset ID:</span>
+                                <p id="previewDatasetId" class="font-semibold text-slate-800 truncate">-</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-400">Mode:</span>
+                                <p id="previewDataMode" class="font-semibold capitalize text-purple-700">-</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-400">Format Version:</span>
+                                <p id="previewFormatVersion" class="font-semibold text-slate-800">-</p>
+                            </div>
+                            <div>
+                                <span class="text-slate-400">Created:</span>
+                                <p id="previewCreatedAt" class="font-semibold text-slate-800 truncate">-</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Entity Record Counts</h4>
+                            <div class="max-h-48 overflow-y-auto rounded-lg border border-slate-200">
+                                <table class="w-full text-left text-xs" aria-label="Entity record counts">
+                                    <thead class="bg-slate-50 text-slate-500 uppercase text-[10px]">
+                                        <tr>
+                                            <th class="px-3 py-2">Entity</th>
+                                            <th class="px-3 py-2 text-right">Records</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="previewCountsBody" class="divide-y divide-slate-100 text-slate-700"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Confirmation Form -->
+                        <form method="POST" action="{{ route('admin.system-data.import') }}" id="confirmImportForm" class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                            @csrf
+                            <input type="hidden" name="preview_token" id="import_preview_token" value="">
+                            <button type="button" data-close-modal="systemDataImportModal" class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+                            <button type="submit" id="btnConfirmImport" class="rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-800 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-check mr-1"></i> Confirm &amp; Import Dataset
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div id="auditModal" class="fixed inset-0 z-50 hidden opacity-0 transition-opacity duration-200" role="dialog" aria-modal="true" aria-labelledby="auditModalTitle"><div class="absolute inset-0 bg-slate-950/50" data-close-modal="auditModal"></div><div class="relative mx-auto flex min-h-full max-w-5xl items-center justify-center p-4"><div class="max-h-[85vh] w-full overflow-hidden rounded-xl bg-white p-6 shadow-2xl"><div class="flex items-start justify-between"><div><h3 id="auditModalTitle" class="text-xl font-bold text-slate-900">Audit Trail</h3><p class="mt-1 text-sm text-slate-500">The latest {{ $auditLogs->count() }} recorded system events.</p></div><button type="button" data-close-modal="auditModal" class="text-2xl leading-none text-slate-400 hover:text-slate-700" aria-label="Close">&times;</button></div><div class="mt-5 max-h-[65vh] overflow-auto"><table class="w-full min-w-[680px] text-left text-sm"><thead class="sticky top-0 border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-3">Time</th><th class="px-3 py-3">User</th><th class="px-3 py-3">Action</th><th class="px-3 py-3">Details</th></tr></thead><tbody class="divide-y divide-slate-100">@foreach($auditLogs as $log)<tr class="align-top"><td class="whitespace-nowrap px-3 py-3 text-xs text-slate-500">{{ optional($log->created_at)->timezone('Asia/Manila')->format('M d, Y h:i A') }}</td><td class="px-3 py-3 font-medium text-slate-700">{{ $log->user?->name ?? 'System' }}</td><td class="px-3 py-3 text-slate-600">{{ ucwords(str_replace('_', ' ', $log->action ?? 'Activity')) }}</td><td class="px-3 py-3 text-slate-600">{{ is_array($log->details) ? ($log->details['message'] ?? json_encode($log->details)) : ($log->details ?? 'No additional details') }}</td></tr>@endforeach</tbody></table></div></div></div></div>
 
     <script>
@@ -302,10 +459,107 @@
             document.addEventListener('keydown', (event) => { if (event.key === 'Escape') document.querySelectorAll('[role="dialog"]:not(.hidden)').forEach((modal) => closeModal(modal.id)); });
         };
 
+        const initSystemDataImport = () => {
+            const btnPreview = document.getElementById('btnPreviewDataset');
+            const fileInput = document.getElementById('dataset_zip_file');
+            const indicator = document.getElementById('previewLoadingIndicator');
+            const errorsContainer = document.getElementById('importErrorsContainer');
+            const errorsList = document.getElementById('importErrorsList');
+            const warningsContainer = document.getElementById('importWarningsContainer');
+            const warningsList = document.getElementById('importWarningsList');
+            const previewContainer = document.getElementById('importPreviewContainer');
+            const countsBody = document.getElementById('previewCountsBody');
+            const previewTokenInput = document.getElementById('import_preview_token');
+            const btnConfirm = document.getElementById('btnConfirmImport');
+
+            if (!btnPreview || !fileInput) return;
+
+            btnPreview.addEventListener('click', async () => {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    alert('Please select a system data ZIP archive first.');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('dataset_file', fileInput.files[0]);
+                formData.append('_token', '{{ csrf_token() }}');
+
+                btnPreview.disabled = true;
+                indicator.classList.remove('hidden');
+                errorsContainer.classList.add('hidden');
+                warningsContainer.classList.add('hidden');
+                previewContainer.classList.add('hidden');
+
+                try {
+                    const response = await fetch('{{ route("admin.system-data.preview") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data.success) {
+                        const errs = data.errors || [data.message || 'Validation failed.'];
+                        errorsList.innerHTML = errs.map(e => `<li>${e}</li>`).join('');
+                        errorsContainer.classList.remove('hidden');
+                        if (btnConfirm) btnConfirm.disabled = true;
+                        return;
+                    }
+
+                    const preview = data.preview;
+
+                    // Populate dataset details
+                    document.getElementById('previewDatasetId').textContent = preview.manifest?.dataset_id || '-';
+                    document.getElementById('previewDataMode').textContent = preview.manifest?.data_mode || '-';
+                    document.getElementById('previewFormatVersion').textContent = preview.manifest?.format_version || '1';
+                    document.getElementById('previewCreatedAt').textContent = preview.manifest?.created_at ? new Date(preview.manifest.created_at).toLocaleString() : '-';
+
+                    // Warnings
+                    if (preview.warnings && preview.warnings.length > 0) {
+                        warningsList.innerHTML = preview.warnings.map(w => `<li>${w}</li>`).join('');
+                        warningsContainer.classList.remove('hidden');
+                    }
+
+                    // Record counts
+                    countsBody.innerHTML = '';
+                    const counts = preview.record_counts || {};
+                    for (const [entity, count] of Object.entries(counts)) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td class="px-3 py-1.5 font-medium capitalize">${entity.replace(/_/g, ' ')}</td><td class="px-3 py-1.5 text-right font-mono">${count}</td>`;
+                        countsBody.appendChild(row);
+                    }
+
+                    // Token
+                    if (previewTokenInput && preview.preview_token) {
+                        previewTokenInput.value = preview.preview_token;
+                    }
+
+                    if (btnConfirm) {
+                        btnConfirm.disabled = !preview.isValid;
+                    }
+
+                    previewContainer.classList.remove('hidden');
+                } catch (err) {
+                    errorsList.innerHTML = `<li>Failed to inspect archive: ${err.message}</li>`;
+                    errorsContainer.classList.remove('hidden');
+                } finally {
+                    btnPreview.disabled = false;
+                    indicator.classList.add('hidden');
+                }
+            });
+        };
+
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeAccountModals, { once: true });
+            document.addEventListener('DOMContentLoaded', () => {
+                initializeAccountModals();
+                initSystemDataImport();
+            }, { once: true });
         } else {
             initializeAccountModals();
+            initSystemDataImport();
         }
     </script>
 </x-admin-layout>

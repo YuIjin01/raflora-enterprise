@@ -395,6 +395,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::get('/return-tracking/manage/{booking}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'manage'])->name('admin.return-tracking.manage');
     Route::get('/return-tracking/{return}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'show'])->name('admin.return-tracking.show');
     Route::put('/return-tracking/{return}', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'update'])->name('admin.return-tracking.update');
+    Route::put('/return-tracking/{return}/assign', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'assign'])->name('admin.return-tracking.assign');
+    Route::put('/return-tracking/{return}/approve', [\App\Http\Controllers\Admin\ReturnTrackingController::class, 'approve'])->name('admin.return-tracking.approve');
     // Admin account management
     Route::get('/users', function () {
         return redirect()->route('admin.settings');
@@ -435,6 +437,12 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     // Admin Account Management: preferences, accounts, and audit trail
     Route::get('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('admin.settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('admin.settings.update');
+
+    // Admin System Data Management: Business-data export, validated import, and synthetic demo datasets
+    Route::get('/system-data/export', [\App\Http\Controllers\Admin\SystemDataController::class, 'export'])->name('admin.system-data.export');
+    Route::get('/system-data/demo', [\App\Http\Controllers\Admin\SystemDataController::class, 'demo'])->name('admin.system-data.demo');
+    Route::post('/system-data/preview', [\App\Http\Controllers\Admin\SystemDataController::class, 'preview'])->name('admin.system-data.preview');
+    Route::post('/system-data/import', [\App\Http\Controllers\Admin\SystemDataController::class, 'import'])->name('admin.system-data.import');
 });
 
 #Temporary route for testing Gemini Vision Service
