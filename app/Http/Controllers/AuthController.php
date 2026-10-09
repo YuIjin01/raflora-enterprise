@@ -6,6 +6,7 @@ use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Controllers\Auth\DeviceVerificationController;
 use App\Models\AuditLog;
+use App\Models\Client;
 use App\Models\User;
 use App\Services\OtpService;
 use App\Services\TrustedDeviceService;
@@ -335,6 +336,14 @@ class AuthController extends Controller
             'mobile_number' => $validated['mobile_number'] ?? null,
             'role' => 'client', // New registrations default to client role
         ]);
+
+        Client::firstOrCreate(
+            ['email' => $user->email],
+            [
+                'full_name' => $user->name,
+                'phone' => $user->mobile_number,
+            ]
+        );
 
         if ($guestToken) {
             // Do not auto-claim. Set the intended URL to the claim page, which they will hit after email verification.
