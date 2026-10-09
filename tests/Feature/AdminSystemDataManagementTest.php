@@ -487,6 +487,51 @@ class AdminSystemDataManagementTest extends TestCase
         $this->post(route('admin.system-data.import'))->assertRedirect();
     }
 
+    public function test_admin_export_download_is_a_valid_zip_with_manifest_and_clients(): void
+    {
+        $this->seedBusinessData();
+
+        $response = $this->actingAs($this->admin)->get(route('admin.system-data.export'));
+
+        $response->assertOk();
+        $response->assertHeader('content-type', 'application/zip');
+
+        // Copy the file before the response is sent, since it is flagged for deletion after send.
+        $sourcePath = $response->baseResponse->getFile()->getPathname();
+        $this->assertFileExists($sourcePath);
+
+        $copyPath = tempnam(sys_get_temp_dir(), 'raflora-export-test-');
+        copy($sourcePath, $copyPath);
+
+        try {
+            $zip = new ZipArchive();
+            $this->assertTrue($zip->open($copyPath));
+
+            $this->assertNotFalse($zip->locateName('manifest.json'));
+            $this->assertNotFalse($zip->locateName('data/clients.json'));
+
+            $manifest = json_decode($zip->getFromName('manifest.json'), true);
+            $this->assertSame('raflora-system-data', $manifest['format']);
+
+            $zip->close();
+        } finally {
+            @unlink($copyPath);
+            @unlink($sourcePath);
+        }
+    }
+
+    public function test_exporter_throws_controlled_exception_when_zip_extension_is_unavailable(): void
+    {
+        if (class_exists(\ZipArchive::class)) {
+            $this->markTestSkipped('ZipArchive is available; cannot simulate a missing ext-zip in-process.');
+        }
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('ext-zip');
+
+        (new SystemDataExporter())->export();
+    }
+
     // =========================================================================
     // DEMO DATASET GENERATOR TESTS
     // =========================================================================
