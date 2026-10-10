@@ -463,7 +463,7 @@
                                     $addDisplayItem(
                                         null,
                                         $item['item_name'] ?? 'Unknown Item',
-                                        $item['estimated_quantity'] ?? 1,
+                                        $item['quantity'] ?? $item['estimated_quantity'] ?? 0,
                                         $item['estimated_unit_cost_php'] ?? 0,
                                         null,
                                         true,

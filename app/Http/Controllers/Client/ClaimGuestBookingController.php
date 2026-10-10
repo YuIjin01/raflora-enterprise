@@ -208,10 +208,12 @@ class ClaimGuestBookingController extends Controller
                             $itemName = trim((string) ($material['item_name'] ?? ''));
                             if ($itemName === '') continue;
 
-                            $quantity = (float) ($material['quantity'] ?? $material['estimated_quantity'] ?? 1);
-                            $unitCost = (float) ($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? 0);
-                            
-                            if ($quantity <= 0 || $unitCost <= 0) continue;
+                            // Rows without an AI quantity or price are kept for staff review; the
+                            // missing value is left for staff to supply rather than guessed.
+                            $rawQuantity = $material['quantity'] ?? $material['estimated_quantity'] ?? null;
+                            $quantity = is_numeric($rawQuantity) && (float) $rawQuantity > 0 ? (float) $rawQuantity : 0.0;
+                            $rawAiPrice = $material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null;
+                            $unitCost = is_numeric($rawAiPrice) && (float) $rawAiPrice > 0 ? round((float) $rawAiPrice, 2) : null;
 
                             $inventoryItem = \App\Models\InventoryItem::whereRaw('LOWER(TRIM(name)) = ?', [strtolower($itemName)])->first();
                             $actualUnitPrice = $inventoryItem ? (float) $inventoryItem->unit_cost : 0;

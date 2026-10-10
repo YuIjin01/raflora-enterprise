@@ -601,14 +601,12 @@ PROMPT;
 
             $detected = filter_var($material['is_detected'] ?? true, FILTER_VALIDATE_BOOLEAN);
             $recommended = filter_var($material['is_recommendation'] ?? false, FILTER_VALIDATE_BOOLEAN);
-            $quantity = is_numeric($material['quantity'] ?? $material['estimated_quantity'] ?? null)
-                ? (float) ($material['quantity'] ?? $material['estimated_quantity'])
-                : 1.0;
-            $quantity = max(1.0, $quantity);
 
-            $unitCost = is_numeric($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null)
-                ? (float) ($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'])
-                : $this->estimateItemCostPhp($itemName, $category);
+            // Quantities and prices are AI estimates only. A missing or invalid value is recorded as
+            // unavailable (null) for staff to supply; it is never replaced with a guessed value.
+            $quantity = $this->positiveNumberOrNull($material['quantity'] ?? $material['estimated_quantity'] ?? null);
+            $unitCost = $this->positiveNumberOrNull($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null);
+            $unitCost = $unitCost !== null ? round($unitCost, 2) : null;
 
             $normalized[] = array_merge($material, [
                 'item_name' => $itemName,
@@ -616,8 +614,10 @@ PROMPT;
                 'unit_type' => $unitType,
                 'quantity' => $quantity,
                 'estimated_quantity' => $quantity,
-                'unit_cost_php' => round($unitCost, 2),
-                'estimated_unit_cost_php' => round($unitCost, 2),
+                'quantity_status' => $quantity !== null ? 'ai_estimate' : 'unavailable',
+                'unit_cost_php' => $unitCost,
+                'estimated_unit_cost_php' => $unitCost,
+                'price_status' => $unitCost !== null ? 'ai_estimate' : 'unavailable',
                 'is_detected' => $detected && !$recommended,
                 'is_recommendation' => $recommended,
                 'is_custom_item' => (bool) ($material['is_custom_item'] ?? false),
@@ -638,24 +638,26 @@ PROMPT;
         return $analysis;
     }
 
+    /**
+     * Totals are calculated by the application from the AI's per-item estimates. Rows without an
+     * AI quantity or price are excluded and listed, so a partial estimate is never shown as complete.
+     */
     public function buildPricingSummary(array $materials): array
     {
         $rawMaterialsTotal = 0.0;
         $itemizedBreakdown = [];
+        $unpricedItems = [];
 
         foreach ($materials as $material) {
             if (!is_array($material)) {
                 continue;
             }
 
-            $quantity = is_numeric($material['quantity'] ?? $material['estimated_quantity'] ?? null)
-                ? (float) ($material['quantity'] ?? $material['estimated_quantity'])
-                : 0.0;
-            $unitCost = is_numeric($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null)
-                ? (float) ($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'])
-                : 0.0;
+            $quantity = $this->positiveNumberOrNull($material['quantity'] ?? $material['estimated_quantity'] ?? null);
+            $unitCost = $this->positiveNumberOrNull($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null);
 
-            if ($quantity <= 0 || $unitCost <= 0) {
+            if ($quantity === null || $unitCost === null) {
+                $unpricedItems[] = trim((string) ($material['item_name'] ?? 'Unknown item'));
                 continue;
             }
 
@@ -680,7 +682,20 @@ PROMPT;
             'raw_materials_total_php' => $rawMaterialsTotal,
             'estimated_grand_total_php' => $estimatedGrandTotal,
             'itemized_breakdown' => $itemizedBreakdown,
+            'price_basis' => 'ai_estimate_unverified',
+            'is_complete' => $unpricedItems === [],
+            'unpriced_item_count' => count($unpricedItems),
+            'unpriced_items' => $unpricedItems,
         ];
+    }
+
+    protected function positiveNumberOrNull(mixed $value): ?float
+    {
+        if (!is_numeric($value) || !is_finite((float) $value) || (float) $value <= 0) {
+            return null;
+        }
+
+        return (float) $value;
     }
 
     protected function inferCategoryFromItemName(string $itemName): string
@@ -711,34 +726,6 @@ PROMPT;
             'supply' => 'set',
             default => 'piece',
         };
-    }
-
-    protected function estimateItemCostPhp(string $itemName, string $category): float
-    {
-        $lower = strtolower($itemName);
-
-        if ($category === 'flower') {
-            if (preg_match('/rose|peony|orchid|lily|hydrangea|cymbidium|ranunculus|gerbera|calla|tulip|lisianthus/i', $lower)) {
-                return 180.0;
-            }
-            if (preg_match('/baby\s*breath|eucalyptus|fern|greens|foliage|salal|ruscus|olive|lemon|pampas/i', $lower)) {
-                return 85.0;
-            }
-            return 120.0;
-        }
-
-        if ($category === 'foliage') {
-            return 75.0;
-        }
-
-        if ($category === 'prop') {
-            if (preg_match('/vase|container|basket|pedestal|stand|frame|arch|backdrop|table|chair|lighting|candle/i', $lower)) {
-                return 350.0;
-            }
-            return 180.0;
-        }
-
-        return 90.0;
     }
 
     protected function normalizeAreaKey(string $area): string
@@ -778,9 +765,11 @@ PROMPT;
             $quantity = $material['quantity'] ?? $material['estimated_quantity'] ?? null;
             $unitCost = $material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null;
 
+            // A quantity or price may be absent (recorded as unavailable for staff to supply),
+            // but a value that is present must be a usable positive number.
             if ($name === '' || !in_array($category, $allowedCategories, true) || !in_array($unit, $allowedUnits, true)
-                || !is_numeric($quantity) || !is_finite((float) $quantity) || (float) $quantity <= 0
-                || !is_numeric($unitCost) || !is_finite((float) $unitCost) || (float) $unitCost <= 0) {
+                || ($quantity !== null && $this->positiveNumberOrNull($quantity) === null)
+                || ($unitCost !== null && $this->positiveNumberOrNull($unitCost) === null)) {
                 throw new \RuntimeException('incomplete_analysis_item');
             }
         }
@@ -864,6 +853,38 @@ PROMPT;
         ];
 
         return $diagnostic;
+    }
+
+    /**
+     * Cache key part for an analysis. Every input that is sent to Gemini is included, so a result
+     * produced for one event date, time or venue is never reused for a different one.
+     */
+    public static function analysisContextHash(array $context): string
+    {
+        $keys = ['event_type', 'event_date', 'event_time', 'end_time', 'venue', 'scale', 'special_requests'];
+
+        return md5(json_encode(array_map(fn (string $key) => (string) ($context[$key] ?? ''), array_combine($keys, $keys))));
+    }
+
+    /**
+     * Evidence kept with every analysis: where the result came from, the model and generation
+     * settings used, when Gemini produced it, and whether an event date was available.
+     *
+     * @param  string  $source  gemini | cache | completed_booking_template
+     */
+    public static function buildAnalysisMeta(array $analysisResult, string $source, array $context): array
+    {
+        $eventDate = !empty($context['event_date']) ? (string) $context['event_date'] : null;
+
+        return [
+            'source' => $source,
+            'model' => $analysisResult['model_used'] ?? null,
+            'generation_config' => $analysisResult['generation_config'] ?? null,
+            'analyzed_at' => $analysisResult['analyzed_at'] ?? null,
+            'event_date' => $eventDate,
+            'event_date_provided' => $eventDate !== null,
+            'context' => array_filter($context, fn ($value) => $value !== null && $value !== ''),
+        ];
     }
 
     public function analyzeImageFromPath(
@@ -1147,6 +1168,7 @@ PROMPT;
 
                 return [
                     'model_used' => $model,
+                    'analyzed_at' => now()->toIso8601String(),
                     'analysis' => $parsed,
                     'raw_response' => $body,
                     'generation_config' => $generationConfig,

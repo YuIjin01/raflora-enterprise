@@ -73,11 +73,12 @@ class QuotationIssuanceService
             // ------------------------------------------------------------------
             // 2. AI review boundary — no unreviewed zero-priced AI items
             // ------------------------------------------------------------------
+            // Applies whether or not Gemini supplied a price: an AI row without an Admin price
+            // must never reach the client as a ₱0 line.
             $unpricedAiItems = $confirmedItems->filter(
                 fn (BookingItem $item): bool =>
                     $item->is_ai_suggested &&
-                    (float) $item->quoted_unit_price === 0.0 &&
-                    (float) ($item->ai_recommended_price ?? 0) > 0.0
+                    (float) $item->quoted_unit_price <= 0.0
             );
 
             if ($unpricedAiItems->isNotEmpty()) {

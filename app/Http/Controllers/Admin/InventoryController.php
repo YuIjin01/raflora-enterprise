@@ -38,8 +38,10 @@ class InventoryController extends Controller
                 $q->with(['booking', 'performedByUser'])->latest();
             }
         ])->withSum(['bookings as reserved_stock' => function ($query) {
+            // Unconfirmed AI suggestions are not demand until staff confirm them; AI output never reserves stock.
             $query->whereDate('bookings.event_date', '>=', Carbon::today())
-                  ->whereNotIn('bookings.status', ['cancelled', 'completed', 'declined']);
+                  ->whereNotIn('bookings.status', ['cancelled', 'completed', 'declined'])
+                  ->where(fn ($q) => $q->whereNotNull('booking_items.confirmed_at')->orWhere('booking_items.is_ai_suggested', false));
         }], 'booking_items.quantity');
         
         if ($category !== 'all') {
@@ -114,7 +116,8 @@ class InventoryController extends Controller
         // Compute system-wide stats for cards (unfiltered)
         $allStatsItems = InventoryItem::withSum(['bookings as reserved_stock' => function ($q) {
             $q->whereDate('bookings.event_date', '>=', Carbon::today())
-              ->whereNotIn('bookings.status', ['cancelled', 'completed', 'declined']);
+              ->whereNotIn('bookings.status', ['cancelled', 'completed', 'declined'])
+              ->where(fn ($inner) => $inner->whereNotNull('booking_items.confirmed_at')->orWhere('booking_items.is_ai_suggested', false));
         }], 'booking_items.quantity')->get();
 
         $totalItemsCount = $allStatsItems->count();

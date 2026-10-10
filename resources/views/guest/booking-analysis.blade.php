@@ -665,7 +665,7 @@
                                     @php
                                         $matName = $mat['item_name'] ?? 'Floral Item';
                                         $category = ucfirst($mat['category'] ?? 'flower');
-                                        $qty = $mat['quantity'] ?? $mat['estimated_quantity'] ?? 1;
+                                        $qty = $mat['quantity'] ?? $mat['estimated_quantity'] ?? null;
                                         $unit = $mat['unit_type'] ?? 'pcs';
                                         $isDetected = !empty($mat['is_detected']) && empty($mat['is_recommendation']);
                                         $confidence = isset($mat['confidence']) ? round((float)$mat['confidence'] * 100) : null;
@@ -700,7 +700,7 @@
                                                     @endif
                                                 </div>
                                                 <div class="text-xs text-stone-600 mt-1">
-                                                    <span class="font-semibold text-stone-800">Est. Qty:</span> {{ $qty }} {{ $unit }}
+                                                    <span class="font-semibold text-stone-800">Est. Qty:</span> {{ $qty !== null ? $qty . ' ' . $unit : 'To be confirmed by Raflora' }}
                                                     @if(!empty($mat['area']) && $mat['area'] !== 'overall')
                                                         <span class="mx-1 text-stone-300">•</span>
                                                         <span class="text-stone-500 capitalize">Area: {{ str_replace('_', ' ', $mat['area']) }}</span>

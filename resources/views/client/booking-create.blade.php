@@ -627,6 +627,7 @@
             }
             formData.append('inspiration_image', file);
             formData.append('event_type', eventType);
+            formData.append('event_date', document.querySelector('input[name="event_date"]')?.value || '');
             formData.append('event_time', document.querySelector('input[name="event_time"]')?.value || '');
             formData.append('venue', document.querySelector('input[name="venue"]')?.value || '');
             formData.append('special_requests', specialRequests);

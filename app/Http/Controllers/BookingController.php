@@ -397,12 +397,23 @@ class BookingController extends Controller
                         $eventType,
                         $validated['event_time'] ?? null,
                         $validated['venue'] ?? null,
-                        $scaleContext
+                        $scaleContext,
+                        $validated['event_date'] ?? null
                     );
                 }
 
                 Log::info('Gemini Raw Analysis Output: ', $result);
 
+                if (!$analysisUsed) {
+                    $result['analysis'] = $vision->normalizeAiAnalysis($result['analysis'] ?? []);
+                    $result['analysis']['analysis_meta'] = GeminiVisionService::buildAnalysisMeta($result, 'gemini', [
+                        'event_type' => $eventType,
+                        'event_date' => $validated['event_date'] ?? null,
+                        'event_time' => $validated['event_time'] ?? null,
+                        'venue' => $validated['venue'] ?? null,
+                        'scale' => $scaleContext,
+                    ]);
+                }
                 $vision->validateAnalysisPayload($result['analysis'] ?? []);
                 $materials = $result['analysis']['suggested_materials'];
 
@@ -418,10 +429,11 @@ class BookingController extends Controller
                     'analyzed_at' => Carbon::now(),
                 ]);
 
-                $booking->raw_materials_sum = round($totalCost, 2);
+                // Totals use Raflora's verified prices only (same rule as a claimed guest request);
+                // AI price estimates are never written into the booking's quoted totals.
                 $booking->multiplier = 3.0;
-                $booking->final_quoted_price = round($totalCost * $booking->multiplier, 2);
-                $booking->total_quoted = $booking->final_quoted_price;
+                $booking->load('bookingItems');
+                app(\App\Services\QuotationPricingService::class)->calculateTotals($booking, false);
                 $booking->ai_analysis_data = $result['analysis'];
                 $booking->save();
             }, 5);
@@ -595,6 +607,12 @@ class BookingController extends Controller
         ]);
     }
 
+    /**
+     * Store Gemini's rows as unconfirmed AI suggestions for staff review. The quoted price comes from
+     * Raflora's own inventory price record (0 when there is none, so Admin must price it before a
+     * quotation can be issued); the AI's price is kept only as ai_recommended_price. Rows without an
+     * AI quantity or price are kept with that value left for staff to supply, never guessed.
+     */
     protected function persistAiSuggestedMaterials(Booking $booking, array $materials): array
     {
         $totalCost = 0.0;
@@ -606,13 +624,10 @@ class BookingController extends Controller
                 continue;
             }
 
-            $quantity = (float) ($material['quantity'] ?? $material['estimated_quantity'] ?? 1);
-            $unitCost = (float) ($material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? 0);
-            if ($quantity <= 0 || $unitCost <= 0) {
-                continue;
-            }
-
-            $totalCost += $quantity * $unitCost;
+            $rawQuantity = $material['quantity'] ?? $material['estimated_quantity'] ?? null;
+            $quantity = is_numeric($rawQuantity) && (float) $rawQuantity > 0 ? (float) $rawQuantity : 0.0;
+            $rawAiPrice = $material['unit_cost_php'] ?? $material['estimated_unit_cost_php'] ?? $material['estimated_unit_cost'] ?? null;
+            $aiRecommendedPrice = is_numeric($rawAiPrice) && (float) $rawAiPrice > 0 ? round((float) $rawAiPrice, 2) : null;
 
             $inventoryItem = InventoryItem::query()
                 ->whereRaw('LOWER(TRIM(name)) = ?', [strtolower($itemName)])
@@ -627,6 +642,9 @@ class BookingController extends Controller
                 });
             }
 
+            $verifiedUnitPrice = $inventoryItem ? (float) $inventoryItem->unit_cost : 0.0;
+            $totalCost += $quantity * $verifiedUnitPrice;
+
             $materialEntry = $material;
             if ($inventoryItem) {
                 $materialEntry['inventory_item_id'] = $inventoryItem->id;
@@ -638,7 +656,8 @@ class BookingController extends Controller
                         'inventory_item_id' => $inventoryItem->id,
                         'item_name' => $itemName,
                         'quantity' => $quantity,
-                        'quoted_unit_price' => $unitCost,
+                        'quoted_unit_price' => $verifiedUnitPrice,
+                        'ai_recommended_price' => $aiRecommendedPrice,
                         'is_ai_suggested' => true,
                         'procurement_status' => 'pending',
                     ]);
@@ -647,7 +666,8 @@ class BookingController extends Controller
                 $booking->inventoryItems()->syncWithoutDetaching([
                     $inventoryItem->id => [
                         'quantity' => $bookingItem->quantity,
-                        'quoted_unit_price' => $unitCost,
+                        'quoted_unit_price' => $verifiedUnitPrice,
+                        'ai_recommended_price' => $aiRecommendedPrice,
                         'is_ai_suggested' => true,
                         'procurement_status' => 'pending',
                         'suggested_order_date' => $booking->suggested_procurement_date,
@@ -663,7 +683,8 @@ class BookingController extends Controller
                     'inventory_item_id' => null,
                     'item_name' => $itemName,
                     'quantity' => $quantity,
-                    'quoted_unit_price' => $unitCost,
+                    'quoted_unit_price' => 0,
+                    'ai_recommended_price' => $aiRecommendedPrice,
                     'is_ai_suggested' => true,
                     'procurement_status' => 'pending',
                 ]);
@@ -1526,7 +1547,9 @@ class BookingController extends Controller
         $request->validate([
             'inspiration_image' => ['required', 'image', 'max:5120'],
             'event_type' => ['nullable', 'string'],
+            'event_date' => ['nullable', 'date'],
             'event_time' => ['nullable', 'date_format:H:i'],
+            'end_time' => ['nullable', 'date_format:H:i'],
             'venue' => ['nullable', 'string', 'max:500'],
             'venue_address' => ['nullable', 'string', 'max:500'],
             'table_count' => ['nullable', 'integer', 'min:1', 'max:2147483647'],
@@ -1577,14 +1600,25 @@ class BookingController extends Controller
 
             $templateResult = $this->findCompletedBookingTemplate($uploadedHash);
             $completedTemplateReused = false;
-            $contextHash = md5(($request->input('event_type') ?? '') . '|' . ($scaleContext ?? '') . '|' . ($request->input('special_requests') ?? ''));
+            $analysisContext = [
+                'event_type' => $request->input('event_type'),
+                'event_date' => $request->input('event_date'),
+                'event_time' => $request->input('event_time'),
+                'end_time' => $request->input('end_time'),
+                'venue' => $venue,
+                'scale' => $scaleContext,
+                'special_requests' => $request->input('special_requests'),
+            ];
+            $contextHash = GeminiVisionService::analysisContextHash($analysisContext);
             $anaCacheKey = $uploadedHash ? "gemini_ana_{$uploadedHash}_{$originalFilename}_{$contextHash}" : null;
 
             if ($templateResult) {
                 $analysisResult = $templateResult;
                 $completedTemplateReused = true;
+                $analysisSource = 'completed_booking_template';
             } elseif ($anaCacheKey && Cache::has($anaCacheKey)) {
                 $analysisResult = Cache::get($anaCacheKey);
+                $analysisSource = 'cache';
             } else {
                 $analysisResult = $vision->analyzeImageFromPath(
                     $fullPath,
@@ -1592,8 +1626,11 @@ class BookingController extends Controller
                     $request->input('event_type'),
                     $request->input('event_time'),
                     $venue,
-                    $scaleContext
+                    $scaleContext,
+                    $request->input('event_date'),
+                    $request->input('end_time')
                 );
+                $analysisSource = 'gemini';
                 if ($anaCacheKey && !empty($analysisResult['analysis']['suggested_materials'])) {
                     Cache::put($anaCacheKey, $analysisResult, now()->addHours(2));
                 }
@@ -1618,7 +1655,9 @@ class BookingController extends Controller
                 $analysisResult,
                 [
                     'event_type' => $request->input('event_type'),
+                    'event_date' => $request->input('event_date'),
                     'event_time' => $request->input('event_time'),
+                    'end_time' => $request->input('end_time'),
                     'venue' => $venue,
                     'guest_count' => $request->input('guest_count'),
                     'table_count' => $request->input('table_count'),
@@ -1641,17 +1680,13 @@ class BookingController extends Controller
                 ], 422);
             }
 
-            $pricingSummary = $analysisResult['analysis']['pricing_summary'] ?? $vision->buildPricingSummary($suggestedMaterials);
-            $rawMaterialsTotal = (float) ($pricingSummary['raw_materials_total_php'] ?? 0.0);
-            $itemizedBreakdown = $pricingSummary['itemized_breakdown'] ?? [];
-            $markupMultiplier = (float) ($pricingSummary['markup_multiplier'] ?? 3.0);
-            $estimatedGrandTotal = (float) ($pricingSummary['estimated_grand_total_php'] ?? round($rawMaterialsTotal * $markupMultiplier, 2));
-            $analysisResult['analysis']['pricing_summary'] = [
-                'markup_multiplier' => $markupMultiplier,
-                'raw_materials_total_php' => $rawMaterialsTotal,
-                'estimated_grand_total_php' => $estimatedGrandTotal,
-                'itemized_breakdown' => $itemizedBreakdown,
-            ];
+            $pricingSummary = $vision->buildPricingSummary($suggestedMaterials);
+            $rawMaterialsTotal = (float) $pricingSummary['raw_materials_total_php'];
+            $itemizedBreakdown = $pricingSummary['itemized_breakdown'];
+            $markupMultiplier = (float) $pricingSummary['markup_multiplier'];
+            $estimatedGrandTotal = (float) $pricingSummary['estimated_grand_total_php'];
+            $analysisResult['analysis']['pricing_summary'] = $pricingSummary;
+            $analysisResult['analysis']['analysis_meta'] = GeminiVisionService::buildAnalysisMeta($analysisResult, $analysisSource, $analysisContext);
 
             $analysisDataJson = json_encode($analysisResult['analysis']);
             $token = (string) Str::uuid();

@@ -573,7 +573,9 @@ class AdminNotificationsTest extends TestCase
             'estimated_unit_cost_php' => 180,
         ]]);
 
-        $this->assertSame(540.0, (float) $totalCost); // P-01E: Unconfirmed new item includes estimated cost
+        // Gemini evidence phase (supersedes P-01E): the AI price is a recommendation only. An item with
+        // no Raflora price record adds nothing to the verified total and keeps the AI price separately.
+        $this->assertSame(0.0, (float) $totalCost);
         $this->assertCount(1, $persistedMaterials);
 
         $bookingItem = $booking->bookingItems()->latest()->first();
@@ -581,6 +583,8 @@ class AdminNotificationsTest extends TestCase
         $this->assertNull($bookingItem->inventory_item_id);
         $this->assertTrue($bookingItem->is_ai_suggested);
         $this->assertNull($bookingItem->confirmed_at);
+        $this->assertSame(0.0, (float) $bookingItem->quoted_unit_price);
+        $this->assertSame(180.0, (float) $bookingItem->ai_recommended_price);
         $this->assertSame(0, InventoryItem::count());
     }
 

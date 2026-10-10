@@ -163,7 +163,6 @@ class GuestBookingController extends Controller
             try {
                 $analyzedImages = [];
                 $combinedMaterials = [];
-                $totalRawMaterials = 0.0;
                 $vision = app(GeminiVisionService::class);
 
                 if (!empty($analysisTokens)) {
@@ -195,9 +194,6 @@ class GuestBookingController extends Controller
                             foreach ($mats as $m) {
                                 $m['image_id'] = $imgCounter;
                                 $combinedMaterials[] = $m;
-                                $qty = floatval($m['estimated_quantity'] ?? $m['quantity'] ?? 1);
-                                $cost = floatval($m['estimated_unit_cost_php'] ?? $m['unit_cost_php'] ?? 0);
-                                $totalRawMaterials += ($qty * $cost);
                             }
 
                             $analyzedImages[] = [
@@ -242,7 +238,16 @@ class GuestBookingController extends Controller
                         $validated['event_date'] ?? null,
                         $validated['end_time'] ?? null
                     );
-                    $vision->validateAnalysisPayload($result['analysis'] ?? []);
+                    $result['analysis'] = $vision->normalizeAiAnalysis($result['analysis'] ?? []);
+                    $vision->validateAnalysisPayload($result['analysis']);
+                    $result['analysis']['analysis_meta'] = GeminiVisionService::buildAnalysisMeta($result, 'gemini', [
+                        'event_type' => $eventType,
+                        'event_date' => $validated['event_date'] ?? null,
+                        'event_time' => $validated['event_time'] ?? null,
+                        'end_time' => $validated['end_time'] ?? null,
+                        'venue' => $validated['venue'] ?? null,
+                        'scale' => $scaleContext,
+                    ]);
 
                     $mats = $result['analysis']['suggested_materials'] ?? [];
                     $analyzedImages[] = [
@@ -256,7 +261,6 @@ class GuestBookingController extends Controller
                         'suggested_materials' => $mats,
                     ];
                     $combinedMaterials = $mats;
-                    $totalRawMaterials = (float)($result['analysis']['pricing_summary']['raw_materials_total_php'] ?? 0);
                 }
 
                 if (empty($analyzedImages)) {
@@ -266,18 +270,13 @@ class GuestBookingController extends Controller
                 }
 
                 $inspirationImagePath = $analyzedImages[0]['image_path'] ?? null;
-                $rawMaterialsTotal = round($totalRawMaterials, 2);
-                $grandTotal = round($rawMaterialsTotal * 3.0, 2);
 
                 $analysisData = [
                     'is_multi_image' => count($analyzedImages) > 1,
                     'images' => $analyzedImages,
                     'suggested_materials' => $combinedMaterials,
-                    'pricing_summary' => [
-                        'markup_multiplier' => 3.0,
-                        'raw_materials_total_php' => $rawMaterialsTotal,
-                        'estimated_grand_total_php' => $grandTotal,
-                    ],
+                    // Recalculated by the application from the combined AI rows (no default quantities).
+                    'pricing_summary' => $vision->buildPricingSummary($combinedMaterials),
                     'summary' => $analyzedImages[0]['summary'] ?? null,
                     'color_palette' => $analyzedImages[0]['color_palette'] ?? null,
                     'arrangement_style' => $analyzedImages[0]['arrangement_style'] ?? null,
@@ -810,15 +809,27 @@ class GuestBookingController extends Controller
 
             $templateResult = $this->findCompletedBookingTemplate($uploadedHash);
             $completedTemplateReused = false;
-            $contextHash = md5(($request->input('event_type') ?? '') . '|' . ($scaleContext ?? '') . '|' . ($request->input('special_requests') ?? ''));
+            $analysisContext = [
+                'event_type' => $request->input('event_type'),
+                'event_date' => $request->input('event_date'),
+                'event_time' => $request->input('event_time'),
+                'end_time' => $request->input('end_time'),
+                'venue' => $venue,
+                'scale' => $scaleContext,
+                'special_requests' => $request->input('special_requests'),
+            ];
+            $contextHash = GeminiVisionService::analysisContextHash($analysisContext);
             $anaCacheKey = $uploadedHash ? "gemini_ana_{$uploadedHash}_{$originalFilename}_{$contextHash}" : null;
 
             if ($templateResult) {
                 $analysisResult = $templateResult;
                 $completedTemplateReused = true;
+                $analysisSource = 'completed_booking_template';
             } elseif ($anaCacheKey && Cache::has($anaCacheKey)) {
                 $analysisResult = Cache::get($anaCacheKey);
+                $analysisSource = 'cache';
             } else {
+                $analysisSource = 'gemini';
                 $analysisResult = $vision->analyzeImageFromPath(
                     $fullPath,
                     $request->input('special_requests'),
@@ -918,18 +929,14 @@ class GuestBookingController extends Controller
             unset($materialItem);
             $analysisResult['analysis']['suggested_materials'] = $suggestedMaterials;
 
-            $pricingSummary = $analysisResult['analysis']['pricing_summary'] ?? $vision->buildPricingSummary($suggestedMaterials);
-            $rawMaterialsTotal = (float) ($pricingSummary['raw_materials_total_php'] ?? 0.0);
-            $itemizedBreakdown = $pricingSummary['itemized_breakdown'] ?? [];
-            $markupMultiplier = (float) ($pricingSummary['markup_multiplier'] ?? 3.0);
-            $estimatedGrandTotal = (float) ($pricingSummary['estimated_grand_total_php'] ?? round($rawMaterialsTotal * $markupMultiplier, 2));
+            $pricingSummary = $vision->buildPricingSummary($suggestedMaterials);
+            $rawMaterialsTotal = (float) $pricingSummary['raw_materials_total_php'];
+            $itemizedBreakdown = $pricingSummary['itemized_breakdown'];
+            $markupMultiplier = (float) $pricingSummary['markup_multiplier'];
+            $estimatedGrandTotal = (float) $pricingSummary['estimated_grand_total_php'];
 
-            $analysisResult['analysis']['pricing_summary'] = [
-                'markup_multiplier'       => $markupMultiplier,
-                'raw_materials_total_php' => $rawMaterialsTotal,
-                'estimated_grand_total_php' => $estimatedGrandTotal,
-                'itemized_breakdown'      => $itemizedBreakdown,
-            ];
+            $analysisResult['analysis']['pricing_summary'] = $pricingSummary;
+            $analysisResult['analysis']['analysis_meta'] = GeminiVisionService::buildAnalysisMeta($analysisResult, $analysisSource, $analysisContext);
 
             $analysisDataJson = json_encode($analysisResult['analysis']);
             $token            = (string) Str::uuid();

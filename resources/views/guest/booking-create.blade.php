@@ -635,11 +635,11 @@
                                             <div class="grid grid-cols-2 gap-2.5 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100">
                                                 <div>
                                                     <span class="text-[10px] text-slate-400 font-semibold uppercase block">Est. Quantity</span>
-                                                    <span class="font-bold text-slate-800"><span id="mat-qty">1</span> <span id="mat-unit">pcs</span></span>
+                                                    <span class="font-bold text-slate-800"><span id="mat-qty">—</span> <span id="mat-unit"></span></span>
                                                 </div>
                                                 <div>
-                                                    <span class="text-[10px] text-slate-400 font-semibold uppercase block">Unit Cost (Est.)</span>
-                                                    <span class="font-bold text-emerald-700">₱<span id="mat-unit-cost">0</span></span>
+                                                    <span class="text-[10px] text-slate-400 font-semibold uppercase block">Unit Cost (AI Est.)</span>
+                                                    <span class="font-bold text-emerald-700" id="mat-unit-cost">—</span>
                                                 </div>
                                                 <div class="col-span-2 pt-1 border-t border-slate-200/50">
                                                     <span class="text-[10px] text-slate-400 font-semibold uppercase block">Used For</span>
@@ -703,8 +703,8 @@
                                         <span id="viewer-badge-style" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 text-slate-800 text-xs font-semibold border border-slate-200">
                                             🏺 <span id="viewer-badge-style-text">Table Arrangement</span>
                                         </span>
-                                        <span id="viewer-badge-conf" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-800 text-xs font-semibold border border-blue-200">
-                                            🔍 <span id="viewer-badge-conf-text">95% Overall Confidence</span>
+                                        <span id="viewer-badge-conf" class="hidden inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-50 text-blue-800 text-xs font-semibold border border-blue-200">
+                                            🔍 <span id="viewer-badge-conf-text"></span>
                                         </span>
                                     </div>
                                 </div>
@@ -727,6 +727,7 @@
                                         <div class="text-3xl font-extrabold text-emerald-600 font-mono">
                                             ₱<span id="mat-grand-total">0</span>
                                         </div>
+                                        <p id="mat-estimate-incomplete" class="hidden text-[11px] text-amber-700 mt-1 max-w-xs sm:ml-auto"></p>
                                     </div>
                                 </div>
                             </div>
@@ -1611,17 +1612,18 @@
                     }
                 }
 
-                // Total Estimate
+                // Total Estimate (labelled partial when some AI rows had no quantity or price)
+                const estimateIsPartial = completedImages.some(img => Number(img.pricingSummary?.unpriced_item_count || 0) > 0);
                 if (totalEst > 0) {
                     document.getElementById('summary-price').textContent = '₱' + Math.round(totalEst).toLocaleString();
-                    document.getElementById('summary-price-label').textContent = 'AI Initial Estimate';
+                    document.getElementById('summary-price-label').textContent = estimateIsPartial ? 'Partial AI Estimate' : 'AI Initial Estimate';
                     const reviewEst = document.getElementById('review-estimate-val');
                     if (reviewEst) reviewEst.textContent = '₱' + Math.round(totalEst).toLocaleString();
                 } else {
                     const singleEst = currentAnalysisPricing?.estimated_grand_total_php || currentAnalysisPricing?.raw_materials_total_php || 0;
                     if (singleEst > 0) {
                         document.getElementById('summary-price').textContent = '₱' + Number(singleEst).toLocaleString();
-                        document.getElementById('summary-price-label').textContent = 'AI Initial Estimate';
+                        document.getElementById('summary-price-label').textContent = Number(currentAnalysisPricing?.unpriced_item_count || 0) > 0 ? 'Partial AI Estimate' : 'AI Initial Estimate';
                         const reviewEst = document.getElementById('review-estimate-val');
                         if (reviewEst) reviewEst.textContent = '₱' + Number(singleEst).toLocaleString();
                     } else {
@@ -2345,9 +2347,10 @@
             const mat = materials[currentMaterialIndex];
             const name = mat.item_name || 'Floral Material';
             const category = (mat.category || 'flower').toUpperCase();
-            const qty = mat.quantity || mat.estimated_quantity || 1;
+            // A missing AI quantity or price is shown as unconfirmed, never as 1 or ₱0.
+            const qty = mat.quantity ?? mat.estimated_quantity ?? null;
             const unit = mat.unit_type || 'pcs';
-            const unitCost = mat.unit_cost_php || mat.estimated_unit_cost_php || 0;
+            const unitCost = mat.unit_cost_php ?? mat.estimated_unit_cost_php ?? null;
             const isDetected = Boolean(mat.is_detected && !mat.is_recommendation);
             const conf = mat.confidence ? Math.round(Number(mat.confidence) * 100) : null;
             const area = mat.area ? mat.area.replace('_', ' ') : 'Arrangement component';
@@ -2390,18 +2393,18 @@
                 confBadge.textContent = conf ? `${conf}% confidence` : '';
             }
 
-            document.getElementById('mat-qty').textContent = qty;
-            document.getElementById('mat-unit').textContent = unit;
+            document.getElementById('mat-qty').textContent = qty !== null ? qty : 'To be confirmed';
+            document.getElementById('mat-unit').textContent = qty !== null ? unit : '';
             document.getElementById('mat-area').textContent = area.charAt(0).toUpperCase() + area.slice(1);
-            document.getElementById('mat-unit-cost').textContent = Number(unitCost).toLocaleString();
+            document.getElementById('mat-unit-cost').textContent = unitCost !== null ? '₱' + Number(unitCost).toLocaleString() : 'To be priced by Raflora';
             document.getElementById('mat-note').textContent = note;
 
             // Seasonal Box
             const seasonalText = document.getElementById('mat-seasonal-text');
             if (seasonalText) {
-                seasonalText.textContent = seasonalNote 
+                seasonalText.textContent = seasonalNote
                     ? `${seasonalNote} (Requires Raflora florist validation for event date)`
-                    : 'Widely available in the Philippines. Requires Raflora florist validation.';
+                    : 'No seasonal information was provided for this item. Raflora will confirm availability for your event date.';
             }
 
             // Alternative Box
@@ -2410,7 +2413,7 @@
                 if (alt) {
                     document.getElementById('mat-orig-name').textContent = name;
                     document.getElementById('mat-alt-name').textContent = alt;
-                    document.getElementById('mat-alt-reason').textContent = altReason || 'Similar floral aesthetic and more resilient in humid conditions.';
+                    document.getElementById('mat-alt-reason').textContent = altReason || '';
                     altBox.classList.remove('hidden');
                 } else {
                     altBox.classList.add('hidden');
@@ -2516,8 +2519,15 @@
             const style = currentImg.visualAnalysis?.detected_arrangement?.style || currentImg.analysis?.event_style || 'Table Arrangement';
             document.getElementById('viewer-badge-style-text').textContent = style.charAt(0).toUpperCase() + style.slice(1);
             
-            const conf = Math.round((currentImg.visualAnalysis?.composition_confidence || 0.95) * 100);
-            document.getElementById('viewer-badge-conf-text').textContent = `${conf}% Overall Confidence`;
+            // Only show an overall confidence when the analysis actually reported one.
+            const compositionConfidence = Number(currentImg.visualAnalysis?.composition_confidence);
+            const confBadgeEl = document.getElementById('viewer-badge-conf');
+            if (compositionConfidence > 0) {
+                document.getElementById('viewer-badge-conf-text').textContent = `${Math.round(compositionConfidence * 100)}% Overall Confidence`;
+                confBadgeEl?.classList.remove('hidden');
+            } else {
+                confBadgeEl?.classList.add('hidden');
+            }
 
             // Column 2: Material card
             renderCurrentMaterialCard(currentImg);
@@ -2526,6 +2536,14 @@
             const estTotal = currentImg.pricingSummary?.estimated_grand_total_php || currentImg.pricingSummary?.raw_materials_total_php || 0;
             const totalEl = document.getElementById('mat-grand-total');
             if (totalEl) totalEl.textContent = Number(estTotal).toLocaleString();
+            const incompleteEl = document.getElementById('mat-estimate-incomplete');
+            if (incompleteEl) {
+                const missing = Number(currentImg.pricingSummary?.unpriced_item_count || 0);
+                incompleteEl.textContent = missing > 0
+                    ? `Partial estimate: ${missing} item${missing > 1 ? 's' : ''} without an AI quantity or price ${missing > 1 ? 'are' : 'is'} not included. Raflora will price ${missing > 1 ? 'them' : 'it'} during review.`
+                    : '';
+                incompleteEl.classList.toggle('hidden', missing === 0);
+            }
 
             renderMaterialQuickList(currentImg);
         }
