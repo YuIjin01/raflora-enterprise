@@ -1,5 +1,5 @@
 <x-app-layout title="Page Not Found">
-    <x-auth-layout>
+    <x-auth-layout :hide-branding-on-mobile="true">
         <div class="w-full max-w-md mx-auto glass-card p-6 sm:p-8 lg:p-10 text-center">
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/10 text-white mb-6 border border-white/20">
                 <i class="fa-solid fa-leaf text-3xl"></i>

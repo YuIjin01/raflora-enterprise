@@ -1,6 +1,6 @@
 <x-app-layout title="Packages">
     <x-navbar title="PACKAGES" />
-    <div class="py-16 bg-slate-50 min-h-screen overflow-x-hidden">
+    <div class="py-8 sm:py-16 bg-slate-50 min-h-screen overflow-x-hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-4">
                 @php
@@ -32,7 +32,7 @@
                     </div>
 
                     {{-- Category Filter (Half width on mobile) --}}
-                    <div class="w-[calc(50%-4px)] md:w-auto md:min-w-[140px]">
+                    <div class="min-w-0 w-[calc(50%-4px)] md:w-auto md:min-w-[140px]">
                         <label for="category" class="sr-only">Category</label>
                         <select id="category" name="category"
                             class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
@@ -44,7 +44,7 @@
                     </div>
 
                     {{-- Sort (Half width on mobile) --}}
-                    <div class="flex-1 md:flex-none md:w-auto md:min-w-[160px]">
+                    <div class="min-w-0 flex-1 md:flex-none md:w-auto md:min-w-[160px]">
                         <label for="sort" class="sr-only">Sort by</label>
                         <select id="sort" name="sort"
                             class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
@@ -65,7 +65,7 @@
             </form>
 
             <div id="packagesContainer">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6" id="packagesGrid">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6" id="packagesGrid">
                 @forelse($packages as $package)
                     @php
                         $coverImage = $package->primary_image_url;
@@ -82,29 +82,29 @@
                             'book_url'       => route('booking.start', ['package_id' => $package->id]),
                         ];
                     @endphp
-                    <article class="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col transition hover:shadow-lg">
+                    <article class="min-w-0 bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200 flex flex-col transition hover:shadow-lg">
                         @if($coverImage)
-                            <img src="{{ $coverImage }}" alt="{{ $package->title }}" class="w-full h-48 object-cover rounded-t-3xl" />
+                            <img src="{{ $coverImage }}" alt="{{ $package->title }}" class="w-full h-32 sm:h-48 object-cover rounded-t-2xl sm:rounded-t-3xl" />
                         @else
-                            <div class="w-full h-48 bg-purple-100 flex items-center justify-center text-purple-400 rounded-t-3xl">
+                            <div class="w-full h-32 sm:h-48 bg-purple-100 flex items-center justify-center text-purple-400 rounded-t-2xl sm:rounded-t-3xl">
                                 <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                             </div>
                         @endif
-                        <div class="p-5 flex flex-col flex-grow items-center text-center">
+                        <div class="p-3 sm:p-5 flex flex-col flex-grow items-center text-center">
                             @if($package->category)
                                 <span class="text-[10px] font-bold tracking-wider uppercase text-purple-600 mb-1">{{ $package->category }}</span>
                             @endif
-                            <h2 class="text-lg font-bold text-slate-900 mb-1">{{ $package->title }}</h2>
-                            <p class="text-xl font-extrabold text-purple-700 mb-4">₱{{ number_format($package->price, 2) }}</p>
+                            <h2 class="text-base sm:text-lg font-bold leading-snug text-slate-900 mb-1">{{ $package->title }}</h2>
+                            <p class="text-lg sm:text-xl font-extrabold text-purple-700 mb-3 sm:mb-4">₱{{ number_format($package->price, 2) }}</p>
 
                             <div class="mt-auto w-full space-y-2">
                                 <button type="button"
-                                    class="view-package-btn block w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-semibold py-2.5 rounded-xl transition shadow-sm text-sm"
+                                    class="view-package-btn block w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-center font-semibold px-2 py-2.5 rounded-xl transition shadow-sm text-xs sm:text-sm"
                                     data-package="{{ json_encode($pkgData) }}">
                                     View Details
                                 </button>
                                 <a href="{{ route('booking.start', ['package_id' => $package->id]) }}"
-                                    class="block w-full bg-purple-700 hover:bg-purple-800 text-white text-center font-semibold py-2.5 rounded-xl transition shadow-sm text-sm">
+                                    class="block w-full bg-purple-700 hover:bg-purple-800 text-white text-center font-semibold px-2 py-2.5 rounded-xl leading-tight transition shadow-sm text-xs sm:text-sm">
                                     Book This Package
                                 </a>
                             </div>

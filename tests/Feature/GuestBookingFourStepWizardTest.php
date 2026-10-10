@@ -276,10 +276,12 @@ class GuestBookingFourStepWizardTest extends TestCase
         $this->assertStringContainsString('AI-Assisted Initial Estimate', $html);
         $this->assertStringContainsString('Final pricing is subject to Raflora review, material validation, availability/procurement considerations, and official quotation.', $html);
 
-        // 7. Preserves 4 guest request journey stages
+        // 7. README booking workflow stages (Guest → Client → Staff) are rendered
         $this->assertStringContainsString('Request Submitted', $html);
+        $this->assertStringContainsString('Awaiting Claim', $html);
         $this->assertStringContainsString('Raflora Review', $html);
-        $this->assertStringContainsString('Claim Your Request', $html);
-        $this->assertStringContainsString('Request Expires', $html);
+        $this->assertStringContainsString('Material Preparation / Validation', $html);
+        $this->assertStringContainsString('Inventory Reconciliation', $html);
+        $this->assertStringNotContainsString('Request Expires', $html);
     }
 }

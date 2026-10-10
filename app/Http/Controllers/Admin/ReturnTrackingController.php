@@ -393,7 +393,7 @@ class ReturnTrackingController extends Controller
 
                                 AuditLog::create([
                                     'user_id' => auth()->id(),
-                                    'action' => 'status_changed',
+                                    'action' => 'return_audit_status_applied',
                                     'module' => 'booking',
                                     'details' => 'Booking status changed to ' . $booking->status_display_label . ' after zero-hardware return audit',
                                     'entity_type' => Booking::class,
@@ -549,18 +549,26 @@ class ReturnTrackingController extends Controller
                             }
                         }
 
-                        // RET-AUD-002: Safely distinguish legacy rows, split rows, and pending/unresolved rows
-                        $hasSplit = ((float) $returnItem->quantity_good > 0
-                            || (float) $returnItem->quantity_damaged > 0
-                            || (float) $returnItem->quantity_lost > 0);
+                        // RET-AUD-002: good stock already credited back for this booking and item comes from
+                        // the inventory ledger (return-tracking movements), not from the recorded counts.
+                        // Staff record returned counts for Admin review without crediting inventory, so the
+                        // counts alone cannot tell whether stock was restored.
+                        $creditLedger = InventoryTransaction::where('booking_id', $return->booking_id)
+                            ->where('inventory_item_id', $returnItem->inventory_item_id)
+                            ->whereIn('transaction_type', ['return', 'damage']);
 
-                        if ($hasSplit) {
-                            $oldGood = (float) $returnItem->quantity_good;
-                        } elseif ((float) $returnItem->quantity_returned > 0) {
-                            // Historical legacy record: determine previously credited good stock from legacy condition & quantity_returned
+                        $isPreSplitLegacyRow = (float) $returnItem->quantity_good == 0.0
+                            && (float) $returnItem->quantity_damaged == 0.0
+                            && (float) $returnItem->quantity_lost == 0.0
+                            && (float) $returnItem->quantity_returned > 0;
+
+                        if ((clone $creditLedger)->exists()) {
+                            $oldGood = (float) $creditLedger->sum('quantity_change');
+                        } elseif ($isPreSplitLegacyRow) {
+                            // Historical single-field record credited before ledger entries were recorded.
                             $oldGood = ($returnItem->condition === 'good') ? (float) $returnItem->quantity_returned : 0.0;
                         } else {
-                            // Pending, unresolved, or legitimately zero-returned item
+                            // Nothing credited yet (pending item, or counts recorded by Staff awaiting Admin review).
                             $oldGood = 0.0;
                         }
                         $newGood = $qGood;
@@ -734,7 +742,7 @@ class ReturnTrackingController extends Controller
 
                             AuditLog::create([
                                 'user_id' => auth()->id(),
-                                'action' => 'status_changed',
+                                'action' => 'return_audit_status_applied',
                                 'module' => 'booking',
                                 'details' => 'Booking status changed to ' . $booking->status_display_label . ' after return audit',
                                 'entity_type' => Booking::class,
@@ -748,9 +756,14 @@ class ReturnTrackingController extends Controller
                                     'Released unfulfilled reservation upon return completion for booking #' . $booking->id
                                 );
 
-                                if ($booking->client_id) {
+                                // client_id references clients.id; notifications belong to the client's user account.
+                                $clientUser = $booking->client && filter_var($booking->client->email, FILTER_VALIDATE_EMAIL)
+                                    ? \App\Models\User::where('email', $booking->client->email)->first()
+                                    : null;
+
+                                if ($clientUser) {
                                     ClientNotification::create([
-                                        'user_id' => $booking->client_id,
+                                        'user_id' => $clientUser->id,
                                         'booking_id' => $booking->id,
                                         'type' => 'booking_update',
                                         'title' => 'Booking completed',

@@ -49,12 +49,16 @@ class GuestBookingClaimAndExpirationUxTest extends TestCase
         $response->assertSee('Raflora will review your event details and, where applicable, analyze your inspiration image before preparing your quotation.');
         $response->assertSee('NO PAYMENT IS REQUIRED AT THIS STAGE');
 
-        // 2. 4-stage Guest Request Journey (terminal at claim/expiration)
+        // 2. README booking workflow: Guest Workflow (Request Submitted → Awaiting Claim) is current;
+        //    Raflora Review only starts in the Client Workflow after the request is claimed.
         $response->assertSee('Guest Request Journey');
         $response->assertSee('Request Submitted');
+        $response->assertSee('Awaiting Claim');
+        $response->assertSee('Stage 2 of 14 · Awaiting Claim');
         $response->assertSee('Raflora Review');
-        $response->assertSee('Claim Your Request');
-        $response->assertSee('Request Expires');
+        $response->assertSee('data-workflow-stage="awaiting_claim" data-workflow-state="current"', false);
+        $response->assertSee('data-workflow-stage="raflora_review" data-workflow-state="upcoming"', false);
+        $response->assertDontSee('Request Expires');
         $response->assertDontSee('Booking Confirmed');
         $response->assertDontSee('Payment / Downpayment');
 
@@ -66,8 +70,9 @@ class GuestBookingClaimAndExpirationUxTest extends TestCase
 
         // 4. Status cards
         $response->assertSee('Current Status');
-        $response->assertSee('Request Received &amp; Under Review', false);
-        $response->assertSee('Your request is being processed by our team.');
+        $response->assertSee('Request Submitted — Awaiting Claim');
+        $response->assertSee('Your request is saved securely and is waiting to be claimed.');
+        $response->assertDontSee('Request Received &amp; Under Review', false);
 
         $response->assertSee('Claim Status');
         $response->assertSee('Not Yet Claimed');
@@ -82,7 +87,8 @@ class GuestBookingClaimAndExpirationUxTest extends TestCase
 
         // 6. What Raflora Is Doing & What to Expect Next
         $response->assertSee('What Raflora Is Doing');
-        $response->assertSee('Our styling team is assessing your event specifications, checking seasonal floral availability, and formulating initial material calculations.');
+        $response->assertSee('Your request and inspiration details are saved securely. Raflora Review begins as soon as you claim this request with a registered client account.');
+        $response->assertDontSee('Our styling team is assessing your event specifications');
         $response->assertSee('What You Should Expect Next');
         $response->assertSee('Raflora will review your request and prepare the appropriate material and quotation details.');
         $response->assertSee('Claim this request before it expires by creating an account or logging in.');
@@ -94,12 +100,12 @@ class GuestBookingClaimAndExpirationUxTest extends TestCase
         $response->assertSee('Your request is saved securely. Create an account now to claim this request and manage it from your client account. If you already have an account, log in to claim it.');
         $response->assertSee('You can continue tracking this request as a guest until it expires.');
 
-        // 8. What Happens Next 5-step workflow
+        // 8. What Happens Next — README order (claim first, then the Client Workflow)
         $response->assertSee('What Happens Next?');
-        $response->assertSee('1. Raflora Reviews Your Request');
-        $response->assertSee('2. Claim Your Request Before It Expires');
-        $response->assertSee('3. Quotation Preparation &amp; Review', false);
-        $response->assertSee('4. Accept the Quotation');
+        $response->assertSee('1. Claim Your Request With a Raflora Account');
+        $response->assertSee('2. Raflora Review');
+        $response->assertSee('3. Material Preparation &amp; Validation', false);
+        $response->assertSee('4. Quotation &amp; Approval', false);
         $response->assertSee('5. Payment &amp; Confirmation', false);
 
         // 9. Privacy: Full email is never exposed in the public view text

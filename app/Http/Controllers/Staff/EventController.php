@@ -28,7 +28,7 @@ class EventController extends Controller
     {
         $allAssigned = Booking::query()
             ->where('staff_id', $request->user()->id)
-            ->with(['client', 'staffChecklistItems'])
+            ->with(['client', 'staffChecklistItems', 'bookingItems', 'inventoryTransactions.inventoryItem', 'returns.returnItems', 'payments'])
             ->orderByRaw('event_date IS NULL, event_date asc')
             ->orderBy('id')
             ->get();
@@ -176,6 +176,10 @@ class EventController extends Controller
             return back()->with('error', 'This event has no confirmed non-perishable materials available for return recording.');
         }
 
+        if ($this->returnAuditIsClosed($booking, $returnRecord)) {
+            return back()->with('error', 'This return audit has been completed by Raflora and can no longer be changed.');
+        }
+
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.quantity_returned' => ['nullable', 'numeric', 'min:0'],
@@ -264,6 +268,10 @@ class EventController extends Controller
             return back()->with('error', 'Record the material return before recording condition observations.');
         }
 
+        if ($this->returnAuditIsClosed($booking, $returnRecord)) {
+            return back()->with('error', 'This return audit has been completed by Raflora and can no longer be changed.');
+        }
+
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*.condition' => ['required', 'in:good,damaged,lost,mixed'],
@@ -330,6 +338,15 @@ class EventController extends Controller
         });
 
         return back()->with('success', 'Condition observations recorded for Admin review.');
+    }
+
+    /**
+     * A completed return audit (or a completed booking) has already been reconciled into
+     * inventory by Admin and must not be reopened from the Staff workspace.
+     */
+    private function returnAuditIsClosed(Booking $booking, AssetReturn $returnRecord): bool
+    {
+        return $booking->status === 'completed' || $returnRecord->status === 'Completed';
     }
 
     private function authorizedBooking(Request $request, Booking $booking): Booking

@@ -78,7 +78,7 @@ class SecureFileController extends Controller
             } elseif ($user->role === 'staff') {
                 $isAuthorized = ((int) $booking->staff_id === (int) $user->id);
             }
-        } elseif ($request->has('guest_token') && $booking->guest_access_token === $request->query('guest_token')) {
+        } elseif ($this->guestTokenGrantsAccess($request, $booking)) {
             $isAuthorized = true;
         }
 
@@ -111,6 +111,22 @@ class SecureFileController extends Controller
             'Content-Disposition' => 'inline; filename="' . $filename . '"',
         ]);
     }
+    /**
+     * Guest-token access applies only to unclaimed guest bookings and requires a non-empty
+     * token that matches the stored token. Client-created bookings have no guest token, so an
+     * empty or missing query value must never match (ConvertEmptyStringsToNull turns "" into null).
+     */
+    private function guestTokenGrantsAccess(Request $request, \App\Models\Booking $booking): bool
+    {
+        $submitted = $request->query('guest_token');
+        $stored = $booking->guest_access_token;
+
+        return is_null($booking->client_id)
+            && is_string($submitted) && $submitted !== ''
+            && is_string($stored) && $stored !== ''
+            && hash_equals($stored, $submitted);
+    }
+
     public function showMessageAttachment(Request $request, $id)
     {
         $message = \App\Models\BookingMessage::findOrFail($id);
@@ -135,7 +151,7 @@ class SecureFileController extends Controller
                 $isAuthorized = ((int) $booking->staff_id === (int) $user->id)
                     && in_array($message->visibility, ['admin_staff', 'shared']);
             }
-        } elseif ($request->has('guest_token') && $booking->guest_access_token === $request->query('guest_token')) {
+        } elseif ($this->guestTokenGrantsAccess($request, $booking)) {
             $isAuthorized = in_array($message->visibility, ['client_admin', 'shared']);
         }
 

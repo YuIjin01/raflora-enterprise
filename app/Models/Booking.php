@@ -35,12 +35,17 @@ class Booking extends Model
             $statusChanged = $booking->wasChanged('status');
             $quoteChanged = $booking->wasChanged('final_quoted_price') || $booking->wasChanged('total_quoted');
 
+            // Single authoritative status-change audit entry for every path (Admin, Client, Staff, system).
             if ($statusChanged) {
+                $previous = (new Booking())->forceFill(['status' => $booking->getOriginal('status')])->status_display_label;
                 AuditLog::create([
                     'user_id' => Auth::id(),
                     'action' => 'status_changed',
                     'module' => 'booking',
-                    'details' => 'Booking status updated to ' . $booking->status_display_label,
+                    'event_type' => 'status_changed',
+                    'details' => 'Booking status changed from ' . $previous . ' to ' . $booking->status_display_label,
+                    'old_values' => ['status' => $booking->getOriginal('status')],
+                    'new_values' => ['status' => $booking->status],
                     'entity_type' => Booking::class,
                     'entity_id' => $booking->id,
                 ]);
@@ -131,6 +136,7 @@ class Booking extends Model
         'suggested_procurement_date' => 'date',
         'preparation_start_date' => 'date',
         'confirmed_at' => 'datetime',
+        'reviewed_at' => 'datetime',
         'downpayment_amount' => 'decimal:2',
         'total_quoted' => 'decimal:2',
         'ai_analysis_data' => 'json',
@@ -217,6 +223,38 @@ class Booking extends Model
     public function assignedStaff(): BelongsTo
     {
         return $this->belongsTo(User::class, 'staff_id', 'id');
+    }
+
+    /**
+     * Get the admin who completed the Raflora Review stage.
+     */
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by', 'id');
+    }
+
+    /**
+     * Whether Raflora has completed the review stage for this booking.
+     */
+    public function isReviewed(): bool
+    {
+        return !is_null($this->reviewed_at);
+    }
+
+    /**
+     * Mark the Raflora Review stage as complete (attributes only; caller saves).
+     * Returns false when the review was already recorded.
+     */
+    public function markReviewed(?int $userId): bool
+    {
+        if ($this->isReviewed()) {
+            return false;
+        }
+
+        $this->reviewed_at = now();
+        $this->reviewed_by = $userId;
+
+        return true;
     }
 
     /**

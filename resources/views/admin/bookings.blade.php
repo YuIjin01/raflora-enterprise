@@ -32,8 +32,8 @@
                     <i class="fa-regular fa-file-lines text-blue-400 text-lg"></i>
                 </div>
                 <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Booking Request</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Guest booking requests</div>
+                    <div class="text-sm font-bold text-slate-800 leading-tight">Awaiting Claim</div>
+                    <div class="text-[10px] text-slate-500 font-medium">Unclaimed guest requests</div>
                 </div>
                 <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'request' ? 'bg-blue-100 text-blue-800' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100 group-hover:text-blue-700' }} text-base font-bold text-center transition-colors">
                     {{ $stageCounts['request'] }}
@@ -53,7 +53,7 @@
                 </div>
                 <div class="text-center mt-1 mb-2">
                     <div class="text-sm font-bold text-slate-800 leading-tight">Review</div>
-                    <div class="text-[10px] text-slate-500 font-medium">For review</div>
+                    <div class="text-[10px] text-slate-500 font-medium">Review &amp; materials</div>
                 </div>
                 <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'review' ? 'bg-sky-100 text-sky-800' : 'bg-sky-50 text-sky-600 group-hover:bg-sky-100 group-hover:text-sky-700' }} text-base font-bold text-center transition-colors">
                     {{ $stageCounts['review'] }}
@@ -273,14 +273,14 @@
             </div>
         </div>
         <div class="overflow-x-auto">
-            <div class="w-full min-w-[1120px]"><table class="rf-table">
+            <div class="w-full md:min-w-[1040px]"><table class="rf-table rf-table--stack">
                 <thead class="bg-purple-50">
                     <tr>
-                        <th scope="col" class="min-w-[180px]">CLIENT &amp; EVENT</th>
-                        <th scope="col" class="min-w-[160px]">EVENT DETAILS</th>
+                        <th scope="col" class="min-w-[150px]">CLIENT &amp; EVENT</th>
+                        <th scope="col" class="min-w-[150px]">EVENT DETAILS</th>
                         <th scope="col" class="min-w-[140px]">FINANCIALS</th>
-                        <th scope="col" class="min-w-[180px]">STATUS (WORKFLOW)</th>
-                        <th scope="col" class="min-w-[140px]">NEXT ACTION</th>
+                        <th scope="col" class="min-w-[150px]">STATUS (WORKFLOW)</th>
+                        <th scope="col" class="min-w-[110px]">NEXT ACTION</th>
                         <th scope="col" class="min-w-[140px]">ACTIONS</th>
                     </tr>
                 </thead>
@@ -288,31 +288,31 @@
                     @forelse($bookings as $booking)
                         @if($booking instanceof \App\Models\TemporaryGuestBooking)
                             <tr>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <div class="font-bold text-slate-800 text-sm">{{ $booking->guest_name ?? 'Guest' }}</div>
                                     <div class="text-xs text-slate-500 mt-0.5">ID: #{{ $booking->id ?? 'Req' }} • {{ ucfirst($booking->event_type) }}</div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <div class="text-sm text-slate-700"><i class="fa-regular fa-calendar mr-1.5 text-slate-400"></i>{{ optional($booking->event_date)->format('M j, Y') ?? 'TBA' }}</div>
                                     <div class="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]" title="{{ $booking->venue }}"><i class="fa-solid fa-location-dot mr-1.5 text-slate-400"></i>{{ $booking->venue ?? 'TBA' }}</div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <span class="text-xs text-slate-500 italic">No quote yet</span>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100 mb-1">
-                                        <div class="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[9px] font-bold">1</div>
-                                        <span class="text-xs font-semibold">Booking Request</span>
+                                        <div class="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[9px] font-bold">{{ \App\Services\BookingWorkflowService::stageNumber('awaiting_claim') }}</div>
+                                        <span class="text-xs font-semibold">Awaiting Claim</span>
                                     </div>
-                                    <div class="text-[11px] font-medium text-slate-500">Awaiting Claim</div>
+                                    <div class="text-[11px] font-medium text-slate-500">{{ $booking->isExpired() ? 'Guest request expired unclaimed' : 'Guest Workflow · Request Submitted' }}</div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <div class="flex items-center gap-1.5 text-xs text-blue-600 font-semibold">
                                         <i class="fa-solid fa-hand-pointer"></i>
-                                        <span>Review &amp; Claim</span>
+                                        <span>Guest Must Claim</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="px-4 py-4">
                                     <div class="px-3 py-1.5 bg-slate-50 border border-slate-200 text-slate-500 rounded-md text-xs text-center cursor-not-allowed">
                                         Client Must Claim First
                                     </div>
@@ -330,15 +330,15 @@
                                 $hasDamageCharges = $totalObligation > (float) ($booking->final_quoted_price ?? $booking->total_quoted ?? 0);
                             @endphp
                             <tr>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-4">
                                 <div class="font-bold text-slate-800 text-sm">{{ $booking->client?->full_name ?? $booking->guest_name ?? 'Guest' }}</div>
                                 <div class="text-xs text-slate-500 mt-0.5">ID: #{{ $booking->id ?? 'Req' }} • {{ ucfirst($booking->event_type) }}</div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-4">
                                 <div class="text-sm text-slate-700"><i class="fa-regular fa-calendar mr-1.5 text-slate-400"></i>{{ optional($booking->event_date)->format('M j, Y') ?? 'TBA' }}</div>
                                 <div class="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]" title="{{ $booking->venue }}"><i class="fa-solid fa-location-dot mr-1.5 text-slate-400"></i>{{ $booking->venue ?? 'TBA' }}</div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-4">
                                 <div class="text-xs space-y-1 w-36">
                                     <div class="flex justify-between gap-2">
                                         <span class="text-slate-500">{{ $hasDamageCharges ? 'Obligation:' : 'Quote:' }}</span>
@@ -356,7 +356,7 @@
                                     @endif
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-4">
                                 @php
                                     $hasReturnAudit = $booking->returns->isNotEmpty();
                                     
@@ -385,18 +385,30 @@
                                         0 => ['bg' => 'bg-slate-50', 'text' => 'text-slate-700', 'border' => 'border-slate-200', 'circleBg' => 'bg-slate-200'],
                                     ];
                                     $sClass = $stageClasses[$stageNum] ?? $stageClasses[2];
+
+                                    // README end-to-end workflow stage (Guest → Client → Staff) for active bookings.
+                                    $rowWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($booking);
+                                    if (empty($rowWorkflow['terminal']) && $rowWorkflow['current']) {
+                                        $stageNum = $rowWorkflow['current_number'];
+                                        $stageName = $rowWorkflow['current_label'];
+                                        $sClass = match ($rowWorkflow['current_phase']) {
+                                            'guest' => ['bg' => 'bg-blue-50', 'text' => 'text-blue-700', 'border' => 'border-blue-100', 'circleBg' => 'bg-blue-100'],
+                                            'staff' => $stageClasses[6],
+                                            default => $stageClasses[$stageNum >= 8 ? 6 : ($stageNum >= 5 ? 3 : 2)],
+                                        };
+                                    }
                                 @endphp
                                 <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md {{ $sClass['bg'] }} {{ $sClass['text'] }} {{ $sClass['border'] }} mb-1 border">
                                     @if($stageNum > 0)
                                     <div class="w-4 h-4 rounded-full {{ $sClass['circleBg'] }} flex items-center justify-center text-[9px] font-bold">{{$stageNum}}</div>
                                     @endif
-                                    <span class="text-xs font-semibold whitespace-nowrap">{{$stageName}}</span>
+                                    <span class="text-xs font-semibold leading-snug">{{$stageName}}</span>
                                 </div>
                                 <div class="text-[11px] font-medium text-slate-600">
                                     {{ $detailLabel }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-4">
                                 @php
                                     $showMarkInProgress = in_array($booking->status, ['downpayment_received', 'confirmed'], true);
                                     $showMarkEventCompleted = $booking->status === 'event_in_progress';
@@ -464,7 +476,7 @@
                                     <span>{{ $nextActionText }}</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-4">
                                 <div class="flex flex-col gap-3">
                                     <a href="{{ route('admin.bookings.edit', ['booking' => $booking->id]) }}" class="rf-btn rf-btn-outline w-full text-center text-sm">
                                         {{ $quoteReviewLabel }}

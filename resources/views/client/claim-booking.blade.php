@@ -18,7 +18,12 @@
                     </h1>
 
                     <p class="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base">
-                        You're about to link this <strong class="font-semibold text-slate-800">{{ ucfirst($booking->event_type ?? 'event') }}</strong> request to your registered account (<strong>{{ auth()->user()->email }}</strong>). Once claimed, this request will be submitted to the Raflora admin team for formal quotation and review.
+                        You're about to link this <strong class="font-semibold text-slate-800">{{ ucfirst($booking->event_type ?? 'event') }}</strong> request to your registered account (<strong>{{ auth()->user()->email }}</strong>).
+                        @if($booking instanceof \App\Models\Booking)
+                            Once claimed, you can continue this booking from your client portal.
+                        @else
+                            Once claimed, this request will be submitted to the Raflora admin team for formal quotation and review.
+                        @endif
                     </p>
                 </div>
 
@@ -41,7 +46,7 @@
                 <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-5 sm:p-6">
                     <div class="flex items-center justify-between border-b border-slate-200/80 pb-3">
                         <h2 class="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Request Details</h2>
-                        <span class="text-xs font-semibold text-slate-500">Temporary ID: #{{ $booking->id }}</span>
+                        <span class="text-xs font-semibold text-slate-500">{{ $booking instanceof \App\Models\Booking ? 'Booking ID' : 'Temporary ID' }}: #{{ $booking->id }}</span>
                     </div>
 
                     <dl class="mt-4 grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">

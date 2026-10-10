@@ -13,20 +13,29 @@
             </a>
         </div>
 
-        <section class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Event date</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ optional($booking->event_date)->format('F j, Y') ?? 'Not scheduled' }}</p>
+        <section class="grid grid-cols-3 gap-2 sm:gap-4" aria-label="Event schedule">
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 sm:text-[11px]"><span class="mr-1 hidden sm:inline" aria-hidden="true"><i class="fa-regular fa-calendar"></i></span>Event date</p>
+                <p class="mt-1.5 text-sm font-semibold text-slate-900 sm:mt-2 sm:text-base">{{ optional($booking->event_date)->format('F j, Y') ?? 'Not scheduled' }}</p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Event time</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ $booking->event_time ?? 'Not specified' }}</p>
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 sm:text-[11px]"><span class="mr-1 hidden sm:inline" aria-hidden="true"><i class="fa-regular fa-clock"></i></span>Event time</p>
+                <p class="mt-1.5 text-sm font-semibold text-slate-900 sm:mt-2 sm:text-base">{{ $booking->event_time ?? 'Not specified' }}</p>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Venue</p>
-                <p class="mt-2 font-semibold text-slate-900">{{ $booking->venue ?? 'Not specified' }}</p>
+            <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm sm:p-5">
+                <p class="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400 sm:text-[11px]"><span class="mr-1 hidden sm:inline" aria-hidden="true"><i class="fa-solid fa-location-dot"></i></span>Venue</p>
+                <p class="mt-1.5 break-words text-sm font-semibold text-slate-900 sm:mt-2 sm:text-base">{{ $booking->venue ?? 'Not specified' }}</p>
             </div>
         </section>
+
+        {{-- README end-to-end booking workflow; Staff see operational details for the Staff Workflow only --}}
+        <x-booking-workflow
+            :booking="$booking"
+            accent="purple"
+            audience="staff"
+            id="staff-booking-workflow"
+            heading="Booking Workflow"
+            description="Your Staff Workflow: Preparation & Reservation → Dispatch → Event Execution → Material Return → Inventory Reconciliation → Completion." />
 
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex items-start justify-between gap-4">

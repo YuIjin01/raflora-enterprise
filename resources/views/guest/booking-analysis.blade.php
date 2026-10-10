@@ -19,9 +19,14 @@
             ? $booking->expires_at 
             : ($quotationValidUntil ?? ($activeQuotation?->valid_until ?? ($booking instanceof \App\Models\Booking ? $booking->price_valid_until : null)));
 
-        $isBookingExpired = isset($isExpired) && $isExpired 
-            ? true 
-            : ($isTemporary ? $booking->isExpired() : ($rawStatus === 'quotation_sent' && $expiresAt && $expiresAt->endOfDay()->isPast()));
+        // A temporary guest request expires when unclaimed; a permanent guest booking never
+        // expires, but its issued quotation can (README: claim is still required to continue).
+        $isBookingExpired = $isTemporary
+            && ((isset($isExpired) && $isExpired) || $booking->isExpired());
+        $isQuotationExpired = !$isTemporary && $rawStatus === 'quotation_sent'
+            && ((isset($isExpired) && $isExpired) || ($expiresAt && $expiresAt->copy()->endOfDay()->isPast()));
+
+        $bookingWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($booking);
 
         $now = \Carbon\Carbon::now();
         $remainingSeconds = ($expiresAt && !$isBookingExpired && $expiresAt->isFuture()) 
@@ -66,12 +71,20 @@
         $analysisGroups = app(\App\Services\GeminiVisionService::class)->normalizeAreaAnalysis(['suggested_materials' => $analysisMaterials]);
         $overlayItems = collect($analysisGroups)->flatMap(fn($group) => $group['items'] ?? [])->values();
 
-        // Status descriptions for Guest Request Journey
-        if ($isTemporary || $rawStatus === 'pending') {
+        // Status descriptions for the Guest Workflow (README: Request Submitted → Awaiting Claim)
+        if ($isTemporary) {
+            $currentStatusText = $isBookingExpired ? 'Request Expired Unclaimed' : 'Request Submitted — Awaiting Claim';
+            $currentStatusDesc = $isBookingExpired
+                ? 'This request was not claimed before it expired.'
+                : 'Your request is saved securely and is waiting to be claimed.';
+            $statusColorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+            $whatRafloraDoes = 'Your request and inspiration details are saved securely. Raflora Review begins as soon as you claim this request with a registered client account.';
+            $whatGuestExpects = 'Create an account or log in to claim this request before it expires. Once claimed, you can continue through the Client Booking process.';
+        } elseif ($rawStatus === 'pending') {
             $currentStatusText = 'Request Received & Under Review';
             $statusColorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
             $whatRafloraDoes = 'Our styling team is assessing your event specifications, checking seasonal floral availability, and formulating initial material calculations.';
-            $whatGuestExpects = 'Create an account or log in to claim this request before it expires. Once claimed, you can continue through the Client Booking process.';
+            $whatGuestExpects = 'Create an account or log in to claim this booking. Once claimed, you can continue through the Client Booking process.';
         } elseif ($rawStatus === 'quotation_sent') {
             $currentStatusText = 'Quotation Ready (Claim Required)';
             $statusColorClass = 'bg-blue-100 text-blue-800 border-blue-200';
@@ -95,7 +108,7 @@
         } elseif (in_array($rawStatus, ['downpayment_received', 'confirmed', 'fully_paid'], true)) {
             $currentStatusText = 'Booking Confirmed';
             $statusColorClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-            $whatRafloraDoes = 'Booking is confirmed! Floral inventory is reserved for your event date.';
+            $whatRafloraDoes = 'Booking is confirmed! Raflora reserves the required materials when the preparation period begins.';
             $whatGuestExpects = 'Raflora will prepare and execute your floral styling arrangements for your event.';
         } elseif (in_array($rawStatus, ['cancelled', 'declined'], true)) {
             $currentStatusText = 'Booking ' . ucfirst($rawStatus);
@@ -109,41 +122,15 @@
             $whatGuestExpects = 'Check back shortly for status updates.';
         }
 
-        // Authoritative 4-Stage Guest Request Journey
-        $guestStages = [
-            1 => [
-                'label' => 'Request Submitted',
-                'badge' => 'COMPLETED',
-                'badge_class' => 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-                'desc' => 'Your booking request has been received.',
-                'status' => 'completed',
-            ],
-            2 => [
-                'label' => 'Raflora Review',
-                'badge' => $isBookingExpired ? 'INCOMPLETE' : ($isClaimed ? 'COMPLETED' : 'CURRENT'),
-                'badge_class' => $isBookingExpired ? 'bg-stone-100 text-stone-500 border border-stone-200' : ($isClaimed ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-emerald-600 text-white tracking-wider'),
-                'desc' => 'Our team is reviewing your event details and inspiration image (if any).',
-                'status' => $isBookingExpired ? 'incomplete' : ($isClaimed ? 'completed' : 'current'),
-            ],
-            3 => [
-                'label' => 'Claim Your Request',
-                'badge' => $isClaimed ? 'COMPLETED' : ($isBookingExpired ? 'EXPIRED' : 'ACTION REQUIRED'),
-                'badge_class' => $isClaimed ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : ($isBookingExpired ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-stone-100 text-stone-600 border border-stone-200'),
-                'desc' => $isClaimed ? 'This request has been linked to your client account.' : 'Create an account or log in to claim this request before it expires.',
-                'status' => $isClaimed ? 'completed' : ($isBookingExpired ? 'expired' : 'action'),
-            ],
-            4 => [
-                'label' => 'Request Expires',
-                'badge' => $isClaimed ? 'RESOLVED' : ($isBookingExpired ? 'EXPIRED' : 'UPCOMING'),
-                'badge_class' => $isClaimed ? 'bg-stone-100 text-stone-500 border border-stone-200' : ($isBookingExpired ? 'bg-rose-600 text-white tracking-wider' : 'bg-stone-100 text-stone-500 border border-stone-200'),
-                'desc' => $isClaimed ? 'Claimed successfully — expiration cancelled.' : ($isBookingExpired ? 'This temporary request was not claimed and has expired.' : 'This request will be automatically deleted if not claimed within the time limit.'),
-                'status' => $isClaimed ? 'resolved' : ($isBookingExpired ? 'expired' : 'upcoming'),
-            ],
-        ];
+        $currentStatusDesc = $currentStatusDesc ?? (in_array($rawStatus, ['cancelled', 'declined'], true)
+            ? 'This booking is no longer active.'
+            : 'Claim this booking with a registered client account to continue.');
 
         // Claim status mapping
         $claimStatusText = 'Not Yet Claimed';
-        $claimStatusDesc = 'Create an account or log in to claim this request before it expires.';
+        $claimStatusDesc = $isTemporary
+            ? 'Create an account or log in to claim this request before it expires.'
+            : 'Create an account or log in with the booking email to claim this booking.';
         $claimStatusBadgeClass = 'bg-amber-100 text-amber-900 border-amber-200';
         if ($isBookingExpired) {
             $claimStatusText = 'Expired Unclaimed';
@@ -253,7 +240,7 @@
                         <a href="#guest-request-journey" class="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white px-3.5 py-2 text-xs font-bold text-stone-700 hover:bg-stone-50 transition shadow-xs">
                             <i class="fa-regular fa-eye text-emerald-600"></i> Track My Booking
                         </a>
-                        @if(!$isBookingExpired)
+                        @if(!$isBookingExpired && !in_array($rawStatus, ['cancelled', 'declined', 'rejected'], true))
                             @guest
                                 <a href="{{ route('register', ['guest_token' => $token, 'email' => $booking->guest_email]) }}" data-claim-action class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 text-xs font-bold text-white transition shadow-xs">
                                     <i class="fa-solid fa-user-plus text-[11px]"></i> Claim Booking
@@ -267,6 +254,7 @@
                     </div>
 
                     {{-- Highlighted Expiration & Claim Panel --}}
+                    @if($isTemporary)
                     <div id="claim-expiration-panel" class="rounded-2xl border {{ $isBookingExpired ? 'border-rose-200 bg-rose-50/70' : ($isExpiringSoon ? 'border-amber-300 bg-amber-50/80' : 'border-emerald-200 bg-emerald-50/60') }} p-4 sm:p-5 transition shadow-xs">
                         <div class="flex items-start gap-3.5">
                             <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 {{ $isBookingExpired ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700' }} text-lg">
@@ -350,122 +338,71 @@
                             </div>
                         </div>
                     </div>
+                    @elseif(!in_array($rawStatus, ['cancelled', 'declined', 'rejected'], true))
+                    {{-- Permanent guest booking: never expires, but must be claimed before the Client Workflow continues --}}
+                    <div id="claim-expiration-panel" class="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5 transition shadow-xs">
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 bg-emerald-100 text-emerald-700 text-lg">
+                                <i class="fa-solid fa-user-lock" aria-hidden="true"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <span class="text-[11px] font-extrabold uppercase tracking-wider block text-emerald-800">
+                                    CLAIM REQUIRED TO CONTINUE
+                                </span>
+                                <p class="text-base font-bold text-[#0B1E43] mt-1">Awaiting Claim</p>
+                                <p class="text-xs text-stone-600 mt-1 leading-relaxed">
+                                    Raflora continues bookings only through registered client accounts. Create a free account or log in with the email used for this booking to claim it, then review quotations and submit payments from your client portal.
+                                </p>
+
+                                {{-- Primary Claim CTAs --}}
+                                <div class="mt-3.5 pt-3 border-t border-emerald-200/60 flex flex-col sm:flex-row gap-2">
+                                    @guest
+                                        <a href="{{ route('register', ['guest_token' => $token, 'email' => $booking->guest_email]) }}" data-claim-action class="inline-flex items-center justify-center gap-1.5 flex-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 text-xs font-bold transition shadow-xs text-center">
+                                            <i class="fa-solid fa-user-plus text-[11px]"></i> Create a free account &amp; Claim
+                                        </a>
+                                        <a href="{{ route('login', ['guest_token' => $token, 'email' => $booking->guest_email]) }}" data-claim-action class="inline-flex items-center justify-center gap-1.5 flex-1 rounded-xl border border-stone-300 bg-white hover:bg-emerald-50 text-stone-800 px-3 py-2 text-xs font-bold transition shadow-xs text-center">
+                                            <i class="fa-solid fa-right-to-bracket text-[11px]"></i> <span class="sr-only">Already have an account? </span>Log In &amp; Claim
+                                        </a>
+                                    @else
+                                        <a href="{{ route('client.claim-guest-booking.show', ['token' => $token]) }}" data-claim-action class="inline-flex items-center justify-center gap-1.5 w-full rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-xs font-bold transition shadow-xs text-center">
+                                            <i class="fa-solid fa-link text-[11px]"></i> Claim Booking
+                                        </a>
+                                    @endguest
+                                </div>
+
+                                <div class="sr-only">
+                                    <h3>Claim &amp; Manage Your Booking Request</h3>
+                                    <span>CLAIM YOUR REQUEST</span>
+                                    <span>Create Account</span>
+                                    <p>Already have an account? Log In &amp; Claim</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                 </div>
 
             </div>
         </div>
 
-        {{-- ─── CARD 2: GUEST REQUEST JOURNEY (4 STAGES) ─── --}}
-        <div id="guest-request-journey" class="mb-6 rounded-3xl border border-stone-200 bg-white p-5 sm:p-6 shadow-xs">
-            <div class="border-b border-stone-100 pb-3 mb-5">
-                <h2 class="text-xl sm:text-2xl font-bold font-serif text-[#0B1E43]">
-                    Guest Request Journey
-                </h2>
-                <p class="text-xs sm:text-sm text-stone-500 mt-0.5">
-                    Track the status of your temporary request and see what happens next.
-                </p>
-            </div>
+        {{-- ─── CARD 2: BOOKING WORKFLOW (README: Guest → Client → Staff) ─── --}}
+        <x-booking-workflow
+            :workflow="$bookingWorkflow"
+            id="guest-request-journey"
+            heading="Guest Request Journey"
+            description="Track this request through the Raflora booking workflow: Guest → Client → Staff."
+            class="mb-6" />
 
-            {{-- Desktop Horizontal Tracker (4 stages) --}}
-            <div class="hidden md:block py-2">
-                <div class="relative flex items-start justify-between">
-                    {{-- Background Connecting Track Line --}}
-                    <div class="absolute top-4 left-12 right-12 h-0.5 bg-stone-200 -z-0">
-                        @php
-                            $trackPercent = $isClaimed ? 66.66 : ($isBookingExpired ? 33.33 : 33.33);
-                        @endphp
-                        <div class="h-full bg-emerald-500 transition-all duration-500" style="width: {{ $trackPercent }}%;"></div>
-                    </div>
-
-                    @foreach($guestStages as $stepIdx => $step)
-                        @php
-                            $isCompleted = $step['status'] === 'completed';
-                            $isCurrent = $step['status'] === 'current';
-                            $isExpiredStep = $step['status'] === 'expired';
-                        @endphp
-                        <div class="relative z-10 flex flex-col items-center text-center px-3" style="width: 25%;">
-                            {{-- Step Node --}}
-                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all shadow-xs
-                                {{ $isCompleted ? 'bg-emerald-600 text-white' : ($isCurrent ? 'bg-emerald-600 text-white ring-4 ring-emerald-100' : ($isExpiredStep ? 'bg-rose-600 text-white' : 'bg-white border-2 border-stone-300 text-stone-400')) }}">
-                                @if($isCompleted)
-                                    <i class="fa-solid fa-check text-[11px]"></i>
-                                @elseif($isExpiredStep)
-                                    <i class="fa-solid fa-xmark text-[11px]"></i>
-                                @else
-                                    {{ $stepIdx }}
-                                @endif
-                            </div>
-
-                            {{-- Step Label --}}
-                            <span class="mt-2 text-xs sm:text-sm leading-tight {{ $isCurrent ? 'text-stone-900 font-bold' : ($isCompleted ? 'text-stone-900 font-bold' : 'text-stone-800 font-semibold') }}">
-                                {{ $step['label'] }}
-                            </span>
-
-                            {{-- Status Badge --}}
-                            <div class="mt-1 h-5 flex items-center">
-                                <span class="inline-block text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full {{ $step['badge_class'] }}">
-                                    {{ $step['badge'] }}
-                                </span>
-                            </div>
-
-                            {{-- Subtext / Description --}}
-                            <p class="text-[11px] text-stone-500 mt-1.5 leading-snug max-w-[200px]">
-                                {{ $step['desc'] }}
-                            </p>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            {{-- Mobile Condensed Tracker (4 stages in 2x2 grid) --}}
-            <div class="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-3 py-1">
-                @foreach($guestStages as $stepIdx => $step)
-                    @php
-                        $isCompleted = $step['status'] === 'completed';
-                        $isCurrent = $step['status'] === 'current';
-                        $isExpiredStep = $step['status'] === 'expired';
-                    @endphp
-                    <div class="p-3 rounded-2xl border {{ $isCurrent ? 'bg-emerald-50/80 border-emerald-400 shadow-2xs' : ($isCompleted ? 'bg-stone-50 border-stone-200' : ($isExpiredStep ? 'bg-rose-50 border-rose-200' : 'bg-white border-stone-200 opacity-80')) }}">
-                        <div class="flex items-start gap-2.5">
-                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0
-                                {{ $isCompleted ? 'bg-emerald-600 text-white' : ($isCurrent ? 'bg-emerald-600 text-white' : ($isExpiredStep ? 'bg-rose-600 text-white' : 'bg-stone-100 text-stone-500')) }}">
-                                @if($isCompleted)
-                                    <i class="fa-solid fa-check text-[10px]"></i>
-                                @elseif($isExpiredStep)
-                                    <i class="fa-solid fa-xmark text-[10px]"></i>
-                                @else
-                                    {{ $stepIdx }}
-                                @endif
-                            </div>
-                            <div class="min-w-0 flex-1">
-                                <div class="flex items-center justify-between gap-1">
-                                    <span class="text-xs font-bold {{ $isCurrent ? 'text-emerald-950' : 'text-stone-900' }}">
-                                        {{ $step['label'] }}
-                                    </span>
-                                    <span class="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded-full {{ $step['badge_class'] }}">
-                                        {{ $step['badge'] }}
-                                    </span>
-                                </div>
-                                <p class="text-[11px] text-stone-500 mt-1 leading-snug">
-                                    {{ $step['desc'] }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-
-            {{-- Accessible Workflow Steps for Testing & Screen Readers --}}
-            <div class="sr-only">
-                <h3>What Happens Next?</h3>
-                <ol>
-                    <li>1. Raflora Reviews Your Request</li>
-                    <li>2. Claim Your Request Before It Expires</li>
-                    <li>3. Quotation Preparation &amp; Review</li>
-                    <li>4. Accept the Quotation</li>
-                    <li>5. Payment &amp; Confirmation</li>
-                </ol>
-            </div>
+        {{-- Accessible Workflow Steps for Testing & Screen Readers --}}
+        <div class="sr-only">
+            <h3>What Happens Next?</h3>
+            <ol>
+                <li>1. Claim Your Request With a Raflora Account</li>
+                <li>2. Raflora Review</li>
+                <li>3. Material Preparation &amp; Validation</li>
+                <li>4. Quotation &amp; Approval</li>
+                <li>5. Payment &amp; Confirmation</li>
+            </ol>
         </div>
 
         {{-- Hidden loading state kept for DOM compatibility --}}
@@ -592,6 +529,16 @@
                             <h3 class="text-sm font-bold uppercase tracking-wider text-rose-800 mb-1">Booking {{ ucfirst($rawStatus) }}</h3>
                             <p class="text-xs text-rose-700 leading-relaxed">This booking request is no longer active.</p>
                         </div>
+                    @elseif($rawStatus === 'quotation_sent' && $isQuotationExpired)
+                        <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <i class="fa-solid fa-clock-rotate-left text-amber-700"></i>
+                                <h4 class="text-sm font-bold uppercase tracking-wider text-amber-900">Quotation Expired — Awaiting Update</h4>
+                            </div>
+                            <p class="text-xs text-amber-800 leading-relaxed">
+                                This quotation expired{{ $expiresAt ? ' on ' . $expiresAt->format('M j, Y') : '' }} due to floral price volatility. Raflora will issue an updated quotation. Claim this booking with your Raflora account to review it once it is re-issued.
+                            </p>
+                        </div>
                     @elseif($rawStatus === 'quotation_sent')
                         @if($isBookingExpired)
                             <div class="mt-4 rounded-2xl border border-rose-200 bg-rose-50/80 p-4 text-center">
@@ -609,6 +556,9 @@
                                     <i class="fa-solid fa-file-invoice-dollar text-emerald-700"></i>
                                     <h4 class="text-sm font-bold uppercase tracking-wider text-emerald-900">Official Quotation Ready</h4>
                                 </div>
+                                @if($expiresAt)
+                                    <p class="text-xs font-semibold text-emerald-900 mb-1">Valid until {{ $expiresAt->format('M j, Y') }}</p>
+                                @endif
                                 <p class="text-xs text-emerald-800 leading-relaxed mb-3">
                                     Your official quotation is ready for review. To securely review and continue with your booking, claim this booking using your verified Raflora account.
                                 </p>
@@ -817,7 +767,7 @@
                             </h2>
                         </div>
                         <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
-                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span> Raflora Review
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span> {{ $bookingWorkflow['terminal_label'] ?? $bookingWorkflow['current_label'] ?? 'Guest Workflow' }}
                         </span>
                     </div>
 
@@ -831,11 +781,11 @@
                                     <span class="text-[10px] font-bold uppercase tracking-wider block">Current Status</span>
                                 </div>
                                 <span class="text-xs font-bold text-stone-900 block leading-tight mt-1">
-                                    Request Received &amp; Under Review
+                                    {{ $currentStatusText }}
                                 </span>
                             </div>
                             <span class="text-[10px] text-stone-500 mt-2 block leading-tight">
-                                Your request is being processed by our team.
+                                {{ $currentStatusDesc }}
                             </span>
                         </div>
 
@@ -860,14 +810,24 @@
                             <div>
                                 <div class="flex items-center gap-1.5 text-stone-500 mb-1">
                                     <i class="fa-regular fa-clock text-xs text-stone-600"></i>
-                                    <span class="text-[10px] font-bold uppercase tracking-wider block">Time Remaining</span>
+                                    <span class="text-[10px] font-bold uppercase tracking-wider block">{{ $isTemporary ? 'Time Remaining' : 'Quotation Validity' }}</span>
                                 </div>
                                 <span class="text-xs sm:text-sm font-bold text-stone-900 font-mono block mt-1">
-                                    {{ $remainingText }}
+                                    @if($isTemporary)
+                                        {{ $isBookingExpired ? 'Expired' : $remainingText }}
+                                    @elseif($expiresAt)
+                                        {{ $expiresAt->copy()->endOfDay()->isPast() ? 'Expired' : 'Valid until ' . $expiresAt->format('M j, Y') }}
+                                    @else
+                                        Not yet issued
+                                    @endif
                                 </span>
                             </div>
                             <span class="text-[10px] text-stone-500 mt-2 block leading-tight">
-                                Expires on {{ $expiresAt ? $expiresAt->format('M j, Y \a\t g:i A') : 'N/A' }}
+                                @if($isTemporary)
+                                    Expires on {{ $expiresAt ? $expiresAt->format('M j, Y \a\t g:i A') : 'N/A' }}
+                                @else
+                                    Claim this booking to continue.
+                                @endif
                             </span>
                         </div>
                     </div>

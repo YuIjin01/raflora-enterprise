@@ -63,6 +63,39 @@
     </div>
 
     <div id="tab-overview" class="tab-content block space-y-6">
+    @php
+        $bookingWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($booking);
+        $canCompleteReview = $booking->status === 'pending'
+            && !is_null($booking->client_id)
+            && !$booking->isReviewed()
+            && $bookingWorkflow['current'] === 'raflora_review';
+    @endphp
+
+    {{-- README end-to-end booking workflow: Guest → Client → Staff --}}
+    <x-booking-workflow
+        :workflow="$bookingWorkflow"
+        accent="purple"
+        id="admin-booking-workflow"
+        heading="Booking Workflow"
+        description="Guest → Client → Staff. Stages update from the booking, quotation, payment, inventory, and return records."
+        class="mb-6" />
+
+    @if($canCompleteReview)
+        <section class="rf-panel mb-6 p-5 sm:p-6" aria-labelledby="raflora-review-heading">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 id="raflora-review-heading" class="text-lg font-bold text-slate-900">Raflora Review</h2>
+                    <p class="mt-1 text-sm text-slate-500">Review the event details, inspiration, and client messages. Completing the review moves this booking to Material Preparation / Validation. Confirming, linking, or promoting a material also completes the review.</p>
+                </div>
+                <form method="POST" action="{{ route('admin.bookings.complete-review', $booking) }}" class="shrink-0">
+                    @csrf
+                    <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-800 sm:w-auto">
+                        <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Complete Raflora Review
+                    </button>
+                </form>
+            </div>
+        </section>
+    @endif
 {{-- Split forms: items adjustments and admin note/quote actions are separate to avoid validation collisions --}}
 
     @php
@@ -104,7 +137,9 @@
             <div>
                 <p class="text-indigo-600 uppercase font-semibold text-[10px]">Remaining Balance</p>
                 <p class="font-bold text-indigo-900">₱{{ number_format($remaining, 2) }}</p>
-                @if($remaining > 0)
+                @if($totalObligation <= 0)
+                    <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 mt-1">Not yet quoted</span>
+                @elseif($remaining > 0)
                     <span class="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800 mt-1">Balance Pending</span>
                 @else
                     <span class="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800 mt-1">Fully Paid</span>
@@ -693,9 +728,9 @@
 
     @foreach($itemsToDisplay as $idx => $item)
         @if(!empty($item['id']) && !$item['confirmed_at'] && !empty($item['inventory_id']))
-            <form method="POST" action="{{ route('admin.bookings.items.confirm', ['booking' => $booking->id, 'bookingItem' => $item['id']]) }}" class="hidden">
+            {{-- The visible "Confirm Material" button submits this form through form="confirmMaterial_{idx}" --}}
+            <form id="confirmMaterial_{{ $idx }}" method="POST" action="{{ route('admin.bookings.items.confirm', ['booking' => $booking->id, 'bookingItem' => $item['id']]) }}" class="hidden">
                 @csrf
-                <button type="submit" id="confirmMaterial_{{ $idx }}">Confirm material</button>
             </form>
         @endif
     @endforeach
@@ -713,7 +748,109 @@
 
     </div>
     <div id="tab-materials" class="tab-content hidden space-y-6">
-        <!-- Materials will go here -->
+        @php
+            $materialItems = ($bookingItems ?? $booking->bookingItems)->filter(fn ($bi) => (float) $bi->quantity > 0)->values();
+            $validatedMaterialCount = $materialItems->filter(fn ($bi) => !is_null($bi->confirmed_at))->count();
+            $formatMaterialQty = fn ($qty) => rtrim(rtrim(number_format((float) $qty, 2, '.', ','), '0'), '.');
+        @endphp
+
+        {{-- README Client Workflow: Material Preparation / Validation --}}
+        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="material-validation-heading">
+            <div class="mb-4 flex flex-col gap-2 border-b border-purple-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 id="material-validation-heading" class="text-lg font-bold text-gray-800">Material Preparation &amp; Validation</h2>
+                <span class="w-fit rounded-full px-2.5 py-0.5 text-xs font-bold {{ $materialItems->isNotEmpty() && $validatedMaterialCount === $materialItems->count() ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                    {{ $validatedMaterialCount }}/{{ $materialItems->count() }} validated
+                </span>
+            </div>
+            <p class="mb-4 text-sm text-slate-500">Confirm, link, or promote materials in the Quotation tab. Every material must be validated before the official quotation can be sent.</p>
+
+            @if($materialItems->isEmpty())
+                <p class="text-sm italic text-slate-500">No materials have been listed for this booking yet.</p>
+            @else
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                    <table class="w-full min-w-[520px] text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-700">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Material</th>
+                                <th scope="col" class="px-4 py-3 text-right">Qty</th>
+                                <th scope="col" class="px-4 py-3">Source</th>
+                                <th scope="col" class="px-4 py-3">Validation</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white">
+                            @foreach($materialItems as $materialItem)
+                                <tr>
+                                    <td class="px-4 py-3 font-medium text-slate-800">{{ $materialItem->item_name ?? $materialItem->inventoryItem?->name ?? 'Material' }}</td>
+                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($materialItem->quantity) }}</td>
+                                    <td class="px-4 py-3 text-xs">{{ $materialItem->is_ai_suggested ? 'AI suggestion' : 'Package / Admin' }}</td>
+                                    <td class="px-4 py-3">
+                                        @if($materialItem->confirmed_at)
+                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">Validated</span>
+                                        @elseif(!$materialItem->inventory_item_id)
+                                            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">Unmatched — link or promote</span>
+                                        @else
+                                            <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">Awaiting confirmation</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+
+        {{-- Inventory check for confirmed reusable materials (feeds Preparation & Reservation) --}}
+        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="reservation-status-heading">
+            <h2 id="reservation-status-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Reusable Material Reservation</h2>
+            @if(empty($reusableStatusList))
+                <p class="text-sm italic text-slate-500">No confirmed reusable materials require reservation.</p>
+            @else
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                    <table class="w-full min-w-[520px] text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase text-slate-700">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Item</th>
+                                <th scope="col" class="px-4 py-3 text-right">Required</th>
+                                <th scope="col" class="px-4 py-3 text-right">Reserved</th>
+                                <th scope="col" class="px-4 py-3 text-right">Available</th>
+                                <th scope="col" class="px-4 py-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white">
+                            @foreach($reusableStatusList as $reusableRow)
+                                <tr>
+                                    <td class="px-4 py-3 font-medium text-slate-800">{{ $reusableRow['inventory_item']->name }}</td>
+                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($reusableRow['required']) }}</td>
+                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($reusableRow['locked']) }}</td>
+                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($reusableRow['available']) }}</td>
+                                    <td class="px-4 py-3">
+                                        @if($reusableRow['is_reserved'])
+                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">Reserved</span>
+                                        @elseif($reusableRow['has_shortage'])
+                                            <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">Shortage</span>
+                                        @else
+                                            <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">Awaiting reservation</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+
+            @if(isset($freshFlowerItems) && $freshFlowerItems->isNotEmpty())
+                <div class="mt-4 rounded-lg border border-pink-100 bg-pink-50/50 p-4">
+                    <p class="text-xs font-bold uppercase tracking-wider text-pink-800">Fresh flowers (procured, not reserved)</p>
+                    <ul class="mt-2 space-y-1 text-sm text-slate-700" role="list">
+                        @foreach($freshFlowerItems as $freshItem)
+                            <li>{{ $freshItem->item_name ?? $freshItem->inventoryItem?->name }} — {{ $formatMaterialQty($freshItem->quantity) }} · {{ ucfirst($freshItem->procurement_status ?? 'pending') }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </section>
     </div>
     <div id="tab-preparation" class="tab-content hidden space-y-6">
         <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="preparation-heading">
@@ -776,76 +913,183 @@
             </div>
             @endif
 
-            <!-- 4. Dispatch Materials -->
+            <!-- 4. Inventory Dispatch & Tracking (README Staff Workflow: Dispatch) -->
             @php
-                // Find all items that have booking_lock for this booking
-                $lockedTx = \App\Models\InventoryTransaction::where('booking_id', $booking->id)
-                    ->where('transaction_type', 'booking_lock')
-                    ->where('quantity_change', '<', 0)
-                    ->with('inventoryItem')
-                    ->get();
-                    
-                $hasLockedItems = $lockedTx->isNotEmpty();
-                $hasOutstanding = false;
+                // Mirrors InventoryDispatchService: outstanding = reserved (lock - release) - net dispatched, per inventory item.
+                $dispatchClosed = in_array($booking->status, ['event_completed', 'completed', 'cancelled', 'declined', 'rejected', 'pending_return', 'pending_resolution'], true);
+                $dispatchRows = \App\Models\InventoryTransaction::with('inventoryItem')
+                    ->where('booking_id', $booking->id)
+                    ->get()
+                    ->filter(fn ($tx) => $tx->inventoryItem !== null)
+                    ->groupBy('inventory_item_id')
+                    ->map(function ($txs) {
+                        $locked = (float) $txs->where('transaction_type', 'booking_lock')->sum(fn ($t) => abs((float) $t->quantity_change));
+                        $released = (float) $txs->where('transaction_type', 'booking_release')->sum('quantity_change');
+                        $dispatched = abs((float) $txs->whereIn('transaction_type', ['dispatch', 'dispatch_correction'])->sum('quantity_change'));
+                        $reserved = max(0.0, $locked - $released);
+
+                        return [
+                            'item' => $txs->first()->inventoryItem,
+                            'reserved' => $reserved,
+                            'dispatched' => $dispatched,
+                            'outstanding' => max(0.0, round($reserved - $dispatched, 4)),
+                        ];
+                    })
+                    ->filter(fn ($row) => $row['reserved'] > 0 || $row['dispatched'] > 0)
+                    ->values();
+                $hasOutstanding = $dispatchRows->contains(fn ($row) => $row['outstanding'] > 0);
+                $canDispatch = !$dispatchClosed && !is_null($booking->confirmed_at) && $hasOutstanding;
+                $formatQty = fn ($qty) => rtrim(rtrim(number_format((float) $qty, 2, '.', ','), '0'), '.');
             @endphp
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <h3 class="font-semibold text-slate-800 mb-2">4. Dispatch Materials</h3>
-                <p class="text-sm text-slate-600 mb-4">Dispatch the reserved reusable materials to the event location. This physically deducts the stock.</p>
-                
-                @if($hasLockedItems)
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5" aria-labelledby="dispatch-tracking-heading">
+                <div class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <h3 id="dispatch-tracking-heading" class="font-semibold text-slate-800">4. Inventory Dispatch &amp; Tracking</h3>
+                    @if($dispatchClosed)
+                        <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>Dispatch Closed ({{ $booking->status_display_label }})
+                        </span>
+                    @elseif($dispatchRows->isNotEmpty() && !$hasOutstanding)
+                        <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>Fully Dispatched
+                        </span>
+                    @elseif($hasOutstanding)
+                        <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800">
+                            <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>Reserved Materials Ready for Dispatch
+                        </span>
+                    @endif
+                </div>
+                <p class="text-sm text-slate-600 mb-4">Dispatch the reserved reusable materials to the event location. Dispatch physically deducts stock and is required before the event can start.</p>
+
+                @if($dispatchRows->isEmpty())
+                    <p class="text-sm text-slate-500 italic">No reserved reusable materials available for dispatch. Please reserve materials first.</p>
+                @else
                     <form method="POST" action="{{ route('admin.bookings.dispatch', $booking) }}" class="space-y-4">
                         @csrf
                         <input type="hidden" name="reason" value="Dispatch for Event #{{ $booking->id }}">
-                        
+
                         <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                            <table class="w-full text-left text-sm text-slate-600">
+                            <table class="w-full min-w-[560px] text-left text-sm text-slate-600">
                                 <thead class="bg-slate-50 text-xs uppercase text-slate-700">
                                     <tr>
-                                        <th class="px-4 py-3">Item</th>
-                                        <th class="px-4 py-3 text-right">Qty to Dispatch</th>
+                                        <th scope="col" class="px-4 py-3">Item</th>
+                                        <th scope="col" class="px-4 py-3 text-right">Reserved</th>
+                                        <th scope="col" class="px-4 py-3 text-right">Dispatched</th>
+                                        <th scope="col" class="px-4 py-3 text-right">Outstanding</th>
+                                        <th scope="col" class="px-4 py-3">Status</th>
+                                        @if($canDispatch)
+                                            <th scope="col" class="px-4 py-3 text-right">Qty to Dispatch</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    @foreach($lockedTx as $index => $tx)
-                                    @php
-                                        // Outstanding reservation logic
-                                        $allTx = \App\Models\InventoryTransaction::where('booking_id', $booking->id)
-                                            ->where('inventory_item_id', $tx->inventory_item_id)
-                                            ->get();
-                                        
-                                        $lock = $allTx->where('transaction_type', 'booking_lock')->sum(fn($t) => abs((float)$t->quantity_change));
-                                        $release = $allTx->where('transaction_type', 'booking_release')->sum('quantity_change');
-                                        $netDispatch = abs($allTx->whereIn('transaction_type', ['dispatch', 'dispatch_correction'])->sum('quantity_change'));
-                                        
-                                        $outstanding = $lock - $release - $netDispatch;
-                                    @endphp
-                                    @if(round($outstanding, 4) > 0)
-                                    @php $hasOutstanding = true; @endphp
-                                    <tr>
-                                        <td class="px-4 py-3 font-medium text-slate-800">{{ $tx->inventoryItem->name }}</td>
-                                        <td class="px-4 py-3 text-right">
-                                            <input type="hidden" name="items[{{ $index }}][inventory_item_id]" value="{{ $tx->inventory_item_id }}">
-                                            <input type="number" name="items[{{ $index }}][quantity]" value="{{ $outstanding }}" max="{{ $outstanding }}" min="0" step="0.01" class="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm">
-                                        </td>
-                                    </tr>
-                                    @endif
+                                    @foreach($dispatchRows as $index => $row)
+                                        <tr>
+                                            <td class="px-4 py-3 font-medium text-slate-800">{{ $row['item']->name }}</td>
+                                            <td class="px-4 py-3 text-right">{{ $formatQty($row['reserved']) }}</td>
+                                            <td class="px-4 py-3 text-right">{{ $formatQty($row['dispatched']) }}</td>
+                                            <td class="px-4 py-3 text-right font-semibold {{ $row['outstanding'] > 0 ? 'text-amber-700' : 'text-slate-500' }}">{{ $formatQty($row['outstanding']) }}</td>
+                                            <td class="px-4 py-3">
+                                                @if($row['outstanding'] <= 0)
+                                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">Fully Dispatched</span>
+                                                @elseif($row['dispatched'] > 0)
+                                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">Partially Dispatched</span>
+                                                @else
+                                                    <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">Awaiting Dispatch</span>
+                                                @endif
+                                            </td>
+                                            @if($canDispatch)
+                                                <td class="px-4 py-3 text-right">
+                                                    @if($row['outstanding'] > 0)
+                                                        <input type="hidden" name="items[{{ $index }}][inventory_item_id]" value="{{ $row['item']->id }}">
+                                                        <label class="sr-only" for="dispatch-qty-{{ $index }}">Quantity to dispatch for {{ $row['item']->name }}</label>
+                                                        <input id="dispatch-qty-{{ $index }}" type="number" name="items[{{ $index }}][quantity]" value="{{ $row['outstanding'] }}" max="{{ $row['outstanding'] }}" min="0" step="0.01" class="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm">
+                                                    @else
+                                                        <span class="text-xs text-slate-400">—</span>
+                                                    @endif
+                                                </td>
+                                            @endif
+                                        </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
-                        
-                        @if($hasOutstanding)
+
+                        @if($canDispatch)
                             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
                                 <i class="fa-solid fa-truck-fast mr-2"></i>Dispatch Selected
                             </button>
+                        @elseif($dispatchClosed)
+                            <p class="text-sm font-medium text-slate-600"><i class="fa-solid fa-lock mr-1" aria-hidden="true"></i>Dispatch unavailable — this booking is {{ strtolower($booking->status_display_label) }}.</p>
+                        @elseif(is_null($booking->confirmed_at))
+                            <p class="text-sm font-medium text-amber-700">Dispatch unavailable — the booking confirmation date is not recorded.</p>
                         @else
                             <p class="text-sm text-emerald-600 font-medium">All reserved materials have been fully dispatched.</p>
                         @endif
                     </form>
-                @else
-                    <p class="text-sm text-slate-500 italic">No reserved reusable materials available for dispatch. Please reserve materials first.</p>
+                @endif
+
+                @if($dispatchClosed && $dispatchRows->isEmpty())
+                    <p class="mt-2 text-sm font-medium text-slate-600"><i class="fa-solid fa-lock mr-1" aria-hidden="true"></i>Dispatch unavailable — this booking is {{ strtolower($booking->status_display_label) }}.</p>
                 @endif
             </div>
+        </section>
+
+        {{-- Staff Preparation Checklist (README Staff Workflow: Preparation & Reservation) — read-only for Admin --}}
+        @php
+            $prepChecklist = $booking->staffChecklistItems()->with('completedBy')->orderBy('id')->get();
+            $prepCompletedCount = $prepChecklist->where('is_completed', true)->count();
+            $prepAllComplete = $prepChecklist->isNotEmpty() && $prepCompletedCount === $prepChecklist->count();
+        @endphp
+        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="staff-checklist-heading">
+            <div class="mb-4 flex flex-col gap-2 border-b border-purple-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 id="staff-checklist-heading" class="text-lg font-bold text-gray-800">Staff Preparation Checklist</h2>
+                    <p class="text-xs text-slate-500">Read-only view of the assigned Staff member's preparation progress.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Read-only</span>
+                    @if($prepChecklist->isNotEmpty())
+                        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ $prepCompletedCount }}/{{ $prepChecklist->count() }} complete</span>
+                        <span class="rounded-full px-2.5 py-0.5 text-xs font-bold {{ $prepAllComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                            {{ $prepAllComplete ? 'Preparation Complete' : 'Preparation Incomplete' }}
+                        </span>
+                    @endif
+                </div>
+            </div>
+
+            @if($prepChecklist->isEmpty())
+                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
+                    <p class="text-sm font-semibold text-slate-700">No preparation checklist items recorded</p>
+                    <p class="mt-1 text-xs text-slate-500">Checklist items will appear once operational staff accesses this assigned event.</p>
+                </div>
+            @else
+                <ul class="space-y-3" role="list">
+                    @foreach($prepChecklist as $checklistItem)
+                        <li class="rounded-xl border {{ $checklistItem->is_completed ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50' }} p-4">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <p class="font-semibold text-slate-800">{{ $checklistItem->title }}</p>
+                                @if($checklistItem->is_completed)
+                                    <span class="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
+                                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>Completed
+                                    </span>
+                                @else
+                                    <span class="inline-flex w-fit items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                                        <i class="fa-regular fa-circle" aria-hidden="true"></i>Pending completion
+                                    </span>
+                                @endif
+                            </div>
+                            @if($checklistItem->is_completed && $checklistItem->completed_at)
+                                <p class="mt-1 text-xs text-slate-500">
+                                    {{ $checklistItem->completed_at->format('M d, Y h:i A') }}@if($checklistItem->completedBy) by {{ $checklistItem->completedBy->name }}@endif
+                                </p>
+                            @endif
+                            @if($checklistItem->notes)
+                                <p class="mt-2 whitespace-pre-line text-sm text-slate-600">{{ $checklistItem->notes }}</p>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
         </section>
     </div>
     <div id="tab-staff" class="tab-content hidden space-y-6">
@@ -879,6 +1123,148 @@
             :unread-count="$unreadMessageCount ?? 0"
             :active-quotation="$activeQuotation"
         />
+
+        {{-- Client Meetings (README Client Workflow: client and Raflora can meet about the booking) --}}
+        @php
+            $adminMeetings = $booking->meetings()->orderByDesc('scheduled_datetime')->get();
+            $adminMeetingsAllowed = \App\Models\Meeting::bookingAllowsMeetings($booking);
+            $openMeetingCount = $adminMeetings->filter(fn ($m) => $m->isOpen())->count();
+        @endphp
+        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="meetings-heading">
+            <div class="mb-4 flex flex-col gap-2 border-b border-purple-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
+                <h2 id="meetings-heading" class="text-lg font-bold text-gray-800">Client Meetings</h2>
+                <span class="w-fit rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ $openMeetingCount }} open</span>
+            </div>
+
+            @if(!$adminMeetingsAllowed && $adminMeetings->isEmpty())
+                <p class="text-sm text-slate-500">Meetings are available once a client account has claimed this booking and while it is still active.</p>
+            @endif
+
+            @if($adminMeetings->isNotEmpty())
+                <ul class="mb-6 space-y-4" role="list">
+                    @foreach($adminMeetings as $meeting)
+                        <li class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-800">{{ $meeting->type_label }} · {{ $meeting->scheduled_datetime->format('M j, Y g:i A') }}</p>
+                                    <p class="text-xs text-slate-500">
+                                        {{ $meeting->status === \App\Models\Meeting::STATUS_REQUESTED ? 'Client-requested time' : 'Scheduled by ' . ($meeting->scheduledBy?->name ?? 'Admin') }}
+                                    </p>
+                                    @if($meeting->meeting_link)
+                                        <p class="mt-1 text-sm break-all"><a href="{{ $meeting->meeting_link }}" target="_blank" rel="noopener noreferrer" class="font-medium text-purple-700 underline">{{ $meeting->meeting_link }}</a></p>
+                                    @endif
+                                    @if($meeting->address)
+                                        <p class="mt-1 text-sm text-slate-600">Location: {{ $meeting->address }}</p>
+                                    @endif
+                                    @if($meeting->agenda)
+                                        <p class="mt-1 text-xs text-slate-500 whitespace-pre-line">Agenda: {{ $meeting->agenda }}</p>
+                                    @endif
+                                    @if($meeting->outcome_notes)
+                                        <p class="mt-1 text-xs text-slate-500 whitespace-pre-line">Notes: {{ $meeting->outcome_notes }}</p>
+                                    @endif
+                                </div>
+                                <span class="w-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold {{ match($meeting->status) { 'scheduled' => 'bg-emerald-100 text-emerald-800', 'completed' => 'bg-slate-200 text-slate-700', 'cancelled' => 'bg-rose-100 text-rose-800', default => 'bg-amber-100 text-amber-800' } }}">{{ $meeting->status_label }}</span>
+                            </div>
+
+                            @if($meeting->status === \App\Models\Meeting::STATUS_REQUESTED && $adminMeetingsAllowed)
+                                <form method="POST" action="{{ route('admin.bookings.meetings.confirm', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-4 grid grid-cols-1 gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
+                                    @csrf
+                                    <div>
+                                        <label for="confirm-type-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Meeting type</label>
+                                        <select id="confirm-type-{{ $meeting->id }}" name="meeting_type" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                                            @foreach(\App\Models\Meeting::TYPES as $typeValue => $typeLabel)
+                                                <option value="{{ $typeValue }}" @selected($meeting->meeting_type === $typeValue)>{{ $typeLabel }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="confirm-time-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Date &amp; time</label>
+                                        <input id="confirm-time-{{ $meeting->id }}" type="datetime-local" name="scheduled_datetime" value="{{ $meeting->scheduled_datetime->format('Y-m-d\TH:i') }}" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                                    </div>
+                                    <div>
+                                        <label for="confirm-link-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Meeting link (online)</label>
+                                        <input id="confirm-link-{{ $meeting->id }}" type="url" name="meeting_link" placeholder="https://" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                                    </div>
+                                    <div>
+                                        <label for="confirm-address-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Address (in-person)</label>
+                                        <input id="confirm-address-{{ $meeting->id }}" type="text" name="address" maxlength="500" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                                    </div>
+                                    <div class="sm:col-span-2 flex justify-end">
+                                        <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Confirm Meeting</button>
+                                    </div>
+                                </form>
+                            @endif
+
+                            @if($meeting->status === \App\Models\Meeting::STATUS_SCHEDULED)
+                                <form method="POST" action="{{ route('admin.bookings.meetings.complete', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-end">
+                                    @csrf
+                                    <div class="flex-1">
+                                        <label for="outcome-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Meeting notes (optional)</label>
+                                        <textarea id="outcome-{{ $meeting->id }}" name="outcome_notes" rows="2" maxlength="2000" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>
+                                    </div>
+                                    <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50" @disabled($meeting->scheduled_datetime->isFuture())>Mark Completed</button>
+                                </form>
+                                @if($meeting->scheduled_datetime->isFuture())
+                                    <p class="mt-1 text-xs text-slate-500">Can be marked completed after the scheduled time.</p>
+                                @endif
+                            @endif
+
+                            @if($meeting->isOpen())
+                                <form method="POST" action="{{ route('admin.bookings.meetings.cancel', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+                                    @csrf
+                                    <div class="flex-1">
+                                        <label for="cancel-reason-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Cancellation reason (optional)</label>
+                                        <input id="cancel-reason-{{ $meeting->id }}" type="text" name="reason" maxlength="500" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                                    </div>
+                                    <button type="submit" class="rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">Cancel Meeting</button>
+                                </form>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            @if($adminMeetingsAllowed)
+                <form method="POST" action="{{ route('admin.bookings.meetings.store', $booking) }}" class="grid grid-cols-1 gap-3 rounded-xl border border-dashed border-purple-200 bg-purple-50/40 p-4 sm:grid-cols-2">
+                    @csrf
+                    <h3 class="sm:col-span-2 text-sm font-bold text-slate-800">Schedule a meeting</h3>
+                    <div>
+                        <label for="new-meeting-type" class="block text-xs font-semibold text-slate-700">Meeting type</label>
+                        <select id="new-meeting-type" name="meeting_type" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                            @foreach(\App\Models\Meeting::TYPES as $typeValue => $typeLabel)
+                                <option value="{{ $typeValue }}" @selected(old('meeting_type') === $typeValue)>{{ $typeLabel }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="new-meeting-time" class="block text-xs font-semibold text-slate-700">Date &amp; time</label>
+                        <input id="new-meeting-time" type="datetime-local" name="scheduled_datetime" value="{{ old('scheduled_datetime') }}" min="{{ now()->format('Y-m-d\TH:i') }}" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                    </div>
+                    <div>
+                        <label for="new-meeting-link" class="block text-xs font-semibold text-slate-700">Meeting link (online)</label>
+                        <input id="new-meeting-link" type="url" name="meeting_link" value="{{ old('meeting_link') }}" placeholder="https://" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label for="new-meeting-address" class="block text-xs font-semibold text-slate-700">Address (in-person)</label>
+                        <input id="new-meeting-address" type="text" name="address" value="{{ old('address') }}" maxlength="500" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="new-meeting-agenda" class="block text-xs font-semibold text-slate-700">Agenda (optional)</label>
+                        <textarea id="new-meeting-agenda" name="agenda" rows="2" maxlength="1000" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">{{ old('agenda') }}</textarea>
+                    </div>
+                    @if($errors->hasAny(['meeting_type', 'scheduled_datetime', 'meeting_link', 'address', 'agenda']))
+                        <ul class="sm:col-span-2 list-disc pl-5 text-xs text-rose-600">
+                            @foreach(['meeting_type', 'scheduled_datetime', 'meeting_link', 'address', 'agenda'] as $meetingField)
+                                @error($meetingField)<li>{{ $message }}</li>@enderror
+                            @endforeach
+                        </ul>
+                    @endif
+                    <div class="sm:col-span-2 flex justify-end">
+                        <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800">Schedule Meeting</button>
+                    </div>
+                </form>
+            @endif
+        </section>
     </div>
 
     <script>

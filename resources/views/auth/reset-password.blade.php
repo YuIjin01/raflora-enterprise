@@ -1,5 +1,5 @@
 <x-app-layout title="Reset Password">
-    <x-auth-layout bgImage="raflora-auth-forgot-password.jpg">
+    <x-auth-layout bgImage="raflora-auth-forgot-password.jpg" brandStyle="plain" :hideBrandingOnMobile="true">
         {{-- 
         RAFLORA UI FUNCTION
 

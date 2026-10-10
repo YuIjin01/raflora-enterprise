@@ -17,6 +17,16 @@ echo "==> [Raflora Startup] Storage initialization successful."
 #    contains destructive data modifications in its up() method (resets admin verification state).
 # Migrations must always be executed as a dedicated, controlled release phase or manual task.
 
+# Scheduled alerts (tiered inventory shortage checks, expired quotations, price reconfirmation,
+# expired guest request cleanup) only execute while the Laravel scheduler runs.
+# Set RAFLORA_RUN_SCHEDULER=false when a dedicated scheduler service or cron entry
+# (`php artisan schedule:run` every minute) is used instead. Tasks use onOneServer(),
+# so running the scheduler on several instances does not duplicate alerts.
+if [ "${RAFLORA_RUN_SCHEDULER:-true}" != "false" ]; then
+    echo "==> [Raflora Startup] Starting Laravel scheduler in the background (php artisan schedule:work)."
+    php artisan schedule:work >> storage/logs/scheduler.log 2>&1 &
+fi
+
 if [ "$#" -gt 0 ]; then
     echo "==> [Raflora Startup] Launching application command: $*"
     exec "$@"

@@ -3,7 +3,7 @@
 
 Hi {{ $tempBooking->guest_name }},
 
-Your booking request has been received and is now being reviewed by Raflora.
+Your booking request has been received. Raflora begins reviewing it as soon as you claim it with a registered account.
 
 **Reference Number:** REF-{{ strtoupper(substr($rawToken, 0, 8)) }}  
 **Event Type:** {{ ucfirst($tempBooking->event_type) }}  

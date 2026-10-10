@@ -47,6 +47,7 @@ class AdminInventoryStockRulesTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($booking);
         $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -128,6 +129,7 @@ class AdminInventoryStockRulesTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($newBooking);
         $response = $this->actingAs($admin)->put(route('admin.bookings.update', $newBooking), [
             '_method' => 'PUT',
             'event_type' => 'birthday',

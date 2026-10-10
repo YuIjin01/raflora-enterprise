@@ -28,6 +28,8 @@
             <div class="absolute inset-0">
                 <img src="{{ asset('assets/images/background.jpg') }}" class="w-full h-full object-cover object-center" alt="Floral Background">
                 <div class="absolute inset-0" style="background: linear-gradient(to right, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.8) 35%, rgba(255,255,255,0) 100%);"></div>
+                {{-- On narrow screens the copy spans the full width, so keep it readable over the photo. --}}
+                <div class="absolute inset-0 bg-white/75 lg:hidden"></div>
             </div>
             
             <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">

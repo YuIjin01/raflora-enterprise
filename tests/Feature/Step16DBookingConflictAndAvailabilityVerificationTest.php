@@ -89,6 +89,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
         ]);
 
         // Admin confirms Booking 1
+        $this->recordVerifiedPayment($booking1);
         $resp1 = $this->actingAs($this->admin)->put(route('admin.bookings.update', $booking1), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -101,6 +102,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
         $this->assertSame('downpayment_received', $booking1->fresh()->status);
 
         // Admin confirms Booking 2 on the same date
+        $this->recordVerifiedPayment($booking2);
         $resp2 = $this->actingAs($this->admin)->put(route('admin.bookings.update', $booking2), [
             '_method' => 'PUT',
             'event_type' => 'birthday',
@@ -162,6 +164,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
         ]);
 
         // Admin attempts to transition Booking 2 to downpayment_received
+        $this->recordVerifiedPayment($booking2);
         $response = $this->actingAs($this->admin)->put(route('admin.bookings.update', $booking2), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -221,6 +224,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($activeBooking);
         $response = $this->actingAs($this->admin)->put(route('admin.bookings.update', $activeBooking), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -279,6 +283,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($readyBooking);
         $response = $this->actingAs($this->admin)->put(route('admin.bookings.update', $readyBooking), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -323,6 +328,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
         ]);
 
         // Even though current_stock is 0, perishable flowers do not trigger date-overlap lock
+        $this->recordVerifiedPayment($booking);
         $response = $this->actingAs($this->admin)->put(route('admin.bookings.update', $booking), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -382,6 +388,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($booking2);
         $response = $this->actingAs($this->admin)->put(route('admin.bookings.update', $booking2), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -429,6 +436,7 @@ class Step16DBookingConflictAndAvailabilityVerificationTest extends TestCase
         ]);
 
         // Transition to downpayment_received with preparation active -> reserves inventory
+        $this->recordVerifiedPayment($booking);
         $this->actingAs($this->admin)->put(route('admin.bookings.update', $booking), [
             '_method' => 'PUT',
             'event_type' => 'wedding',

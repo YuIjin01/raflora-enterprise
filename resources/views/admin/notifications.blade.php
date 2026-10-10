@@ -46,7 +46,8 @@
                         $isBookingShortageAlert = $alertType === 'booking_shortage' || $alertType === 'daily_shortage' || $alertType === 'weekly_shortage';
                         $isPaymentAlert = $alertType === 'payment_pending';
                         $isPhysicalVarianceAlert = $alertType === 'physical_count_variance';
-                        $badgeLabel = $isPhysicalVarianceAlert ? 'PHYSICAL COUNT VARIANCE' : ($isInventoryAlert ? 'STOCK ALERT' : ($isPaymentAlert ? 'PAYMENT VERIFICATION' : 'SYSTEM ALERT'));
+                        $isMeetingAlert = str_starts_with($alertType, 'meeting_');
+                        $badgeLabel = $isPhysicalVarianceAlert ? 'PHYSICAL COUNT VARIANCE' : ($isInventoryAlert ? 'STOCK ALERT' : ($isPaymentAlert ? 'PAYMENT VERIFICATION' : ($isMeetingAlert ? 'CLIENT MEETING' : 'SYSTEM ALERT')));
                         $modalId = 'notification-action-' . ($alert->id ?? uniqid());
                         $modalTitle = $isPhysicalVarianceAlert ? 'Physical Stock Count Review' : ($isInventoryAlert ? 'Stock Shortage Alert' : ($isPaymentAlert ? 'Payment Verification Review' : 'Notification Details'));
                     @endphp

@@ -160,7 +160,13 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-0.5">
                         <span class="text-[11px] font-bold px-2 py-0.5 rounded-full {{ $alert->type === 'inventory_shortage' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700' }}">
-                            {{ $alert->type === 'inventory_shortage' ? 'Stock Shortage' : 'Quotation Expired' }}
+                            {{ match ($alert->type) {
+                                'inventory_shortage' => 'Stock Shortage',
+                                'quotation_expired' => 'Quotation Expired',
+                                'meeting_requested' => 'Meeting Request',
+                                'meeting_cancelled' => 'Meeting Cancelled',
+                                default => \Illuminate\Support\Str::headline((string) $alert->type),
+                            } }}
                         </span>
                         <span class="text-xs text-gray-400">{{ $alert->created_at->diffForHumans() }}</span>
                     </div>

@@ -217,6 +217,7 @@ class AdminConfirmedMaterialRequirementTest extends TestCase
 
         $this->assertSame(150.0, (float) $booking->fresh()->raw_materials_sum);
 
+        $this->recordVerifiedPayment($booking);
         $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
             'event_type' => $booking->event_type,
             'event_date' => $booking->event_date->toDateString(),
@@ -256,6 +257,7 @@ class AdminConfirmedMaterialRequirementTest extends TestCase
         [$booking, $bookingItem, $original] = $this->substitutionFixture();
         $this->actingAs($admin)->post(route('admin.bookings.items.confirm', [$booking, $bookingItem]));
 
+        $this->recordVerifiedPayment($booking);
         $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
             'event_type' => $booking->event_type,
             'event_date' => $booking->event_date->toDateString(),
@@ -288,6 +290,7 @@ class AdminConfirmedMaterialRequirementTest extends TestCase
         $admin = $this->user('admin');
         [$booking, $bookingItem, $original] = $this->substitutionFixture();
         $this->actingAs($admin)->post(route('admin.bookings.items.confirm', [$booking, $bookingItem]));
+        $this->recordVerifiedPayment($booking);
         $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
             'event_type' => $booking->event_type,
             'event_date' => $booking->event_date->toDateString(),
@@ -325,6 +328,7 @@ class AdminConfirmedMaterialRequirementTest extends TestCase
         $admin = $this->user('admin');
         [$booking, $bookingItem, $original] = $this->substitutionFixture();
         $this->actingAs($admin)->post(route('admin.bookings.items.confirm', [$booking, $bookingItem]));
+        $this->recordVerifiedPayment($booking);
         $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
             'event_type' => $booking->event_type,
             'event_date' => $booking->event_date->toDateString(),

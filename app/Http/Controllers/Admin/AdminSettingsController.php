@@ -244,7 +244,9 @@ class AdminSettingsController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'in:admin,staff'],
+            // Raflora supports exactly one Admin (S-01D single-admin bootstrap & recovery);
+            // the operations panel can only create Staff accounts.
+            'role' => ['required', 'in:staff'],
             'password' => ['required', 'confirmed', 'min:8'],
         ]);
 

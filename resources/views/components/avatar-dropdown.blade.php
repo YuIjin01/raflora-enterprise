@@ -1,6 +1,6 @@
-<div class="relative inline-flex items-center gap-3">
+<div class="relative inline-flex items-center gap-2 sm:gap-3">
     <div>
-        <button id="notificationToggle" type="button" class="relative inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-purple-700 shadow-md border-2 border-purple-700 hover:shadow-lg transition" aria-label="View notifications" aria-expanded="false">
+        <button id="notificationToggle" type="button" class="relative inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-100" aria-label="View notifications" aria-expanded="false">
             <i class="fa-solid fa-bell text-lg"></i>
             @php
                 $unreadNotificationCount = \App\Models\ClientNotification::where('user_id', Auth::id())->where('is_read', false)->count();

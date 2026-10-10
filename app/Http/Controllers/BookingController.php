@@ -887,7 +887,7 @@ class BookingController extends Controller
             $activeQuotation->status = \App\Models\Quotation::STATUS_ACCEPTED;
             $activeQuotation->save();
 
-            $this->logAuditEvent('booking', 'status_changed', $booking, 'Quotation accepted by client', Auth::id());
+            $this->logAuditEvent('booking', 'quotation_accepted', $booking, 'Quotation accepted by client', Auth::id());
         });
 
         $successMsg = $booking->total_paid > 0

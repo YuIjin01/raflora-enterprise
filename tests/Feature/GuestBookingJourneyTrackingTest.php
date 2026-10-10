@@ -314,11 +314,14 @@ class GuestBookingJourneyTrackingTest extends TestCase
         $response->assertSee('Guest Request Journey');
         $response->assertSee('Request Submitted');
         $response->assertSee('Raflora Review');
-        $response->assertSee('Claim Your Request');
-        $response->assertSee('Request Expires');
+        $response->assertSee('Awaiting Claim');
+        // Unclaimed permanent guest booking: claim is the current stage, the quotation continues after claiming.
+        $response->assertSee('data-workflow-stage="awaiting_claim" data-workflow-state="current"', false);
+        $response->assertSee('data-workflow-stage="quotation" data-workflow-state="upcoming"', false);
+        $response->assertDontSee('Request Expires');
         $response->assertSee('CLAIM YOUR REQUEST');
         $response->assertSee('Claim Booking');
-        $response->assertSee('YOUR QUOTATION IS READY');
+        $response->assertSee('Official Quotation Ready');
         $response->assertSee('What Raflora Is Doing');
         $response->assertSee('What You Should Expect Next');
     }

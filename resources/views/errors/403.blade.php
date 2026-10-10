@@ -1,5 +1,5 @@
 <x-app-layout title="Access Denied">
-    <x-auth-layout>
+    <x-auth-layout :hide-branding-on-mobile="true">
         {{-- 
         RAFLORA UI FUNCTION
 

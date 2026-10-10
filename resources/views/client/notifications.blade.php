@@ -1,10 +1,10 @@
 <x-app-layout title="Notifications">
     <x-client-layout active="notifications">
-        <div class="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-            <div class="rounded-[2rem] bg-white/95 backdrop-blur-md shadow-xl border border-slate-200/60 p-5 sm:p-8">
-                <div class="mb-8 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+        <div class="mx-auto max-w-6xl sm:px-2 sm:py-4 lg:px-4">
+            <div class="rf-panel p-4 sm:p-8">
+                <div class="mb-6 flex flex-wrap items-center justify-between gap-3 sm:mb-8">
                     <div class="flex items-center">
-                        <h1 class="text-3xl font-black text-slate-900">Notifications</h1>
+                        <h1 class="rf-page-title text-2xl font-bold text-slate-900 sm:text-3xl">Notifications</h1>
                         <x-info-popover title="Notifications">
                             Manage your event updates, quotes, and admin notices.
                         </x-info-popover>
@@ -24,16 +24,22 @@
                 @else
                     <div class="space-y-4">
                         @foreach($notificationData as $notification)
-                            <div class="notification-row flex flex-col gap-4 rounded-2xl border border-slate-200 p-5 transition sm:flex-row sm:items-start sm:justify-between {{ $notification['is_read'] ? 'bg-white' : 'bg-emerald-50/40 ring-1 ring-emerald-200' }}" data-notification-id="{{ $notification['id'] }}" data-read="{{ $notification['is_read'] ? '1' : '0' }}">
+                            <div class="notification-row flex flex-col gap-3 rounded-2xl border border-slate-200 p-4 transition sm:gap-4 sm:p-5 sm:flex-row sm:items-start sm:justify-between {{ $notification['is_read'] ? 'bg-white' : 'bg-emerald-50/40 ring-1 ring-emerald-200' }}" data-notification-id="{{ $notification['id'] }}" data-read="{{ $notification['is_read'] ? '1' : '0' }}">
                                 
-                                <div class="flex-1 space-y-3">
-                                    <div class="flex items-start justify-between sm:justify-start sm:gap-4">
-                                        <div class="text-xl font-bold text-slate-900">{{ $notification['booking_event'] }}</div>
+                                <div class="min-w-0 flex-1 space-y-2">
+                                    <div class="flex items-start justify-between gap-3 sm:justify-start sm:gap-4">
+                                        <div class="text-base font-bold text-slate-900 sm:text-lg">{{ $notification['title'] ?: ucwords(str_replace('_', ' ', $notification['booking_event'])) }}</div>
                                         @if(!$notification['is_read'])
                                             <span class="rf-badge rf-badge--primary shrink-0">New</span>
                                         @endif
                                     </div>
-                                    <div class="text-sm font-medium text-slate-500">{{ $notification['timestamp'] }}</div>
+                                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-medium text-slate-500 sm:text-sm">
+                                        @if($notification['booking_id'])
+                                            <span class="capitalize">{{ str_replace('_', ' ', $notification['booking_event']) }} · Booking #{{ $notification['booking_id'] }}</span>
+                                            <span aria-hidden="true">•</span>
+                                        @endif
+                                        <span>{{ $notification['timestamp'] }}</span>
+                                    </div>
                                     
                                     <div>
                                         <span class="inline-flex rounded-md bg-emerald-100 px-2 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800">
@@ -67,10 +73,10 @@
 
         <div id="notificationModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="modalEventTitle">
             <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-[28px] bg-white shadow-2xl">
-                <div class="flex items-start justify-between border-b border-slate-200 px-6 py-5">
+                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6 sm:py-5">
                     <div>
                         <p class="text-xs font-black uppercase tracking-[0.22em] text-[#0F2E5B]">Latest admin update</p>
-                        <h2 id="modalEventTitle" class="mt-3 text-3xl font-black text-slate-900"></h2>
+                        <h2 id="modalEventTitle" class="mt-2 text-xl font-bold text-slate-900 sm:text-2xl"></h2>
                         <p id="modalEventMeta" class="mt-2 text-sm text-slate-500"></p>
                     </div>
                     <button id="closeNotificationModal" type="button" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:bg-slate-100 transition" aria-label="Close details">
@@ -78,7 +84,7 @@
                     </button>
                 </div>
 
-                <div id="modalBody" class="space-y-5 px-6 py-5 text-slate-800"></div>
+                <div id="modalBody" class="space-y-4 px-5 py-4 text-slate-800 sm:px-6 sm:py-5"></div>
 
                 <div class="border-t border-slate-200 px-6 py-4">
                     <div class="flex gap-3">
@@ -199,7 +205,7 @@
                 }
 
                 function renderNotificationDetails(notification) {
-                    modalTitle.textContent = notification.booking_event || 'Booking';
+                    modalTitle.textContent = notification.title || notification.booking_event || 'Booking';
                     modalMeta.textContent = [notification.event_date, notification.timestamp].filter(Boolean).join(' • ');
                     modalBody.innerHTML = '';
 
@@ -208,7 +214,10 @@
                     if (details.custom_note) {
                         const note = document.createElement('div');
                         note.className = 'rounded-xl border border-slate-200 bg-slate-50 p-4';
-                        note.innerHTML = '<p class="text-sm leading-6 text-slate-700">' + details.custom_note.replace(/\n/g, '<br>') + '</p>';
+                        const noteText = document.createElement('p');
+                        noteText.className = 'whitespace-pre-line text-sm leading-6 text-slate-700';
+                        noteText.textContent = details.custom_note;
+                        note.appendChild(noteText);
                         modalBody.appendChild(note);
                     }
 

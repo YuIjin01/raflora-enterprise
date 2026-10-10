@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => AdminMiddleware::class,
             'staff' => StaffMiddleware::class,
+            'client' => \App\Http\Middleware\ClientMiddleware::class,
             'verified' => EnsureEmailIsVerified::class,
             'admin.setup' => EnsureAdminSetupCompleted::class,
         ]);

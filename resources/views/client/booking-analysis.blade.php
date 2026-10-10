@@ -47,147 +47,8 @@
                     $presentations = isset($presentations) ? $presentations : $booking->presentations()->orderBy('created_at')->get();
                     $isTerminal = in_array($booking->status, ['cancelled', 'declined'], true);
 
-                    // Determine 9-stage progress indicator states
-                    $progressSteps = [
-                        'request' => [
-                            'label' => 'Booking Submitted',
-                            'status' => $isTerminal ? 'upcoming' : 'complete',
-                            'sublabel' => 'Event details received',
-                        ],
-                        'quotation' => [
-                            'label' => 'Review / Quotation',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'client' => [
-                            'label' => 'Client Confirmation',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'payment' => [
-                            'label' => 'Payment',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'confirmation' => [
-                            'label' => 'Confirmation',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'preparation' => [
-                            'label' => 'Preparation',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'event' => [
-                            'label' => 'Event',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'return' => [
-                            'label' => 'Material Return / Assessment',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                        'completion' => [
-                            'label' => 'Final Completion',
-                            'status' => 'upcoming',
-                            'sublabel' => null,
-                        ],
-                    ];
-
-                    if (!$isTerminal) {
-                        // 1. Quotation Phase
-                        if (in_array($booking->status, ['pending', 'change_requested'], true)) {
-                            $progressSteps['quotation']['status'] = 'current';
-                            $progressSteps['quotation']['sublabel'] = $booking->status === 'change_requested' ? 'Quotation revision in progress' : 'Under review by Raflora';
-                        } elseif (in_array($booking->status, ['quotation_sent', 'approved', 'admin_approved', 'payment_pending', 'payment_submitted', 'downpayment_received', 'confirmed', 'in_preparation', 'event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed', 'fully_paid'], true)) {
-                            $progressSteps['quotation']['status'] = 'complete';
-                        }
-                        
-                        // 2. Client Confirmation Phase
-                        if ($booking->status === 'quotation_sent') {
-                            $progressSteps['client']['status'] = 'current';
-                            $progressSteps['client']['sublabel'] = 'Awaiting your review & acceptance';
-                        } elseif ($booking->status === 'approved') {
-                            $progressSteps['client']['status'] = 'current';
-                            $progressSteps['client']['sublabel'] = 'Awaiting final Admin approval';
-                        } elseif (in_array($booking->status, ['admin_approved', 'payment_pending', 'payment_submitted', 'downpayment_received', 'confirmed', 'in_preparation', 'event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed', 'fully_paid'], true)) {
-                            $progressSteps['client']['status'] = 'complete';
-                        }
-                        
-                        // 3. Payment Phase
-                        if (in_array($booking->status, ['admin_approved', 'payment_pending'], true)) {
-                            $progressSteps['payment']['status'] = 'current';
-                            $progressSteps['payment']['sublabel'] = 'Payment submission required';
-                        } elseif ($booking->status === 'payment_submitted') {
-                            $progressSteps['payment']['status'] = 'current';
-                            $progressSteps['payment']['sublabel'] = 'Payment verification pending';
-                        } elseif (in_array($booking->status, ['downpayment_received', 'confirmed', 'in_preparation', 'event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed', 'fully_paid'], true)) {
-                            $progressSteps['payment']['status'] = 'complete';
-                        }
-                        
-                        // 4. Confirmation Phase
-                        if (in_array($booking->status, ['downpayment_received', 'confirmed'], true) && !$booking->isInPreparationPeriod()) {
-                            $progressSteps['confirmation']['status'] = 'current';
-                            $progressSteps['confirmation']['sublabel'] = 'Confirmed';
-                        } elseif (in_array($booking->status, ['in_preparation', 'event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed', 'fully_paid'], true) || (in_array($booking->status, ['downpayment_received', 'confirmed'], true) && $booking->isInPreparationPeriod())) {
-                            $progressSteps['confirmation']['status'] = 'complete';
-                        }
-                        
-                        // 5. Preparation Phase
-                        if ($booking->status === 'in_preparation' || (in_array($booking->status, ['downpayment_received', 'confirmed'], true) && $booking->isInPreparationPeriod())) {
-                            $progressSteps['preparation']['status'] = 'current';
-                            $progressSteps['preparation']['sublabel'] = 'Event in preparation';
-                        } elseif (in_array($booking->status, ['event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed', 'fully_paid'], true)) {
-                            $progressSteps['preparation']['status'] = 'complete';
-                        }
-                        
-                        // 6. Event Phase
-                        if ($booking->status === 'event_in_progress') {
-                            $progressSteps['event']['status'] = 'current';
-                            $progressSteps['event']['sublabel'] = 'Event in progress';
-                        } elseif (in_array($booking->status, ['event_completed', 'pending_return', 'pending_resolution', 'completed', 'fully_paid'], true)) {
-                            $progressSteps['event']['status'] = 'complete';
-                        }
-                        
-                        // 7. Return Phase
-                        if (in_array($booking->status, ['event_completed', 'pending_return'], true)) {
-                            $progressSteps['return']['status'] = 'current';
-                            $progressSteps['return']['sublabel'] = $booking->status === 'event_completed' ? 'Awaiting final payment' : 'Awaiting return';
-                        } elseif ($booking->status === 'pending_resolution') {
-                            $progressSteps['return']['status'] = 'current';
-                            $progressSteps['return']['sublabel'] = 'Pending resolution';
-                        } elseif (in_array($booking->status, ['completed', 'fully_paid'], true)) {
-                            $progressSteps['return']['status'] = 'complete';
-                        }
-                        
-                        // 8. Completion Phase
-                        if (in_array($booking->status, ['completed', 'fully_paid'], true)) {
-                            $progressSteps['completion']['status'] = 'complete';
-                            $progressSteps['completion']['sublabel'] = 'Booking completed';
-                        }
-                    }
-
-                    // A helper to draw the circles
-                    if (!function_exists('getTimelineDot')) {
-                        function getTimelineDot($status) {
-                            if ($status === 'complete') {
-                                return '<div class="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center shrink-0 z-10 ring-4 ring-white" aria-hidden="true"><svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>';
-                            } elseif ($status === 'current') {
-                                return '<div class="w-6 h-6 rounded-full border-2 border-emerald-600 bg-white flex items-center justify-center shrink-0 z-10 ring-4 ring-emerald-100" aria-hidden="true"><div class="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse"></div></div>';
-                            } else {
-                                return '<div class="w-6 h-6 rounded-full border-2 border-slate-200 bg-white shrink-0 z-10 ring-4 ring-white" aria-hidden="true"></div>';
-                            }
-                        }
-                    }
-                    if (!function_exists('getTimelineLabelClass')) {
-                        function getTimelineLabelClass($status) {
-                            if ($status === 'complete') return 'text-slate-800 font-semibold';
-                            if ($status === 'current') return 'text-emerald-700 font-bold';
-                            return 'text-slate-400 font-medium';
-                        }
-                    }
+                    // README end-to-end booking workflow (single source of truth)
+                    $bookingWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($booking);
                 @endphp
 
                     {{-- 1. Back Navigation --}}
@@ -237,48 +98,10 @@
                         </div>
                     </section>
 
-                <div class="flex flex-col lg:flex-row gap-6 mb-8">
-                    
-                    {{-- 3. Vertical Booking Timeline --}}
-                    <aside class="w-full lg:w-1/3 xl:w-1/4 shrink-0">
-                        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sticky top-6">
-                            <h2 class="text-xs font-bold uppercase tracking-[0.18em] text-slate-400 mb-5">Booking Progress</h2>
-                            
-                            @if($isTerminal)
-                                <div class="rounded-xl bg-rose-50 border border-rose-200 text-rose-800 p-4 mb-4">
-                                    <div class="flex items-center gap-2 font-bold text-sm">
-                                        <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                        Booking {{ ucfirst($booking->status) }}
-                                    </div>
-                                    <p class="text-xs text-rose-700 mt-1 leading-relaxed">
-                                        This booking process has been stopped and is no longer active.
-                                    </p>
-                                </div>
-                            @endif
+                {{-- 3. Booking Workflow (README: Guest → Client → Staff) --}}
+                <x-booking-workflow :workflow="$bookingWorkflow" heading="Booking Progress" id="client-booking-workflow" />
 
-                            <nav aria-label="Booking Progress" class="relative">
-                                {{-- The connecting line --}}
-                                <div class="absolute left-3 top-3 bottom-3 w-px bg-slate-200 z-0" aria-hidden="true"></div>
-                                
-                                <ol class="space-y-5 relative z-10" role="list">
-                                    @foreach($progressSteps as $key => $step)
-                                        <li class="flex items-start gap-3">
-                                            {!! getTimelineDot($isTerminal ? 'upcoming' : $step['status']) !!}
-                                            <div class="min-w-0 flex-1 pt-0.5">
-                                                <p class="text-sm {{ $isTerminal ? 'text-slate-400 font-medium' : getTimelineLabelClass($step['status']) }}">
-                                                    <span class="sr-only">{{ ucfirst($step['status']) }}: </span>
-                                                    {{ $step['label'] }}
-                                                </p>
-                                                @if(!$isTerminal && !empty($step['sublabel']))
-                                                    <p class="text-xs text-slate-500 mt-0.5">{{ $step['sublabel'] }}</p>
-                                                @endif
-                                            </div>
-                                        </li>
-                                    @endforeach
-                                </ol>
-                            </nav>
-                        </div>
-                    </aside>
+                <div class="flex flex-col lg:flex-row gap-6 mb-8">
 
                     {{-- 4-10. Current Status / Action Area --}}
                     <div class="w-full lg:flex-1 space-y-6">
@@ -292,7 +115,7 @@
                                         @if($isTerminal)
                                             Booking {{ ucfirst($booking->status) }}
                                         @elseif($booking->status === 'pending')
-                                            Raflora Review
+                                            {{ $bookingWorkflow['current_label'] ?? 'Raflora Review' }}
                                         @elseif($booking->status === 'quotation_sent')
                                             Quotation Ready
                                         @elseif($booking->status === 'change_requested')
@@ -327,13 +150,13 @@
                                         @if($isTerminal)
                                             <p>This booking process has been stopped and is no longer active.</p>
                                         @elseif($booking->status === 'pending')
-                                            <p>Your booking request has been received. Raflora is reviewing the event details before preparing the formal quotation.</p>
+                                            <p>Your booking request has been received. {{ $bookingWorkflow['current_detail'] ?? 'Raflora is reviewing the event details before preparing the formal quotation.' }}</p>
                                             <div class="mt-4 pt-4 border-t border-emerald-200/60">
                                                 <p class="font-semibold text-slate-800 mb-2">What happens next?</p>
                                                 <ol class="list-decimal list-inside space-y-1.5 ml-1">
                                                     <li>Raflora reviews your booking details.</li>
-                                                    <li>We prepare your formal quotation.</li>
-                                                    <li>You'll be notified when it is ready for your review.</li>
+                                                    <li>Raflora prepares and validates the materials for your event.</li>
+                                                    <li>We prepare your formal quotation and notify you when it is ready for your review.</li>
                                                 </ol>
                                             </div>
                                         @elseif($booking->status === 'quotation_sent')
@@ -619,11 +442,84 @@
                                     <x-booking-conversation 
                                         :booking="$booking"
                                         role="client"
-                                        :booking-messages="$bookingMessages"
+                                        :booking-messages="$bookingMessages ?? collect()"
                                         :unread-count="$unreadMessageCount ?? 0"
                                         :active-quotation="$activeQuotation"
                                     />
                                 </div>
+                            {{-- Meetings with Raflora (README Client Workflow: client and Raflora can meet about the booking) --}}
+                            @php
+                                $clientMeetings = $booking->meetings()->orderByDesc('scheduled_datetime')->get();
+                                $meetingsAllowed = \App\Models\Meeting::bookingAllowsMeetings($booking);
+                                $hasPendingMeetingRequest = $clientMeetings->contains(fn ($m) => $m->status === \App\Models\Meeting::STATUS_REQUESTED);
+                            @endphp
+                            @if($clientMeetings->isNotEmpty() || $meetingsAllowed)
+                                <div id="client-meetings" class="p-5 sm:p-6 sm:p-8 bg-white border-t border-slate-200">
+                                    <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Meetings with Raflora</h3>
+                                    <p class="text-sm text-slate-500 mb-4">Request an online or in-person meeting to discuss your booking. Raflora confirms the final schedule.</p>
+
+                                    @if($clientMeetings->isNotEmpty())
+                                        <ul class="space-y-3 mb-6" role="list">
+                                            @foreach($clientMeetings as $meeting)
+                                                <li class="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                        <div class="min-w-0">
+                                                            <p class="text-sm font-semibold text-slate-800">{{ $meeting->type_label }} · {{ $meeting->scheduled_datetime->format('M j, Y g:i A') }}</p>
+                                                            @if($meeting->status === \App\Models\Meeting::STATUS_REQUESTED)
+                                                                <p class="text-xs text-slate-500">Your preferred time — awaiting Raflora confirmation.</p>
+                                                            @endif
+                                                            @if($meeting->status === \App\Models\Meeting::STATUS_SCHEDULED && $meeting->meeting_link)
+                                                                <p class="mt-1 text-sm"><a href="{{ $meeting->meeting_link }}" target="_blank" rel="noopener noreferrer" class="font-medium text-emerald-700 underline break-all">Join meeting</a></p>
+                                                            @endif
+                                                            @if($meeting->status === \App\Models\Meeting::STATUS_SCHEDULED && $meeting->address)
+                                                                <p class="mt-1 text-sm text-slate-600">Location: {{ $meeting->address }}</p>
+                                                            @endif
+                                                            @if($meeting->agenda)
+                                                                <p class="mt-1 text-xs text-slate-500 whitespace-pre-line">Agenda: {{ $meeting->agenda }}</p>
+                                                            @endif
+                                                        </div>
+                                                        <span class="w-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold {{ match($meeting->status) { 'scheduled' => 'bg-emerald-100 text-emerald-800', 'completed' => 'bg-slate-200 text-slate-700', 'cancelled' => 'bg-rose-100 text-rose-800', default => 'bg-amber-100 text-amber-800' } }}">{{ $meeting->status_label }}</span>
+                                                    </div>
+                                                    @if($meeting->isOpen())
+                                                        <form method="POST" action="{{ route('bookings.meetings.cancel', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-3">
+                                                            @csrf
+                                                            <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-700 underline">Cancel this meeting</button>
+                                                        </form>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+
+                                    @if($meetingsAllowed && !$hasPendingMeetingRequest)
+                                        <form method="POST" action="{{ route('bookings.meetings.store', $booking->id) }}" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            @csrf
+                                            <div class="rf-field">
+                                                <label class="rf-label" for="meeting_type">Meeting type</label>
+                                                <select id="meeting_type" name="meeting_type" class="rf-input text-sm w-full" required>
+                                                    @foreach(\App\Models\Meeting::TYPES as $typeValue => $typeLabel)
+                                                        <option value="{{ $typeValue }}" @selected(old('meeting_type') === $typeValue)>{{ $typeLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="rf-field">
+                                                <label class="rf-label" for="preferred_datetime">Preferred date &amp; time</label>
+                                                <input id="preferred_datetime" type="datetime-local" name="preferred_datetime" value="{{ old('preferred_datetime') }}" min="{{ now()->format('Y-m-d\TH:i') }}" class="rf-input text-sm w-full" required>
+                                                @error('preferred_datetime')
+                                                    <p class="mt-1 text-xs text-rose-600">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+                                            <div class="rf-field sm:col-span-2">
+                                                <label class="rf-label" for="meeting_agenda">What would you like to discuss? (optional)</label>
+                                                <textarea id="meeting_agenda" name="agenda" rows="2" maxlength="1000" class="rf-input text-sm w-full" placeholder="e.g., Review the arch design and table centerpieces">{{ old('agenda') }}</textarea>
+                                            </div>
+                                            <div class="sm:col-span-2 flex justify-end">
+                                                <button type="submit" class="rf-btn bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-6 py-2">Request Meeting</button>
+                                            </div>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endif
                         </section>
                         
                         {{-- Modals --}}

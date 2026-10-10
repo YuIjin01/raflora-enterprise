@@ -301,11 +301,11 @@ class GuestBookingManualAcceptanceTest extends TestCase
         $response->assertSee('NO PAYMENT IS REQUIRED AT THIS STAGE');
         $response->assertSee('Guest Request Journey');
 
-        // All 4 Guest Request Journey stages must exist
+        // README Guest Workflow stages (Request Submitted → Awaiting Claim) followed by the Client Workflow
         $response->assertSee('Request Submitted');
+        $response->assertSee('Awaiting Claim');
         $response->assertSee('Raflora Review');
-        $response->assertSee('Claim Your Request');
-        $response->assertSee('Request Expires');
+        $response->assertDontSee('Request Expires');
         $response->assertSee('CLAIM YOUR REQUEST');
         $response->assertSee('Claim Booking');
 

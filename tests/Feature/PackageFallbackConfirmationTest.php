@@ -50,7 +50,9 @@ class PackageFallbackConfirmationTest extends TestCase
             'suggested_procurement_date' => now()->addDays(5)->toDateString()
         ];
 
-        $response = $this->actingAs($admin)->post('/client/bookings/create', $payload);
+        // Client bookings are created by client accounts (the client portal is client-only).
+        $clientUser = User::factory()->create(['role' => 'client', 'email' => 'john@example.com']);
+        $response = $this->actingAs($clientUser)->post('/client/bookings/create', $payload);
         
         file_put_contents(base_path('scratch/test_response.html'), $response->content());
         $response->assertSessionHasNoErrors();

@@ -40,7 +40,7 @@ Route::get('/gallery', fn () => view('gallery'))->name('gallery');
 Route::get('/about', fn () => view('about'))->name('about');
 
 //flagging invalid image in bookings
-Route::post('/bookings/validate-image', [BookingController::class, 'validateImageAjax'])->name('bookings.validate-image');
+Route::post('/bookings/validate-image', [BookingController::class, 'validateImageAjax'])->middleware('throttle:5,1')->name('bookings.validate-image');
 Route::post('/bookings/analyze-temp-image', [BookingController::class, 'analyzeTempImage'])->middleware('throttle:5,1')->name('bookings.analyze-temp-image');
 
 // Dynamic Booking Route
@@ -150,7 +150,7 @@ Route::prefix('staff')->middleware(['auth', 'staff', 'verified'])->group(functio
 });
 
 // Client Routes: Protected by authentication and email verification
-Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
+Route::prefix('client')->middleware(['auth', 'verified', 'client'])->group(function () {
     // Client Dashboard: Main portal overview
     Route::get('/dashboard', function () {
         $user = Auth::user();
@@ -173,7 +173,8 @@ Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/{notification}/read', [\App\Http\Controllers\ClientNotificationController::class, 'markAsRead'])->name('client.notifications.read');
     Route::post('/notifications/{notification}/mark-as-read', [\App\Http\Controllers\ClientNotificationController::class, 'markAsReadAjax'])->name('client.notifications.mark-as-read');
     Route::post('/notifications/read-all', [\App\Http\Controllers\ClientNotificationController::class, 'markAllAsRead'])->name('client.notifications.read-all');
-    Route::get('/bookings/{booking}/updates', [\App\Http\Controllers\ClientNotificationController::class, 'bookingUpdates'])->name('client.booking.updates');
+    // Admin may open a client's booking updates for supervision; the controller enforces admin-or-owner.
+    Route::get('/bookings/{booking}/updates', [\App\Http\Controllers\ClientNotificationController::class, 'bookingUpdates'])->withoutMiddleware('client')->name('client.booking.updates');
 
     // Client Bookings: Lists user's active bookings
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings');
@@ -201,6 +202,9 @@ Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
     Route::post('/bookings/{booking}/request-cancellation', [BookingController::class, 'requestCancellation'])->name('bookings.request-cancellation');
     Route::post('/bookings/{booking}/payment-reference', [BookingController::class, 'submitPaymentReference'])->name('bookings.payment.reference');
     Route::post('/bookings/{booking}/proposals/{presentation}/feedback', [BookingController::class, 'submitProposalFeedback'])->name('bookings.proposals.feedback');
+    // Client ↔ Raflora meetings (README Client Workflow)
+    Route::post('/bookings/{booking}/meetings', [\App\Http\Controllers\Client\BookingMeetingController::class, 'store'])->middleware('throttle:10,1')->name('bookings.meetings.store');
+    Route::post('/bookings/{booking}/meetings/{meeting}/cancel', [\App\Http\Controllers\Client\BookingMeetingController::class, 'cancel'])->name('bookings.meetings.cancel');
 
     // Client Booking History: Shows past bookings
     Route::get('/booking-history', [BookingController::class, 'history'])->name('booking-history');
@@ -228,6 +232,20 @@ Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
             'new_password' => ['nullable', 'required_with:current_password', 'string', 'min:8', 'confirmed'],
         ]);
 
+        // Client records are linked to user accounts by email. An email change must carry the
+        // user's client record (and its bookings) along, must never attach the account to
+        // someone else's client record, and must be re-verified before portal access resumes.
+        $emailChanged = strcasecmp(trim($data['email']), (string) $user->email) !== 0;
+        $currentClient = \App\Models\Client::where('email', $user->email)->first();
+        if ($emailChanged) {
+            $emailTakenByAnotherClient = \App\Models\Client::where('email', $data['email'])
+                ->when($currentClient, fn ($q) => $q->whereKeyNot($currentClient->id))
+                ->exists();
+            if ($emailTakenByAnotherClient) {
+                return back()->withErrors(['email' => 'This email address is already linked to another client record. Please contact Raflora for help.'])->withInput();
+            }
+        }
+
         try {
             if ($request->hasFile('profile_image')) {
                 if ($user->profile_image && \Storage::disk('public')->exists($user->profile_image)) {
@@ -253,7 +271,40 @@ Route::prefix('client')->middleware(['auth', 'verified'])->group(function () {
             $user->email = $data['email'];
             $user->mobile_number = $data['mobile_number'] ?? null;
             $user->address = $data['address'] ?? null;
-            $user->save();
+            if ($emailChanged) {
+                $user->email_verified_at = null;
+            }
+
+            \Illuminate\Support\Facades\DB::transaction(function () use ($user, $currentClient, $emailChanged, $data) {
+                $user->save();
+                if ($emailChanged && $currentClient) {
+                    $currentClient->update(['email' => $data['email']]);
+                }
+            });
+
+            if ($emailChanged) {
+                \App\Models\AuditLog::create([
+                    'user_id' => $user->id,
+                    'action' => 'client_email_changed',
+                    'module' => 'account',
+                    'event_type' => 'client_email_changed',
+                    'details' => 'Client account email changed; re-verification required.',
+                    'ip_address' => $request->ip(),
+                    'entity_type' => User::class,
+                    'entity_id' => $user->id,
+                ]);
+
+                $otpService = app(\App\Services\OtpService::class);
+                $otp = $otpService->generate($user, 'email_verification');
+                $sent = $otpService->sendOtp($user, $otp, 10, 'email_verification');
+
+                $redirect = redirect()->route('verification.notice')
+                    ->with('info', 'Your email address was updated. Please verify the new address to continue using your client portal.');
+
+                return $sent
+                    ? $redirect
+                    : $redirect->withErrors(['otp' => 'We were unable to deliver your verification code. Please click resend to try again.']);
+            }
 
             return redirect()->route('account-settings')->with('success', 'Account settings updated successfully.');
         } catch (\Throwable $e) {
@@ -336,6 +387,12 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'admin.setup'])->group(func
     Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('admin.bookings.show');
     Route::put('/bookings/{booking}', [AdminBookingController::class, 'update'])->name('admin.bookings.update');
     Route::post('/bookings/{booking}/assign-staff', [AdminBookingController::class, 'assignStaff'])->name('admin.bookings.assign-staff');
+    Route::post('/bookings/{booking}/complete-review', [AdminBookingController::class, 'completeReview'])->name('admin.bookings.complete-review');
+    // Client ↔ Raflora meetings (README Client Workflow)
+    Route::post('/bookings/{booking}/meetings', [\App\Http\Controllers\Admin\BookingMeetingController::class, 'store'])->name('admin.bookings.meetings.store');
+    Route::post('/bookings/{booking}/meetings/{meeting}/confirm', [\App\Http\Controllers\Admin\BookingMeetingController::class, 'confirm'])->name('admin.bookings.meetings.confirm');
+    Route::post('/bookings/{booking}/meetings/{meeting}/complete', [\App\Http\Controllers\Admin\BookingMeetingController::class, 'complete'])->name('admin.bookings.meetings.complete');
+    Route::post('/bookings/{booking}/meetings/{meeting}/cancel', [\App\Http\Controllers\Admin\BookingMeetingController::class, 'cancel'])->name('admin.bookings.meetings.cancel');
     Route::post('/bookings/{booking}/presentations', [AdminBookingController::class, 'storeProposal'])->name('admin.bookings.presentations.store');
     // Dedicated AI suggestion actions (link/promote) to avoid validating full booking payload
     Route::post('/bookings/{booking}/ai-link', [AdminBookingController::class, 'linkAiItem'])->name('admin.bookings.ai.link');
@@ -433,10 +490,12 @@ Route::get('/test-gemini', function (GeminiVisionService $service) {
     return response()->json($result);
 });
 
-// PHASE 4 UI MOCK ROUTES
-Route::middleware(['web'])->group(function () {
-    Route::get('/mock', [\App\Http\Controllers\MockUIController::class, 'hub'])->name('mock.hub');
-    Route::get('/mock/client/{scenario}', [\App\Http\Controllers\MockUIController::class, 'clientScenario'])->name('mock.client');
-    Route::get('/mock/admin/{scenario}', [\App\Http\Controllers\MockUIController::class, 'adminScenario'])->name('mock.admin');
-    Route::get('/mock/staff/{scenario}', [\App\Http\Controllers\MockUIController::class, 'staffScenario'])->name('mock.staff');
-});
+// PHASE 4 UI MOCK ROUTES — temporary UI previews; never exposed outside local development.
+if (app()->environment('local')) {
+    Route::middleware(['web'])->group(function () {
+        Route::get('/mock', [\App\Http\Controllers\MockUIController::class, 'hub'])->name('mock.hub');
+        Route::get('/mock/client/{scenario}', [\App\Http\Controllers\MockUIController::class, 'clientScenario'])->name('mock.client');
+        Route::get('/mock/admin/{scenario}', [\App\Http\Controllers\MockUIController::class, 'adminScenario'])->name('mock.admin');
+        Route::get('/mock/staff/{scenario}', [\App\Http\Controllers\MockUIController::class, 'staffScenario'])->name('mock.staff');
+    });
+}

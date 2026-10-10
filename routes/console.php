@@ -120,7 +120,7 @@ Artisan::command('alerts:check-price-reconfirmations', function () {
 | Laravel Scheduler: Run alert checks daily at 6:00 AM
 |--------------------------------------------------------------------------
 */
-Schedule::command('inventory:check-tiered-shortages')->dailyAt('06:00');
-Schedule::command('alerts:check-expired-quotations')->dailyAt('06:05');
-Schedule::command('alerts:check-price-reconfirmations')->dailyAt('06:10');
-Schedule::command('guest-bookings:cleanup')->hourly();
+Schedule::command('inventory:check-tiered-shortages')->dailyAt('06:00')->withoutOverlapping()->onOneServer();
+Schedule::command('alerts:check-expired-quotations')->dailyAt('06:05')->withoutOverlapping()->onOneServer();
+Schedule::command('alerts:check-price-reconfirmations')->dailyAt('06:10')->withoutOverlapping()->onOneServer();
+Schedule::command('guest-bookings:cleanup')->hourly()->withoutOverlapping()->onOneServer();

@@ -6,11 +6,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title }} - Raflora Enterprises</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body { font-family: 'Montserrat', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
         .serif { font-family: 'Playfair Display', serif; }
     </style>
 </head>
@@ -64,9 +64,9 @@
         </aside>
 
         <div class="flex min-h-screen min-w-0 flex-1 flex-col">
-            <header class="border-b border-slate-200 bg-white/90 px-4 py-4 backdrop-blur-sm sm:px-8">
+            <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur sm:px-8 sm:py-4">
                 <div class="flex items-center justify-between gap-3 sm:gap-4">
-                    <div class="flex items-center gap-3">
+                    <div class="flex min-w-0 items-center gap-3">
                         <button id="mobileStaffToggle" type="button"
                                 class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm transition hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 focus-visible:ring-offset-2 lg:hidden"
                                 aria-controls="staffSidebar"
@@ -74,9 +74,9 @@
                                 aria-label="Open Staff navigation">
                             <i class="fa-solid fa-bars text-lg" aria-hidden="true"></i>
                         </button>
-                        <div>
-                            <p class="text-[11px] font-bold uppercase tracking-[0.22em] text-purple-600">Raflora Enterprises</p>
-                            <h1 class="serif mt-1 text-xl font-bold text-slate-900 sm:text-2xl">{{ $title }}</h1>
+                        <div class="min-w-0">
+                            <p class="hidden text-[11px] font-bold uppercase tracking-[0.22em] text-purple-600 sm:block">Raflora Enterprises</p>
+                            <h1 class="serif truncate text-lg font-bold text-slate-900 sm:mt-1 sm:text-2xl">{{ $title }}</h1>
                         </div>
                     </div>
 
