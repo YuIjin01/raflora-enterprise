@@ -241,6 +241,8 @@ class AdminNotificationsTest extends TestCase
             'total_quoted' => 15000,
         ]);
 
+        // The label is normalized, but a pending booking cannot jump straight to an event in progress
+        // (Stabilization Phase 3: status changes must reflect valid business events).
         $response = $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
             '_method' => 'PUT',
             'event_type' => 'wedding',
@@ -253,9 +255,25 @@ class AdminNotificationsTest extends TestCase
         ]);
 
         $response->assertRedirect();
-        $booking->refresh();
+        $response->assertSessionHas('error', 'Use "Mark Event In Progress" so fresh-flower readiness, dispatch, and inventory locks are checked.');
+        $this->assertSame('pending', $booking->fresh()->status);
 
-        $this->assertSame('event_in_progress', $booking->status);
+        // A human-readable label is normalized on a legal transition.
+        $booking->update(['status' => 'event_in_progress']);
+        $response = $this->actingAs($admin)->put(route('admin.bookings.update', $booking), [
+            '_method' => 'PUT',
+            'event_type' => 'wedding',
+            'event_date' => now()->addDays(15)->toDateString(),
+            'venue' => 'The Garden Hall',
+            'status' => 'Event completed',
+            'special_requests' => null,
+            'admin_note' => null,
+            'action' => 'save',
+        ]);
+
+        $response->assertRedirect();
+        $response->assertSessionMissing('error');
+        $this->assertSame('event_completed', $booking->fresh()->status);
     }
 
     public function test_quote_override_changes_are_saved_into_client_update_notification(): void

@@ -17,6 +17,8 @@ use Illuminate\View\View;
 
 class ClaimGuestBookingController extends Controller
 {
+    private const ALREADY_CLAIMED = 'temporary_guest_booking_already_claimed';
+
     /**
      * Show the claim confirmation page for a temporary guest booking.
      */
@@ -25,14 +27,20 @@ class ClaimGuestBookingController extends Controller
         $booking = TemporaryGuestBooking::where('claim_token_hash', hash('sha256', $token))->first();
 
         if (!$booking) {
-            abort(404, 'Booking request not found or token invalid.');
-        }
+            // README Guest Workflow: permanent guest bookings must also be claimed before
+            // the Client Workflow can continue. They do not expire.
+            $booking = Booking::where('guest_access_token', $token)->first();
 
-        if ($booking->isClaimed()) {
+            if (!$booking) {
+                abort(404, 'Booking request not found or token invalid.');
+            }
+
+            if (!is_null($booking->client_id)) {
+                return redirect()->route('client.dashboard')->with('error', 'This booking request has already been claimed.');
+            }
+        } elseif ($booking->isClaimed()) {
             return redirect()->route('client.dashboard')->with('error', 'This booking request has already been claimed.');
-        }
-
-        if ($booking->isExpired()) {
+        } elseif ($booking->isExpired()) {
             abort(403, 'This booking request has expired (24 hours). Please start a new request.');
         }
 
@@ -68,7 +76,7 @@ class ClaimGuestBookingController extends Controller
         $tempBooking = TemporaryGuestBooking::where('claim_token_hash', hash('sha256', $token))->lockForUpdate()->first();
 
         if (!$tempBooking) {
-            abort(404, 'Booking request not found or token invalid.');
+            return $this->claimPermanentGuestBooking($token);
         }
 
         if ($tempBooking->isClaimed()) {
@@ -89,6 +97,17 @@ class ClaimGuestBookingController extends Controller
 
         try {
             DB::transaction(function () use ($tempBooking, $user, $token) {
+                // Atomic claim: only one request can move the temporary request from unclaimed to
+                // claimed, so a double-submit or parallel claim can never create two bookings.
+                $claimedNow = TemporaryGuestBooking::whereKey($tempBooking->id)
+                    ->whereNull('claimed_at')
+                    ->whereNull('client_id')
+                    ->update(['claimed_at' => Carbon::now()]);
+
+                if ($claimedNow === 0) {
+                    throw new \RuntimeException(self::ALREADY_CLAIMED);
+                }
+
                 // Re-evaluate logic from GuestBookingController store to convert TemporaryGuestBooking into Booking
 
                 $priceValidUntil = Carbon::now()->addDays(7)->toDateString();
@@ -244,9 +263,75 @@ class ClaimGuestBookingController extends Controller
 
             return redirect()->route('bookings')
                 ->with('success', 'Booking request claimed successfully! It is now in your bookings list.');
+        } catch (\RuntimeException $e) {
+            if ($e->getMessage() === self::ALREADY_CLAIMED) {
+                return redirect()->route('client.dashboard')->with('error', 'This booking request has already been claimed.');
+            }
+
+            \Illuminate\Support\Facades\Log::error('Failed to claim guest booking: ' . $e->getMessage(), ['exception' => $e]);
+            return redirect()->route('client.dashboard')->with('error', 'There was an error claiming your request. Please try again.');
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Failed to claim guest booking: ' . $e->getMessage(), ['exception' => $e]);
             return redirect()->route('client.dashboard')->with('error', 'There was an error claiming your request. Please try again.');
         }
+    }
+
+    /**
+     * Link an unclaimed permanent guest booking to the authenticated client account.
+     * The booking keeps its current workflow state; only ownership is transferred.
+     */
+    protected function claimPermanentGuestBooking(string $token): RedirectResponse
+    {
+        $user = Auth::user();
+
+        $result = DB::transaction(function () use ($token, $user) {
+            $booking = Booking::where('guest_access_token', $token)->lockForUpdate()->first();
+
+            if (!$booking) {
+                abort(404, 'Booking request not found or token invalid.');
+            }
+
+            if (!is_null($booking->client_id)) {
+                return 'already_claimed';
+            }
+
+            if (strtolower((string) $user->email) !== strtolower((string) $booking->guest_email)) {
+                abort(403, 'Your account email does not match the email used for this request. Please log in with the correct account.');
+            }
+
+            if (!$user->hasVerifiedEmail()) {
+                abort(403, 'You must verify your email address before claiming this request.');
+            }
+
+            $client = \App\Models\Client::firstOrCreate(
+                ['email' => $user->email],
+                [
+                    'full_name' => $booking->guest_name ?: $user->name,
+                    'phone' => $booking->guest_phone,
+                    'address' => $booking->guest_address,
+                ]
+            );
+
+            $booking->client_id = $client->id;
+            $booking->save();
+
+            \App\Models\AuditLog::create([
+                'user_id' => $user->id,
+                'action' => 'guest_booking_claimed',
+                'module' => 'booking',
+                'details' => 'Guest booking #' . $booking->id . ' claimed by client account ' . $user->email . '.',
+                'entity_type' => Booking::class,
+                'entity_id' => $booking->id,
+            ]);
+
+            return $booking;
+        });
+
+        if ($result === 'already_claimed') {
+            return redirect()->route('client.dashboard')->with('error', 'This booking request has already been claimed.');
+        }
+
+        return redirect()->route('bookings.show', ['booking' => $result->id])
+            ->with('success', 'Booking claimed successfully! You can now continue it from your client account.');
     }
 }

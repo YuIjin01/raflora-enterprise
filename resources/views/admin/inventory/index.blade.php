@@ -1,5 +1,5 @@
 <x-admin-layout title="Inventory Management">
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
         <div class="flex items-center gap-3">
             <div>
                 <h2 class="text-xl font-bold text-gray-800">Inventory Management</h2>
@@ -34,47 +34,47 @@
     @endif
 
     <!-- Status Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-8">
+    <div class="rf-stat-grid grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6 mb-8">
         <!-- Total Items -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 flex items-center justify-between gap-3">
             <div>
                 <p class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Total Items</p>
-                <p class="text-3xl font-bold text-gray-800">{{ $totalItemsCount }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-800">{{ $totalItemsCount }}</p>
             </div>
-            <div class="w-12 h-12 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+            <div class="hidden sm:flex w-12 h-12 shrink-0 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
                 <i class="fa-solid fa-boxes-stacked text-xl"></i>
             </div>
         </div>
 
         <!-- In Stock -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 flex items-center justify-between gap-3">
             <div>
                 <p class="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-1">In Stock</p>
-                <p class="text-3xl font-bold text-gray-800">{{ $inStockCount }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-800">{{ $inStockCount }}</p>
             </div>
-            <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <div class="hidden sm:flex w-12 h-12 shrink-0 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
                 <i class="fa-solid fa-check-circle text-xl"></i>
             </div>
         </div>
 
         <!-- Low Stock -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 flex items-center justify-between gap-3">
             <div>
                 <p class="text-sm font-semibold text-amber-600 uppercase tracking-wider mb-1">Low Stock</p>
-                <p class="text-3xl font-bold text-gray-800">{{ $lowStockCount }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-800">{{ $lowStockCount }}</p>
             </div>
-            <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
+            <div class="hidden sm:flex w-12 h-12 shrink-0 rounded-full bg-amber-50 flex items-center justify-center text-amber-600">
                 <i class="fa-solid fa-triangle-exclamation text-xl"></i>
             </div>
         </div>
 
         <!-- Shortage -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex items-center justify-between">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 flex items-center justify-between gap-3">
             <div>
                 <p class="text-sm font-semibold text-red-600 uppercase tracking-wider mb-1">Shortage</p>
-                <p class="text-3xl font-bold text-gray-800">{{ $shortageCount }}</p>
+                <p class="text-2xl sm:text-3xl font-bold text-gray-800">{{ $shortageCount }}</p>
             </div>
-            <div class="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center text-red-600">
+            <div class="hidden sm:flex w-12 h-12 shrink-0 rounded-full bg-red-50 flex items-center justify-center text-red-600">
                 <i class="fa-solid fa-circle-exclamation text-xl"></i>
             </div>
         </div>
@@ -82,7 +82,7 @@
 
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
         <!-- Header & Filters -->
-        <div class="p-6 border-b border-gray-200">
+        <div class="p-4 sm:p-6 border-b border-gray-200">
             <form method="GET" action="{{ route('admin.inventory.index') }}" class="flex flex-wrap lg:flex-nowrap items-center gap-3 w-full">
                 <!-- Search -->
                 <div class="relative w-full lg:flex-1 min-w-[200px]">
@@ -129,7 +129,7 @@
         
         <!-- Table -->
         <div class="overflow-x-auto">
-            <table class="w-full table-auto text-left min-w-[800px]">
+            <table class="rf-table--stack w-full table-auto text-left min-w-[800px]">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
                         <th class="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center w-12">#</th>
@@ -146,10 +146,10 @@
                 <tbody class="divide-y divide-gray-100 bg-white">
                     @forelse($inventoryItems as $item)
                         <tr class="hover:bg-slate-50 transition">
-                            <td class="px-6 py-4 text-sm text-gray-500 text-center font-medium">
+                            <td class="rf-stack-hide px-6 py-4 text-sm text-gray-500 text-center font-medium">
                                 {{ $loop->iteration }}
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="rf-stack-full px-6 py-4">
                                 <div class="flex items-center gap-3">
                                     <div class="h-10 w-10 flex-shrink-0 bg-gray-100 rounded overflow-hidden flex items-center justify-center">
                                         @if($item->image_path)
@@ -167,41 +167,41 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-base font-medium text-gray-700">
+                            <td data-label="Category" class="px-6 py-4 text-base font-medium text-gray-700">
                                 {{ $item->category }}
                             </td>
-                            <td class="px-6 py-4 text-lg font-semibold text-gray-700 text-right">
+                            <td data-label="Current" class="px-6 py-4 text-lg font-semibold text-gray-700 text-right">
                                 {{ (float) $item->current_stock }}
                             </td>
-                            <td class="px-6 py-4 text-lg text-right">
+                            <td data-label="Reserved" class="px-6 py-4 text-lg text-right">
                                 @if($item->reserved_stock > 0)
                                     <span class="text-amber-600 font-semibold">{{ (float) $item->reserved_stock }}</span>
                                 @else
                                     <span class="text-gray-400">0</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-xl font-black text-right {{ $item->net_available < 0 ? 'text-red-600' : 'text-gray-900' }}">
+                            <td data-label="Available" class="px-6 py-4 text-xl font-black text-right {{ $item->net_available < 0 ? 'text-red-600' : 'text-gray-900' }}">
                                 {{ (float) $item->net_available }}
                             </td>
-                            <td class="px-6 py-4 text-lg font-medium text-gray-500 text-right">
+                            <td data-label="Minimum" class="px-6 py-4 text-lg font-medium text-gray-500 text-right">
                                 {{ (float) $item->min_stock }}
                             </td>
-                            <td class="px-6 py-4 text-center">
+                            <td data-label="Status" class="px-6 py-4 text-center">
                                 @if($item->warning_level === 'shortage')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                    <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
                                         Shortage
                                     </span>
                                 @elseif($item->warning_level === 'low')
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                    <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
                                         Low Stock
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
                                         In Stock
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-right space-x-2">
+                            <td class="px-6 py-4 text-right whitespace-nowrap space-x-2">
                                 <a href="{{ route('admin.inventory.edit', $item) }}" class="inline-flex items-center justify-center w-8 h-8 rounded text-gray-400 hover:text-purple-600 hover:bg-purple-50 transition" title="Edit Item">
                                     <i class="fa-solid fa-pen-to-square"></i>
                                 </a>

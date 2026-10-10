@@ -25,8 +25,8 @@
     
     --rf-bg: #FDF8F3;
     
-    --rf-border: #D1D5DB;
-    --rf-border-strong: rgba(15, 23, 42, 0.2);
+    --rf-border: #e2e8f0;
+    --rf-border-strong: #cbd5e1;
     
     --rf-text: #374151; /* Body Text */
     --rf-heading: #0F2E5B; /* Heading */
@@ -49,9 +49,9 @@
     --rf-info-500: #3b82f6;
     --rf-info-700: #1d4ed8;
     
-    --rf-shadow-sm: 0 1px 2px rgba(15, 46, 91, 0.08); /* slightly navy tinted */
-    --rf-shadow-md: 0 10px 24px rgba(15, 46, 91, 0.08);
-    --rf-shadow-lg: 0 22px 50px -22px rgba(15, 46, 91, 0.3);
+    --rf-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
+    --rf-shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.08), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
+    --rf-shadow-lg: 0 18px 40px -18px rgba(15, 46, 91, 0.28);
     
     --rf-radius-sm: 0.375rem;
     --rf-radius-md: 0.5rem;
@@ -68,12 +68,25 @@
     body {
         @apply bg-slate-50 text-slate-700 antialiased;
         font-family: 'Inter', sans-serif;
+        text-rendering: optimizeLegibility;
+        -webkit-tap-highlight-color: transparent;
     }
 
     h1, h2, h3, h4, h5, h6 {
         letter-spacing: -0.01em;
         font-family: 'Playfair Display', serif;
         color: var(--rf-heading);
+        text-wrap: balance;
+    }
+
+    p {
+        text-wrap: pretty;
+    }
+
+    /* Thin, unobtrusive scrollbars for horizontally scrolling regions (tabs, stage strips, tables). */
+    .overflow-x-auto {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
     }
 
     *, *::before, *::after {
@@ -375,7 +388,7 @@
     .rf-btn-primary {
         background: linear-gradient(135deg, var(--rf-primary-500), var(--rf-primary-700));
         color: #fff;
-        box-shadow: var(--rf-shadow-lg);
+        box-shadow: 0 1px 2px rgba(21, 128, 61, 0.25), 0 6px 16px -8px rgba(21, 128, 61, 0.55);
     }
 
     .btn-primary:hover,
@@ -558,8 +571,12 @@
         border-bottom: none;
     }
 
+    .rf-table tbody tr {
+        transition: background-color 0.15s ease;
+    }
+
     .rf-table tbody tr:hover {
-        background: rgba(15, 23, 42, 0.015);
+        background: #f8fafc;
     }
 
     .rf-modal {
@@ -621,24 +638,46 @@
     }
 
     .rf-nav-item {
+        position: relative;
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 0.9rem;
-        border-radius: 0.9rem;
+        min-height: 2.5rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.75rem;
         color: var(--rf-text-soft);
+        font-size: 0.875rem;
         font-weight: 600;
+        line-height: 1.25;
         transition: background-color 0.2s ease, color 0.2s ease;
     }
 
+    .rf-nav-item > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     .rf-nav-item:hover {
-        background: rgba(16, 185, 129, 0.06);
-        color: var(--rf-primary-700);
+        background: #f1f5f9;
+        color: var(--rf-heading);
     }
 
     .rf-nav-item.is-active {
-        background: rgba(16, 185, 129, 0.09);
+        background: rgba(22, 163, 74, 0.09);
         color: var(--rf-primary-700);
+    }
+
+    .rf-nav-item.is-active::before {
+        content: "";
+        position: absolute;
+        left: -0.75rem;
+        top: 0.5rem;
+        bottom: 0.5rem;
+        width: 3px;
+        border-radius: 9999px;
+        background: var(--rf-primary-600);
     }
 
     .rf-panel {
@@ -689,6 +728,92 @@
 
     .rf-modal__dialog {
         width: min(100%, 28rem);
+    }
+
+    /* Stacked tables: each row becomes a card on phones (first and last cells span the card). */
+    .rf-table--stack,
+    .rf-table--stack tbody {
+        display: block;
+        width: 100%;
+        min-width: 0 !important;
+        border: 0;
+        background: transparent;
+    }
+
+    .rf-table--stack thead {
+        display: none;
+    }
+
+    .rf-table--stack tbody tr {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem 1rem;
+        margin: 0.75rem;
+        padding: 1rem;
+        border: 1px solid var(--rf-border);
+        border-radius: 1rem;
+        background: var(--rf-surface);
+        box-shadow: var(--rf-shadow-sm);
+    }
+
+    .rf-table--stack tbody tr:hover {
+        background: var(--rf-surface);
+    }
+
+    .rf-table--stack tbody td {
+        display: block;
+        min-width: 0;
+        padding: 0 !important;
+        border: 0 !important;
+    }
+
+    .rf-table--stack tbody td:first-child,
+    .rf-table--stack tbody td:last-child,
+    .rf-table--stack tbody td[colspan] {
+        grid-column: 1 / -1;
+    }
+
+    .rf-table--stack tbody td:last-child {
+        padding-top: 0.75rem !important;
+        border-top: 1px solid var(--rf-border) !important;
+    }
+
+    .rf-table--stack tbody td[colspan] {
+        border-top: 0 !important;
+    }
+
+    /* The header row is hidden on phones, so cells repeat their column name. */
+    .rf-table--stack tbody td[data-label] {
+        text-align: left !important;
+    }
+
+    .rf-table--stack tbody td[data-label]::before {
+        content: attr(data-label);
+        display: block;
+        margin-bottom: 0.2rem;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--rf-text-muted, #64748b);
+    }
+
+    .rf-table--stack tbody td.rf-stack-hide {
+        display: none;
+    }
+
+    .rf-table--stack tbody td.rf-stack-full {
+        grid-column: 1 / -1;
+    }
+
+    .rf-table--stack .whitespace-nowrap {
+        white-space: normal;
+    }
+
+    /* Two-up summary tiles on phones instead of one tall card per metric. */
+    .rf-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 0.75rem !important;
     }
 }
 

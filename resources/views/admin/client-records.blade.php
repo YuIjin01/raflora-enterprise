@@ -3,17 +3,17 @@
         <div class="flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
             <div>
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">Client management</p>
-                <h2 class="serif mt-1 text-3xl font-bold text-slate-900">Client Records</h2>
+                <h2 class="serif mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Client Records</h2>
                 <p class="mt-1 text-sm text-slate-500">Review the current client roster and the latest booking activity tied to each account.</p>
             </div>
-            <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
+            <span class="inline-flex w-fit items-center self-start rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
                 {{ $clients->count() }} record{{ $clients->count() === 1 ? '' : 's' }}
             </span>
         </div>
 
         <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
-                <table class="w-full min-w-[760px] text-left text-sm" aria-label="Client records table">
+                <table class="rf-table--stack w-full min-w-[760px] text-left text-sm" aria-label="Client records table">
                     <thead class="border-b border-slate-200 bg-slate-50 text-[11px] uppercase tracking-[0.14em] text-slate-500">
                         <tr>
                             <th scope="col" class="px-6 py-4">Client Name</th>
@@ -30,13 +30,13 @@
                                         {{ $client->name ?? trim(($client->first_name ?? '') . ' ' . ($client->last_name ?? '')) ?: 'Unnamed client' }}
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-slate-600">{{ $client->email }}</td>
-                                <td class="px-6 py-4">
+                                <td data-label="Email" class="rf-stack-full px-6 py-4 break-all text-slate-600">{{ $client->email }}</td>
+                                <td data-label="Bookings" class="px-6 py-4">
                                     <span class="inline-flex rounded-full bg-purple-50 px-2.5 py-1 text-xs font-semibold text-purple-700">
                                         {{ $client->bookings_count }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-slate-600">
+                                <td data-label="Last Activity" class="px-6 py-4 text-slate-600">
                                     {{ $client->bookings->first()?->created_at?->format('M d, Y') ?? 'No activity' }}
                                 </td>
                             </tr>

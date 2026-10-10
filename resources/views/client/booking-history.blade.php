@@ -13,8 +13,8 @@
                     <p class="text-lg font-medium">You have no past bookings yet.</p>
                 </div>
             @else
-                <div class="overflow-x-auto rounded-2xl border border-slate-200">
-                    <table class="rf-table min-w-[760px]">
+                <div class="-mx-3 overflow-x-auto sm:mx-0 md:rounded-2xl md:border md:border-slate-200">
+                    <table class="rf-table rf-table--stack min-w-[760px]">
                         <thead>
                             <tr class="border-b border-white/10">
                                 <th scope="col">Booking #</th>
@@ -28,10 +28,10 @@
                         <tbody>
                             @foreach($bookings as $booking)
                                 <tr>
-                                    <td class="font-medium text-slate-900">#{{ $booking->id }}</td>
-                                    <td class="capitalize">{{ $booking->event_type }}</td>
-                                    <td>{{ optional($booking->event_date)->format('F j, Y') }}</td>
-                                    <td>
+                                    <td class="font-semibold text-slate-900">Booking #{{ $booking->id }}</td>
+                                    <td data-label="Event" class="capitalize">{{ str_replace('_', ' ', $booking->event_type) }}</td>
+                                    <td data-label="Date">{{ optional($booking->event_date)->format('F j, Y') }}</td>
+                                    <td data-label="Status">
                                         @php
                                             $statusClass = match ($booking->status) {
                                                 'quotation_sent', 'payment_pending' => 'rf-badge--warning',
@@ -44,11 +44,15 @@
                                             {{ $booking->client_status_label ?? $booking->status_display_label }}
                                         </span>
                                     </td>
-                                    <td>
-                                        <div class="space-y-1">
-                                            <div>Quote: ₱{{ number_format((float) ($booking->total_obligation ?? 0), 2) }}</div>
-                                            <div>Balance: ₱{{ number_format((float) ($booking->remaining_balance ?? 0), 2) }}</div>
-                                        </div>
+                                    <td data-label="Quoted total">
+                                        @if((float) ($booking->total_obligation ?? 0) > 0)
+                                            <div class="space-y-1">
+                                                <div>Quote: ₱{{ number_format((float) $booking->total_obligation, 2) }}</div>
+                                                <div>Balance: ₱{{ number_format((float) ($booking->remaining_balance ?? 0), 2) }}</div>
+                                            </div>
+                                        @else
+                                            <span class="text-slate-500">Not yet quoted</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <a href="{{ route('bookings.analysis', ['booking' => $booking->id]) }}" class="rf-btn rf-btn-outline text-sm">View details</a>

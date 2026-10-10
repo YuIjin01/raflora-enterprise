@@ -68,9 +68,10 @@
                     $remainingChecklist = $hasInitializedChecklist 
                         ? $event->staffChecklistItems->where('is_completed', false)->count() 
                         : $defaultChecklistCount;
-                    $totalChecklist = $hasInitializedChecklist 
-                        ? $event->staffChecklistItems->count() 
+                    $totalChecklist = $hasInitializedChecklist
+                        ? $event->staffChecklistItems->count()
                         : $defaultChecklistCount;
+                    $eventWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($event);
                 @endphp
                 <a href="{{ route('staff.events.show', $event) }}" class="mb-3 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-purple-300 hover:bg-purple-50/60 sm:flex-row sm:items-center sm:justify-between">
                     <div class="space-y-1.5">
@@ -97,6 +98,12 @@
                                 {{ $event->preparation_status_display_label }}
                             </span>
                         </div>
+
+                        @if($eventWorkflow['current'])
+                            <p class="text-xs font-semibold text-purple-700">
+                                <i class="fa-solid fa-route mr-1" aria-hidden="true"></i>Workflow stage {{ $eventWorkflow['current_number'] }} of {{ $eventWorkflow['total'] }}: {{ $eventWorkflow['current_label'] }}
+                            </p>
+                        @endif
 
                         <p class="text-sm text-slate-600">
                             <span class="font-medium">{{ optional($event->event_date)->format('M d, Y') ?? 'Date not scheduled' }}</span>
@@ -184,10 +191,16 @@
                     </div>
                 </div>
 
+                @php
+                    $staffWorkflowStages = array_values(array_filter(
+                        \App\Services\BookingWorkflowService::STAGES,
+                        fn (array $stage) => $stage['phase'] === 'staff'
+                    ));
+                @endphp
                 <ol class="mt-5 space-y-3 text-sm text-slate-600">
-                    <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">1</span> Event preparation</li>
-                    <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">2</span> Event execution</li>
-                    <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">3</span> Material return and observation</li>
+                    @foreach($staffWorkflowStages as $stageIndex => $stageDefinition)
+                        <li class="flex items-center gap-3"><span class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-500">{{ $stageIndex + 1 }}</span> {{ $stageDefinition['label'] }}</li>
+                    @endforeach
                 </ol>
             </div>
 

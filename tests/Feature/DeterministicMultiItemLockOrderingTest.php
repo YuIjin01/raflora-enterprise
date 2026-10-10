@@ -256,8 +256,17 @@ class DeterministicMultiItemLockOrderingTest extends TestCase
         // Artificially deplete stock of item 2 to 0
         $items[1]->update(['current_stock' => 0]);
 
-        // First establish item 2 as having 2 good returned previously
+        // First establish item 2 as having 2 good returned previously — a prior credit is
+        // always recorded in the inventory ledger by the return audit.
         $returnItems[1]->update(['quantity_good' => 2, 'condition' => 'good']);
+        InventoryTransaction::create([
+            'inventory_item_id' => $items[1]->id,
+            'booking_id' => $booking->id,
+            'quantity_change' => 2,
+            'transaction_type' => 'return',
+            'reason' => 'Return tracking update: good',
+            'performed_by' => $this->admin->id,
+        ]);
 
         // Now attempt an update: item 1 adds good stock (+2), but item 2 reduces good stock from 2 to 0 (stockDiff = -2),
         // but item 2 currently has 0 stock, so downward correction cannot proceed without negative stock.
@@ -283,8 +292,8 @@ class DeterministicMultiItemLockOrderingTest extends TestCase
         $this->assertEquals(8, $items[0]->fresh()->current_stock);
         $this->assertEquals(0, $items[1]->fresh()->current_stock);
 
-        // No new return transaction should be saved
-        $this->assertEquals(0, InventoryTransaction::where('booking_id', $booking->id)->where('transaction_type', 'return')->count());
+        // No new return transaction should be saved (only the prior credit remains)
+        $this->assertEquals(1, InventoryTransaction::where('booking_id', $booking->id)->where('transaction_type', 'return')->count());
     }
 
     public function test_authorization_enforced_for_both_endpoints(): void

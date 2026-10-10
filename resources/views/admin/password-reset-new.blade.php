@@ -1,5 +1,5 @@
 <x-app-layout title="Admin Set New Password">
-    <x-auth-layout>
+    <x-auth-layout brandStyle="plain" :hideBrandingOnMobile="true">
         <div class="w-full max-w-md mx-auto glass-card p-6 sm:p-8 lg:p-10">
             <div class="text-center mb-6">
                 <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-emerald-500/20 text-emerald-400 mb-3 border border-emerald-500/30">

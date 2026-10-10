@@ -2,12 +2,12 @@
 
 <header class="sticky top-0 z-40 bg-white/95 shadow-md ring-1 ring-slate-200/70 backdrop-blur-sm relative">
     <!-- Main nav bar container -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-between items-center gap-3">
         <!-- Left: Logo & Links -->
-        <div class="flex items-center gap-6 sm:gap-8">
-            <a href="{{ route('home') }}" class="flex shrink-0 items-center gap-2 sm:gap-3 group">
-                <img src="{{ asset('assets/images/raflora_flower_emblem_transparent.png') }}" alt="Raflora Emblem" class="h-10 md:h-12 w-auto object-contain group-hover:rotate-12 transition-transform duration-300">
-                <img src="{{ asset('assets/images/raflora_text_wordmark_transparent.png') }}" alt="Raflora Wordmark" class="h-8 md:h-9 w-auto object-contain mt-1">
+        <div class="flex min-w-0 items-center gap-6 sm:gap-8">
+            <a href="{{ route('home') }}" class="flex min-w-0 shrink items-center gap-1.5 sm:gap-3 group" aria-label="Raflora home">
+                <img src="{{ asset('assets/images/raflora_flower_emblem_transparent.png') }}" alt="Raflora Emblem" class="h-9 sm:h-10 md:h-12 w-auto shrink-0 object-contain group-hover:rotate-12 transition-transform duration-300">
+                <img src="{{ asset('assets/images/raflora_text_wordmark_transparent.png') }}" alt="Raflora Wordmark" class="h-6 sm:h-8 md:h-9 w-auto min-w-0 object-contain mt-1 max-[359px]:hidden">
             </a>
 
             {{-- Desktop navigation: always hidden on small screens, visible on md+ --}}
@@ -39,7 +39,7 @@
         </div>
 
         <!-- Right: User/Profile Controls -->
-        <div class="flex items-center gap-4 text-sm">
+        <div class="flex shrink-0 items-center gap-2 sm:gap-4 text-sm">
             @if(auth()->check() || session('dev_user'))
                 <div class="hidden sm:flex flex-col items-end mr-2">
                     <p class="text-sm font-semibold text-slate-900 leading-tight">{{ auth()->user()->name ?? 'Raflora Client' }}</p>

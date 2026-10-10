@@ -3,9 +3,9 @@
     <form method="GET" action="{{ route('admin.quotations') }}" class="mb-6 flex flex-col items-start gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <!-- Status Filter -->
-            <div class="flex items-center gap-2">
-                <label for="status" class="text-sm font-semibold text-gray-700">Status</label>
-                <select id="status" name="status" class="rf-select min-w-44 rounded-lg px-3 py-2 text-sm">
+            <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <label for="status" class="text-xs font-semibold text-gray-700 sm:text-sm">Status</label>
+                <select id="status" name="status" class="rf-select w-full sm:w-auto sm:min-w-44 rounded-lg px-3 py-2 text-sm">
                     <option value="active" {{ $statusFilter === 'active' ? 'selected' : '' }}>Active (Pending & Issued)</option>
                     <option value="all" {{ $statusFilter === 'all' ? 'selected' : '' }}>All Statuses</option>
                     <option value="pending" {{ $statusFilter === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -16,9 +16,9 @@
             </div>
 
             <!-- Sort Option -->
-            <div class="flex items-center gap-2">
-                <label for="sort" class="text-sm font-semibold text-gray-700">Sort by</label>
-                <select id="sort" name="sort" class="rf-select min-w-36 rounded-lg px-3 py-2 text-sm">
+            <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+                <label for="sort" class="text-xs font-semibold text-gray-700 sm:text-sm whitespace-nowrap">Sort by</label>
+                <select id="sort" name="sort" class="rf-select w-full sm:w-auto sm:min-w-36 rounded-lg px-3 py-2 text-sm">
                     <option value="latest" {{ $sortOrder === 'latest' ? 'selected' : '' }}>Newest First</option>
                     <option value="oldest" {{ $sortOrder === 'oldest' ? 'selected' : '' }}>Oldest First</option>
                     <option value="amount_high" {{ $sortOrder === 'amount_high' ? 'selected' : '' }}>Highest Amount</option>
@@ -50,7 +50,7 @@
     <section class="rf-panel mb-6 p-5 sm:p-6" aria-labelledby="pending-quotations-heading">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-100">
             <div>
-                <h1 id="pending-quotations-heading" class="page-title text-3xl">Pending Quotations</h1>
+                <h1 id="pending-quotations-heading" class="page-title text-2xl sm:text-3xl">Pending Quotations</h1>
                 <p class="section-subtitle mt-1">Review estimates and return to the booking review screen for quotation actions.</p>
             </div>
             <div class="mt-2 sm:mt-0 text-xs font-medium text-slate-500">
@@ -59,7 +59,7 @@
         </div>
 
         <div class="overflow-x-auto mt-4 w-full">
-            <table class="w-full">
+            <table class="rf-table--stack w-full">
                 <thead class="bg-purple-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Booking</th>
@@ -96,7 +96,7 @@
                         @endphp
                         <tr class="hover:bg-slate-50/60 transition">
                             <td class="px-6 py-4 text-sm text-gray-800">
-                                <div class="font-medium text-slate-800">{{ $quotation->booking->event_type ?? 'N/A' }}</div>
+                                <div class="font-medium text-slate-800">{{ $quotation->booking?->event_type ? ucwords(str_replace('_', ' ', $quotation->booking->event_type)) : 'N/A' }}</div>
                                 @if($quotation->booking)
                                     <div class="text-xs text-slate-500 mt-0.5">
                                         Booking #{{ $quotation->booking_id }}
@@ -106,7 +106,7 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
+                            <td data-label="Client" class="px-6 py-4 text-sm text-gray-600">
                                 <div class="font-medium text-slate-800">{{ $clientDisplayName }}</div>
                                 @php
                                     $clientEmail = $quotation->booking?->client?->email ?? $quotation->booking?->guest_email;
@@ -115,12 +115,12 @@
                                     <div class="text-xs text-slate-400 mt-0.5">{{ $clientEmail }}</div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            <td data-label="Version" class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800">
                                     v{{ $quotation->version ?? 1 }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600">
+                            <td data-label="Estimate" class="px-6 py-4 text-sm text-gray-600">
                                 <div class="font-semibold text-slate-800">
                                     ₱{{ number_format((float) ($quotation->final_quoted_price ?? $quotation->recommended_price ?? 0), 2) }}
                                 </div>
@@ -130,7 +130,7 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
+                            <td data-label="Validity" class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
                                 @if($quotation->valid_until)
                                     <div class="{{ $isExpired ? 'text-rose-600 font-medium' : 'text-slate-700' }}">
                                         {{ $quotation->valid_until->format('M j, Y') }}
@@ -142,7 +142,7 @@
                                     <span class="text-slate-400">—</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+                            <td data-label="Status" class="px-6 py-4 whitespace-nowrap">
                                 <span class="rf-badge {{ $statusClass }}">
                                     <span aria-hidden="true">•</span>{{ $displayStatus }}
                                 </span>

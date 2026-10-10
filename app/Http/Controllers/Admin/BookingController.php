@@ -68,7 +68,7 @@ class BookingController extends Controller
             ->orderBy('event_type')
             ->pluck('event_type');
 
-        $query = Booking::with(['client', 'payments', 'returns.returnItems']);
+        $query = Booking::with(['client', 'payments', 'returns.returnItems', 'bookingItems', 'inventoryTransactions.inventoryItem', 'staffChecklistItems', 'activeQuotation']);
 
         // Status Filter
         if ($statusFilter !== 'all') {
@@ -356,7 +356,10 @@ class BookingController extends Controller
                 $validated['attachment_category'] ?? null
             );
 
-            $this->createClientNotificationForBooking($booking, 'New message from Admin', 'Admin has replied to your request regarding booking #' . $booking->id . '.', 'booking_update');
+            // Internal admin↔staff notes are not visible to the client, so the client is not notified about them.
+            if ($validated['visibility'] !== 'admin_staff') {
+                $this->createClientNotificationForBooking($booking, 'New message from Admin', 'Admin has replied to your request regarding booking #' . $booking->id . '.', 'booking_update');
+            }
             $this->logAuditEvent('booking', 'admin_reply', $booking, 'Admin replied to client request', Auth::id());
 
             return redirect()->back()->with('success', 'Reply sent successfully.');
@@ -1439,6 +1442,97 @@ class BookingController extends Controller
         return redirect()->back()->with('success', 'Proposal uploaded successfully.');
     }
 
+    /**
+     * README Client Workflow: complete the "Raflora Review" stage so the booking moves to
+     * "Material Preparation / Validation".
+     */
+    public function completeReview(Request $request, Booking $booking): RedirectResponse
+    {
+        if (Auth::user()?->role !== 'admin') {
+            abort(403, 'Only an authorized admin can complete the Raflora review.');
+        }
+
+        if (is_null($booking->client_id)) {
+            return redirect()->back()->with('error', 'This booking must be claimed by a client account before Raflora Review can be completed.');
+        }
+
+        if ($booking->status !== 'pending') {
+            return redirect()->back()->with('error', 'Raflora Review can only be completed while the booking is pending review.');
+        }
+
+        if ($booking->isReviewed()) {
+            return redirect()->back()->with('success', 'Raflora Review is already complete for this booking.');
+        }
+
+        $booking->markReviewed(Auth::id());
+        $booking->save();
+
+        $this->logAuditEvent('booking', 'raflora_review_completed', $booking, 'Raflora Review completed; material preparation and validation started', Auth::id(), null, null, 'raflora_review_completed');
+
+        $this->createClientNotificationForBooking(
+            $booking,
+            'Raflora Review Complete',
+            'Raflora has reviewed your event details and is now preparing and validating the materials for your booking.',
+            'booking_update'
+        );
+
+        return redirect()->back()->with('success', 'Raflora Review completed. Material preparation and validation can now proceed.');
+    }
+
+    /**
+     * Validate a status change submitted directly through the booking form.
+     * Returns an error message when the change would bypass the booking workflow, or null.
+     */
+    protected function illegalRawStatusTransition(Booking $booking, ?string $from, string $to): ?string
+    {
+        $from = Booking::normalizeStatus($from) ?? 'pending';
+
+        if ($from === $to) {
+            return null;
+        }
+
+        if (in_array($from, ['completed', 'cancelled', 'declined', 'rejected'], true)) {
+            return 'This booking is closed (' . $booking->status_display_label . '), so its status can no longer be changed.';
+        }
+
+        return match ($to) {
+            'declined', 'cancelled', 'rejected' => null,
+            'downpayment_received', 'confirmed', 'fully_paid' => $booking->total_paid > 0
+                ? null
+                : 'A booking can only be confirmed after a payment has been verified. Verify the client\'s submitted payment instead.',
+            'quotation_sent' => 'Use "Approve & Send Official Quote" so the official quotation is issued and recorded.',
+            'admin_approved' => 'Use "Final Approve & Enable Payment" on a quotation the client has accepted.',
+            'approved', 'change_requested', 'cancellation_requested', 'payment_submitted', 'payment_pending'
+                => 'This status is set by the client\'s own action and cannot be assigned by Admin.',
+            'event_in_progress' => 'Use "Mark Event In Progress" so fresh-flower readiness, dispatch, and inventory locks are checked.',
+            'event_completed', 'pending_return', 'pending_resolution' => in_array($from, ['event_in_progress', 'event_completed', 'pending_return', 'pending_resolution'], true)
+                ? null
+                : 'The event must be in progress before it can move to post-event settlement.',
+            // Completion keeps its dedicated guard (post-event stage, zero balance, completed return audit).
+            'completed' => null,
+            'pending' => in_array($from, ['change_requested', 'cancellation_requested'], true)
+                ? null
+                : 'A booking cannot be moved back to pending review from its current stage.',
+            default => null,
+        };
+    }
+
+    /**
+     * A material validation action implies the Raflora Review stage is complete.
+     * Records the review once (pending / change_requested bookings only).
+     */
+    protected function recordReviewFromMaterialAction(Booking $booking, string $trigger): void
+    {
+        if (!in_array($booking->status, ['pending', 'change_requested'], true)) {
+            return;
+        }
+
+        if ($booking->markReviewed(Auth::id())) {
+            $booking->save();
+            $this->logAuditEvent('booking', 'raflora_review_completed', $booking, 'Raflora Review completed via ' . $trigger, Auth::id(), null, null, 'raflora_review_completed');
+        }
+    }
+
     public function finalApproveQuotation(Request $request, Booking $booking): RedirectResponse
     {
         if ($booking->status !== 'approved') {
@@ -1485,6 +1579,7 @@ class BookingController extends Controller
         $bookingItem->save();
 
         $this->logAuditEvent('booking', 'ai_item_linked', $booking, 'Linked AI item to inventory id ' . $linkId, Auth::id());
+        $this->recordReviewFromMaterialAction($booking, 'material linking');
 
         return redirect()->back()->with('success', 'AI suggestion linked to master inventory.');
     }
@@ -1534,6 +1629,7 @@ class BookingController extends Controller
             ]);
 
             $this->logAuditEvent('booking', 'ai_item_promoted', $booking, 'Promoted AI item to inventory id ' . $inventoryItem->id . ' (fallback)', Auth::id());
+            $this->recordReviewFromMaterialAction($booking, 'material promotion');
 
             return redirect()->back()->with('success', 'AI suggestion promoted into inventory catalog.');
         }
@@ -1554,6 +1650,7 @@ class BookingController extends Controller
         $bookingItem->save();
 
         $this->logAuditEvent('booking', 'ai_item_promoted', $booking, 'Promoted AI item to inventory id ' . $inventoryItem->id, Auth::id());
+        $this->recordReviewFromMaterialAction($booking, 'material promotion');
 
         return redirect()->back()->with('success', 'AI suggestion promoted into inventory catalog.');
     }
@@ -1598,6 +1695,7 @@ class BookingController extends Controller
             ['booking_item_id' => $bookingItem->id, 'confirmed_at' => $bookingItem->confirmed_at?->toIso8601String()],
             'material_requirement_confirmed'
         );
+        $this->recordReviewFromMaterialAction($booking, 'material confirmation');
 
         return redirect()->back()->with('success', 'Material requirement confirmed for this booking.');
     }
@@ -1663,6 +1761,7 @@ class BookingController extends Controller
                     $bookingItem->inventory_item_id = $linkId;
                     $bookingItem->item_name = InventoryItem::find($linkId)?->name ?? $bookingItem->item_name;
                     $bookingItem->save();
+                    $this->recordReviewFromMaterialAction($booking, 'material linking');
 
                     return redirect()->back()->with('success', 'AI suggestion linked to the selected inventory item.');
                 }
@@ -1681,6 +1780,7 @@ class BookingController extends Controller
                     $bookingItem->inventory_item_id = $inventoryItem->id;
                     $bookingItem->item_name = $inventoryItem->name;
                     $bookingItem->save();
+                    $this->recordReviewFromMaterialAction($booking, 'material promotion');
 
                     return redirect()->back()->with('success', 'AI suggestion promoted into the inventory catalog.');
                 }
@@ -1709,6 +1809,36 @@ class BookingController extends Controller
 
         $oldStatus = $booking->status;
         $action = $request->input('action', 'save');
+
+        // A status submitted with the form must match a real business event; workflow steps
+        // with prerequisites (quotation issuance, client acceptance, payment verification,
+        // event start) go through their own guarded actions.
+        $normalizedOldStatus = Booking::normalizeStatus($oldStatus) ?? 'pending';
+        $statusGoverningActions = [
+            'send_quotation', 'reissue_quotation', 'reconfirm_price_unchanged', 'reconfirm_price_revised',
+            'mark_event_in_progress', 'mark_event_completed', 'log_final_payment', 'accept',
+        ];
+
+        if (in_array($action, $statusGoverningActions, true)) {
+            // These actions decide the resulting status from the booking's real current status;
+            // a submitted status value is never trusted for them.
+            $data['status'] = $normalizedOldStatus;
+        } else {
+            $transitionError = $this->illegalRawStatusTransition($booking, $oldStatus, $data['status']);
+            if ($transitionError !== null) {
+                return redirect()->back()->with('error', $transitionError);
+            }
+        }
+
+        if ($action === 'mark_event_in_progress' && !in_array($normalizedOldStatus, ['downpayment_received', 'confirmed', 'fully_paid', 'in_preparation'], true)) {
+            return redirect()->back()->with('error', 'Only a confirmed booking with a verified payment can be marked as in progress.');
+        }
+        if ($action === 'mark_event_completed' && $normalizedOldStatus !== 'event_in_progress') {
+            return redirect()->back()->with('error', 'Only an event in progress can be marked as completed.');
+        }
+        if ($action === 'log_final_payment' && !in_array($normalizedOldStatus, ['event_in_progress', 'event_completed', 'pending_return', 'pending_resolution'], true)) {
+            return redirect()->back()->with('error', 'A final payment can only be logged once the event is in progress or completed.');
+        }
         if ($action === 'send_quotation') {
             $this->reconcileBookingInventoryLinks($booking);
             $booking->load('bookingItems.inventoryItem');
@@ -2105,6 +2235,9 @@ class BookingController extends Controller
                 return redirect()->back()->with('error', $e->getMessage());
             }
 
+            // Issuing the official quotation implies Raflora Review and material validation are complete.
+            $reviewRecordedByIssuance = in_array($oldStatus, ['pending', 'change_requested'], true)
+                && $booking->markReviewed(Auth::id());
             $booking->setNormalizedStatus('quotation_sent');
             $notificationStatus = 'quotation_sent';
         } elseif ($action === 'mark_event_in_progress') {
@@ -2359,9 +2492,7 @@ class BookingController extends Controller
             }
         }
 
-        if ($booking->status !== $oldStatus) {
-            $this->logAuditEvent('booking', 'status_changed', $booking, 'Booking status changed from ' . $oldStatus . ' to ' . $booking->status, Auth::id());
-        }
+        // The status change itself is audited once by the Booking model (status_changed).
 
         if ($booking->wasChanged('preparation_start_date') || $booking->wasChanged('preparation_status')) {
             $this->logAuditEvent(
@@ -2399,6 +2530,10 @@ class BookingController extends Controller
         }
 
         $booking->save();
+
+        if (!empty($reviewRecordedByIssuance)) {
+            $this->logAuditEvent('booking', 'raflora_review_completed', $booking, 'Raflora Review completed via quotation issuance', Auth::id(), null, null, 'raflora_review_completed');
+        }
 
         if ($notificationStatus) {
             $title = match ($notificationStatus) {
@@ -2482,6 +2617,11 @@ class BookingController extends Controller
 
                 if ($payment->verified_at) {
                     throw new \Exception('already_verified');
+                }
+
+                // Only a submission still awaiting review can be verified (never a rejected one).
+                if ($payment->status !== 'pending') {
+                    throw new \Exception('not_pending');
                 }
 
                 // Lock inventory items ordered by ID to prevent deadlocks
@@ -2638,6 +2778,9 @@ class BookingController extends Controller
             }
             if ($e->getMessage() === 'already_verified') {
                 return back()->with('warning', 'This payment has already been verified.');
+            }
+            if ($e->getMessage() === 'not_pending') {
+                return back()->with('error', 'Only a payment submission awaiting review can be verified.');
             }
             if (str_starts_with($e->getMessage(), 'insufficient_stock')) {
                 if (!empty($insufficientItems)) {
@@ -2813,15 +2956,15 @@ class BookingController extends Controller
             if ($newRemaining <= 0.0) {
                 if ($hasPendingResolution) {
                     $lockedBooking->setNormalizedStatus('pending_resolution')->save();
-                    $this->logAuditEvent('booking', 'status_changed', $lockedBooking, 'Booking set to pending resolution after payment because return items await adjudication', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'pending_resolution');
+                    $this->logAuditEvent('booking', 'final_payment_status_applied', $lockedBooking, 'Booking set to pending resolution after payment because return items await adjudication', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'pending_resolution');
                 } elseif ($hasCompletedReturn && !$hasIncompleteReturn) {
                     $lockedBooking->setNormalizedStatus('completed')->save();
 
-                    $this->logAuditEvent('booking', 'status_changed', $lockedBooking, 'Booking completed after final payment because return audit was already completed', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'booking_completed');
+                    $this->logAuditEvent('booking', 'final_payment_status_applied', $lockedBooking, 'Booking completed after final payment because return audit was already completed', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'booking_completed');
                 } elseif (in_array($lockedBooking->status, ['event_completed', 'pending_return'], true)) {
                     $lockedBooking->setNormalizedStatus('pending_return')->save();
 
-                    $this->logAuditEvent('booking', 'status_changed', $lockedBooking, 'Booking moved to pending return audit after final payment', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'pending_return');
+                    $this->logAuditEvent('booking', 'final_payment_status_applied', $lockedBooking, 'Booking moved to pending return audit after final payment', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'pending_return');
                     $this->ensureReturnRecordForBooking($lockedBooking);
                 } else {
                     $lockedBooking->save();
@@ -2832,7 +2975,7 @@ class BookingController extends Controller
                 } elseif ($hasCompletedReturn && !$hasIncompleteReturn && $lockedBooking->status !== 'event_completed') {
                     $lockedBooking->setNormalizedStatus('event_completed')->save();
 
-                    $this->logAuditEvent('booking', 'status_changed', $lockedBooking, 'Booking kept as event completed with balance pending after return audit completed', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'status_updated');
+                    $this->logAuditEvent('booking', 'final_payment_status_applied', $lockedBooking, 'Booking kept as event completed with balance pending after return audit completed', Auth::id(), ['booking_status' => $oldStatus], ['booking_status' => $lockedBooking->status], 'status_updated');
                 }
             }
         });
@@ -2848,6 +2991,12 @@ class BookingController extends Controller
         $data = $request->validate([
             'admin_note' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        // Declining applies before the event starts; afterwards the booking follows the
+        // execution/return workflow (or a cancellation), and closed bookings stay closed.
+        if (in_array($booking->status, ['event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed', 'cancelled', 'declined', 'rejected'], true)) {
+            return redirect()->back()->with('error', 'This booking can no longer be declined (' . $booking->status_display_label . ').');
+        }
 
         if (in_array($booking->status, ['downpayment_received', 'confirmed'], true)) {
             $this->releaseInventoryForBooking($booking);

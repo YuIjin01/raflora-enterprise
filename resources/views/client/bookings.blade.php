@@ -28,22 +28,13 @@
                                 'cancelled', 'declined', 'rejected' => 'rf-badge--danger',
                                 default => 'rf-badge--primary',
                             };
-                            $actionHint = match ($booking->status) {
-                                'pending' => 'Under review by Raflora',
-                                'quotation_sent' => 'Quotation ready for your review',
-                                'change_requested' => 'Quotation revision in progress',
-                                'approved' => 'Awaiting admin final approval',
-                                'admin_approved' => 'Payment required to secure booking',
-                                'payment_pending', 'payment_submitted' => 'Payment under verification',
-                                'downpayment_received', 'confirmed' => 'Booking confirmed • Preparation underway',
-                                'in_preparation' => 'Event materials in preparation',
-                                'event_in_progress' => 'Event in progress',
-                                'event_completed' => ((float) $booking->remaining_balance > 0) ? 'Event concluded • Final payment due' : 'Event concluded',
-                                'pending_return' => 'Material return & inspection in progress',
-                                'pending_resolution' => 'Return assessment pending review',
-                                'completed', 'fully_paid' => 'Event successfully completed',
-                                'cancelled' => 'Booking cancelled',
-                                'declined', 'rejected' => 'Booking declined',
+                            // README booking workflow stage (same source as the booking page tracker)
+                            $listWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($booking);
+                            $actionHint = match (true) {
+                                !empty($listWorkflow['terminal']) => $listWorkflow['terminal_label'],
+                                $listWorkflow['finished'] => 'Booking completed',
+                                (bool) $listWorkflow['current'] => 'Stage ' . $listWorkflow['current_number'] . ' of ' . $listWorkflow['total'] . ' · ' . $listWorkflow['current_label']
+                                    . ($listWorkflow['current_detail'] ? ' — ' . $listWorkflow['current_detail'] : ''),
                                 default => null,
                             };
                         @endphp

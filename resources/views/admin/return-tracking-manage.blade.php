@@ -1,11 +1,11 @@
 <x-admin-layout title="Return Audit">
     <div class="space-y-6">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-900">Return Audit</h1>
                 <p class="text-sm text-slate-500 mt-1">Review returned assets and finalize the booking after the return inspection.</p>
             </div>
-            <a href="{{ route('admin.return-tracking') }}" class="bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition">Back to Return Tracking</a>
+            <a href="{{ route('admin.return-tracking') }}" class="inline-flex shrink-0 items-center gap-2 self-start whitespace-nowrap bg-white border border-slate-300 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-50 transition sm:self-auto"><i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i> Back to Return Tracking</a>
         </div>
 
         @if(session('success'))
@@ -43,7 +43,7 @@
         @endif
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Booking Summary</h2>
                 <div class="space-y-3 text-sm text-slate-700">
                     <div><span class="font-semibold">Booking #</span> {{ $booking->booking_number ?? $booking->id }}</div>
@@ -59,7 +59,7 @@
                 </div>
             </div>
 
-            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900 mb-4">Return Instructions</h2>
                 <p class="text-sm text-slate-600">Adjust quantities and conditions for each returned item. The booking will move to <span class="font-semibold">Return Completed</span> once the return audit reaches completion.</p>
                 <p class="text-sm text-slate-600 mt-2">If items are still outstanding, the booking will remain in the return workflow until the issue is resolved.</p>
@@ -76,8 +76,8 @@
                 </div>
             @endif
 
-            <div class="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm w-full">
-                <table class="w-full text-left border-collapse">
+            <div class="-mx-3 w-auto overflow-x-auto md:mx-0 md:w-full md:rounded-3xl md:border md:border-slate-200 md:bg-white md:shadow-sm">
+                <table class="rf-table--stack w-full text-left border-collapse">
                     <thead class="bg-slate-50 text-slate-700 text-xs uppercase tracking-wide">
                         <tr>
                             <th class="px-4 py-4">Item</th>
@@ -105,10 +105,10 @@
                                     <div class="text-xs text-slate-500">SKU: {{ $inventoryItem?->sku ?? 'N/A' }}</div>
                                     <input type="hidden" name="items[{{ $returnItem->id }}][inventory_item_id]" value="{{ $returnItem->inventory_item_id }}">
                                 </td>
-                                <td class="px-4 py-4 text-sm font-semibold text-slate-700 align-top">
+                                <td data-label="Dispatched" class="px-4 py-4 text-sm font-semibold text-slate-700 align-top">
                                     {{ $dispatched }}
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td data-label="Quantities" class="rf-stack-full px-4 py-4 align-top">
                                     <div class="space-y-2">
                                         <div class="grid grid-cols-3 gap-2">
                                             <div>
@@ -134,7 +134,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td data-label="Observation &amp; Evidence" class="rf-stack-full px-4 py-4 align-top">
                                     <div class="space-y-2">
                                         <div class="text-xs">
                                             <span class="text-slate-500">Condition:</span>
@@ -156,7 +156,7 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td data-label="Decision &amp; Charge" class="rf-stack-full px-4 py-4 align-top">
                                     <div class="space-y-3">
                                         <select name="items[{{ $returnItem->id }}][charge_decision]" {{ $isArchivedAudit ? 'disabled' : '' }} class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500">
                                             <option value="pending" {{ old('items.' . $returnItem->id . '.charge_decision', $returnItem->charge_decision) === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -169,7 +169,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-4 py-4 align-top">
+                                <td data-label="Notes &amp; Reason" class="px-4 py-4 align-top">
                                     <div class="space-y-2">
                                         <textarea name="items[{{ $returnItem->id }}][notes]" rows="2" {{ $isArchivedAudit ? 'disabled' : '' }} class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500" placeholder="Return Notes">{{ old('items.' . $returnItem->id . '.notes', $returnItem->notes) }}</textarea>
                                         <textarea name="items[{{ $returnItem->id }}][charge_reason]" rows="1" {{ $isArchivedAudit ? 'disabled' : '' }} class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500" placeholder="Reason for charge">{{ old('items.' . $returnItem->id . '.charge_reason', $returnItem->charge_reason) }}</textarea>
@@ -187,7 +187,7 @@
                 </table>
             </div>
 
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-sm">
                 <label class="mb-2 block text-sm font-semibold text-slate-700">Audit Notes</label>
                 <textarea name="notes" rows="4" {{ $isArchivedAudit ? 'disabled' : '' }} class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500">{{ old('notes', $return->notes) }}</textarea>
             </div>

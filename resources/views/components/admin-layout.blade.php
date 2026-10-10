@@ -6,15 +6,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title }} — Raflora Enterprises</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        body { font-family: 'Montserrat', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
         .serif { font-family: 'Playfair Display', serif; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="bg-slate-50 text-slate-800 antialiased">
     <div class="min-h-screen w-full bg-slate-50">
 
     <div id="adminSidebarBackdrop" class="fixed inset-0 z-30 hidden bg-slate-950/40 backdrop-blur-[1px] lg:hidden" aria-hidden="true"></div>
@@ -23,15 +23,16 @@
     <aside id="adminSidebar" class="fixed inset-y-0 left-0 w-64 h-full flex-shrink-0 bg-white border-r border-gray-200 overflow-y-auto flex flex-col justify-between z-40 -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out">
         <div>
             <!-- Sidebar Header / Logo -->
-            <div class="p-4 border-b border-slate-100 flex flex-col items-start gap-2 w-full bg-white">
-                <img src="{{ asset('assets/images/logo.jpg') }}" alt="Raflora Enterprises" class="h-12 w-12 rounded-full object-cover shadow-sm">
-                <div class="mt-1 text-xs font-bold text-slate-800 uppercase tracking-wider block">
-                    {{ $title }}
+            <div class="flex w-full items-center gap-3 border-b border-slate-100 bg-white px-4 py-4">
+                <img src="{{ asset('assets/images/logo.jpg') }}" alt="Raflora Enterprises" class="h-10 w-10 shrink-0 rounded-xl object-cover shadow-sm ring-1 ring-slate-200">
+                <div class="min-w-0">
+                    <p class="truncate text-sm font-bold text-slate-900">Raflora Enterprises</p>
+                    <p class="truncate text-[11px] font-medium text-slate-500">Admin workspace</p>
                 </div>
             </div>
 
             <!-- Navigation Links -->
-            <nav class="space-y-4 p-4" aria-label="Admin navigation">
+            <nav class="space-y-5 px-3 py-4" aria-label="Admin navigation">
                 <div>
                     <p class="text-xs uppercase tracking-[0.2em] text-slate-400 font-semibold mb-2 ml-1">Overview</p>
                     <a href="{{ route('admin.dashboard') }}" class="rf-nav-item {{ request()->routeIs('admin.dashboard') ? 'is-active' : '' }}" @if(request()->routeIs('admin.dashboard')) aria-current="page" @endif>
@@ -111,7 +112,7 @@
         <div class="p-4 border-t border-slate-200 bg-white">
             <form method="POST" action="{{ route('logout') }}" class="w-full">
                 @csrf
-                <button type="submit" class="btn-primary w-full">
+                <button type="submit" class="rf-btn rf-btn-ghost w-full">
                     <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
                     <span>Log Out</span>
                 </button>
@@ -123,17 +124,23 @@
     <div class="flex flex-col lg:pl-64 min-h-screen w-full">
         
         <!-- Mobile Top Bar -->
-        <div class="sticky top-0 z-30 bg-white p-3 border-b border-slate-200 flex items-center justify-between lg:hidden">
-            <button id="mobileAdminBrandToggle" type="button" class="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-200" aria-controls="adminSidebar" aria-expanded="false" aria-label="Toggle admin navigation">
-                <img src="{{ asset('assets/images/logo.jpg') }}" alt="Raflora logo" class="h-10 w-10 rounded-full object-cover shadow-sm">
-                <span id="mobileAdminPanelName" class="text-sm font-bold uppercase tracking-wider text-slate-800">{{ $title }}</span>
+        <div class="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-3 py-2.5 backdrop-blur lg:hidden">
+            <button id="mobileAdminBrandToggle" type="button" class="flex min-w-0 items-center gap-3 rounded-xl p-1 focus:outline-none focus-visible:ring-4 focus-visible:ring-purple-200" aria-controls="adminSidebar" aria-expanded="false" aria-label="Toggle admin navigation">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-sm" aria-hidden="true"><i class="fa-solid fa-bars"></i></span>
+                <span id="mobileAdminPanelName" class="truncate text-sm font-bold text-slate-900">{{ $title }}</span>
             </button>
+            <a href="{{ route('admin.notifications') }}" aria-label="Open admin notifications" class="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm">
+                <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                @if($unreadAlerts > 0)
+                    <span class="absolute -top-1 -right-1 h-3 w-3 rounded-full border-2 border-white bg-red-600"></span>
+                @endif
+            </a>
         </div>
 
         <!-- Top Fixed Page Header -->
-        <header class="hidden lg:flex flex-shrink-0 z-10 bg-white border-b border-gray-200 px-4 md:px-6 py-4 items-center justify-between">
+        <header class="sticky top-0 z-20 hidden flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white/85 px-6 py-3.5 backdrop-blur lg:flex">
             <div class="flex items-center gap-3">
-                <h1 class="serif text-xl md:text-2xl font-bold text-gray-800">{{ $title }}</h1>
+                <h1 class="serif text-xl font-bold text-slate-900 xl:text-2xl">{{ $title }}</h1>
             </div>
             <div class="flex items-center gap-2 md:gap-4">
                 <a href="{{ route('home') }}" class="text-sm font-semibold text-purple-600 hover:text-purple-800 transition">View Site &rarr;</a>
@@ -147,7 +154,7 @@
         </header>
 
         <!-- Main Work Area -->
-        <main class="flex-1 bg-gray-50 p-4 pb-12 sm:p-6" aria-label="Admin workspace content">
+        <main class="mx-auto w-full max-w-[1600px] flex-1 p-4 pb-12 sm:p-6 xl:p-8" aria-label="Admin workspace content">
             {{-- Flash Messages --}}
             @if(session('success'))
                 <x-alert type="success">{{ session('success') }}</x-alert>

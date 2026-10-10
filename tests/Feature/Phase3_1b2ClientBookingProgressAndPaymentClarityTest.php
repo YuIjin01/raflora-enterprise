@@ -29,17 +29,23 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
         $response = $this->actingAs($user)->get(route('bookings.analysis', $booking));
 
         $response->assertOk();
-        // Progress bar steps present
-        $response->assertSee('Booking Submitted');
-        $response->assertSee('Review / Quotation');
-        $response->assertSee('Client Confirmation');
-        $response->assertSee('Payment');
-        $response->assertSee('Confirmation');
-
-        // Status badge and text
-        $response->assertSee('Pending');
-        $response->assertSee('Under review by Raflora');
+        // README workflow stages present (Guest → Client → Staff)
+        $response->assertSee('Booking Progress');
+        $response->assertSee('Request Submitted');
+        $response->assertSee('Awaiting Claim');
         $response->assertSee('Raflora Review');
+        $response->assertSee('Material Preparation / Validation');
+        $response->assertSee('Quotation');
+        $response->assertSee('Approval');
+        $response->assertSee('Payment');
+        $response->assertSee('Confirmed');
+        $response->assertSee('Preparation & Reservation');
+        $response->assertSee('Completion');
+
+        // Current stage: Raflora Review
+        $response->assertSee('Pending');
+        $response->assertSee('data-workflow-stage="raflora_review" data-workflow-state="current"', false);
+        $response->assertSee('Raflora is reviewing the event details and inspiration before validating materials.');
         $response->assertSee('Your booking request has been received.');
 
         // Payment form is not rendered
@@ -55,7 +61,8 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Quotation Ready');
-        $response->assertSee('Awaiting your review &amp; acceptance', false);
+        $response->assertSee('data-workflow-stage="quotation" data-workflow-state="current"', false);
+        $response->assertSee('Quotation v1 issued — awaiting client review and acceptance');
         $response->assertSee('Accept Quotation');
         $response->assertSee('Request Changes');
 
@@ -74,10 +81,11 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
         $response->assertSee('Quotation Accepted — Awaiting Final Admin Approval');
         $response->assertSee('Your quotation has been accepted. Raflora Administration must complete the final booking approval before payment submission becomes available.');
 
-        // Progress bar verifies Step 3 is completed and Step 4 is awaiting
-        $response->assertSee('Client Confirmation');
-        $response->assertSee('Payment');
-        $response->assertSee('Awaiting final Admin approval');
+        // Workflow: Quotation is complete and Approval is current; Payment is still upcoming
+        $response->assertSee('data-workflow-stage="quotation" data-workflow-state="complete"', false);
+        $response->assertSee('data-workflow-stage="approval" data-workflow-state="current"', false);
+        $response->assertSee('data-workflow-stage="payment" data-workflow-state="upcoming"', false);
+        $response->assertSee('Quotation accepted by the client — awaiting Raflora final approval.');
 
         // Payment form is strictly hidden for 'approved' status
         $response->assertDontSee('Submit Payment Reference');
@@ -94,9 +102,10 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
         $response->assertSee('Payment Required');
         $response->assertSee('Your booking has received Admin final approval. Please submit your payment reference below to secure your booking.');
 
-        // Progress steps: Step 4 complete, Step 5 in progress
-        $response->assertSee('Payment');
-        $response->assertSee('Payment submission required');
+        // Workflow: Approval complete, Payment in progress
+        $response->assertSee('data-workflow-stage="approval" data-workflow-state="complete"', false);
+        $response->assertSee('data-workflow-stage="payment" data-workflow-state="current"', false);
+        $response->assertSee('Quotation approved by Raflora — downpayment submission is required.');
 
         // Payment form is visible
         $response->assertSee('Payment Method');
@@ -122,7 +131,8 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Payment Verification in Progress');
-        $response->assertSee('Payment verification pending');
+        $response->assertSee('data-workflow-stage="payment" data-workflow-state="current"', false);
+        $response->assertSee('Payment reference submitted — awaiting Raflora verification.');
         // Must NOT claim booking is fully confirmed yet
         $response->assertDontSee('Booking Confirmed');
     }
@@ -145,7 +155,8 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Booking Confirmed');
-        $response->assertSee('Confirmation');
+        $response->assertSee('data-workflow-stage="confirmed" data-workflow-state="current"', false);
+        $response->assertSee('data-workflow-stage="preparation_reservation" data-workflow-state="upcoming"', false);
         $response->assertDontSee('Event in preparation');
     }
 
@@ -161,8 +172,11 @@ class Phase3_1b2ClientBookingProgressAndPaymentClarityTest extends TestCase
         $response = $this->actingAs($user)->get(route('bookings.analysis', $booking));
 
         $response->assertOk();
-        $response->assertSee('Event in preparation');
-        
+        // Staff Workflow has started: Confirmed is complete and Preparation & Reservation is current
+        $response->assertSee('data-workflow-stage="confirmed" data-workflow-state="complete"', false);
+        $response->assertSee('data-workflow-stage="preparation_reservation" data-workflow-state="current"', false);
+        $response->assertSee('Preparation & Reservation');
+
         // Confirmation should now be marked as complete, so we should not see 'Confirmed' as the sublabel of the current step
         // However, the test framework's assertSee is broad. Let's just ensure we get 200 OK and it renders the Preparation phase correctly.
     }

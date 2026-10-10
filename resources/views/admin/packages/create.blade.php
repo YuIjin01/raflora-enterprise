@@ -110,15 +110,15 @@
                             <div class="flex items-center justify-between group py-1 add-inv-row" data-name="{{ $item->name }}" data-category="{{ $item->category }}">
                                 <div class="flex items-center gap-3 pr-3 flex-1 min-w-0">
                                     <input type="checkbox" id="add_inv_check_{{ $item->id }}" class="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 add-inv-check" onchange="toggleInvQty('add', {{ $item->id }})">
-                                    <div>
+                                    <div class="min-w-0">
                                         <p class="text-[13px] font-semibold text-gray-700 truncate">{{ $item->name }}</p>
                                         <p class="text-[11px] text-gray-500 truncate">{{ $item->category }}</p>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 shrink-0">
                                     <label class="text-xs text-gray-500 hidden sm:block">Quantity:</label>
-                                    <input type="number" name="inventory_items[{{ $item->id }}]" id="add_inv_qty_{{ $item->id }}" min="0.01" step="0.01" placeholder="0" disabled class="w-24 px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-sm text-sm disabled:opacity-50 disabled:bg-gray-100">
-                                    <span class="text-[13px] text-gray-500 w-8">{{ $item->unit }}</span>
+                                    <input type="number" name="inventory_items[{{ $item->id }}]" id="add_inv_qty_{{ $item->id }}" min="0.01" step="0.01" placeholder="0" disabled class="w-20 sm:w-24 px-2 sm:px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-sm text-sm disabled:opacity-50 disabled:bg-gray-100">
+                                    <span class="text-[13px] text-gray-500 w-10 truncate">{{ $item->unit }}</span>
                                 </div>
                             </div>
                         @endforeach

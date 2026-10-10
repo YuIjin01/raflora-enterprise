@@ -116,7 +116,7 @@
             </div>
             @endif
 
-            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm {{ $isAdmin ? 'xl:col-span-1' : 'xl:col-span-2' }}">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6 {{ $isAdmin ? 'xl:col-span-1' : 'xl:col-span-2' }}">
                 <div class="mb-4 flex items-start justify-between gap-4">
                     <div>
                         <h3 class="font-bold text-slate-900">Team accounts</h3>
@@ -125,7 +125,7 @@
                     <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ $accounts->count() }} account{{ $accounts->count() === 1 ? '' : 's' }}</span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[560px] text-left text-sm" aria-label="Admin team accounts">
+                    <table class="rf-table--stack w-full min-w-[560px] text-left text-sm" aria-label="Admin team accounts">
                         <thead class="border-y border-slate-100 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500">
                             <tr>
                                 <th scope="col" class="px-3 py-3">Name</th>
@@ -138,8 +138,8 @@
                             @forelse($accounts as $account)
                                 <tr class="hover:bg-slate-50">
                                     <td class="px-3 py-3 font-semibold text-slate-800">{{ $account->name }}</td>
-                                    <td class="px-3 py-3 text-slate-600">{{ $account->email }}</td>
-                                    <td class="px-3 py-3"><span class="rounded-full {{ $account->role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-sky-50 text-sky-700' }} px-2.5 py-1 text-xs font-semibold capitalize">{{ $account->role }}</span></td>
+                                    <td data-label="Email" class="rf-stack-full break-all px-3 py-3 text-slate-600">{{ $account->email }}</td>
+                                    <td data-label="Role" class="px-3 py-3"><span class="rounded-full {{ $account->role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-sky-50 text-sky-700' }} px-2.5 py-1 text-xs font-semibold capitalize">{{ $account->role }}</span></td>
                                     <td class="px-3 py-3 text-xs font-semibold text-emerald-700"><i class="fa-solid fa-circle-check mr-1" aria-hidden="true"></i> Active</td>
                                 </tr>
                             @empty
@@ -213,7 +213,7 @@
                     <div class="flex items-start justify-between">
                         <div>
                             <h3 id="accountModalTitle" class="text-xl font-bold text-slate-900">Add Account</h3>
-                            <p class="mt-1 text-sm text-slate-500">Create an admin or staff account for the operations panel.</p>
+                            <p class="mt-1 text-sm text-slate-500">Create a staff account for the operations panel. Raflora has a single Admin account.</p>
                         </div>
                         <button type="button" data-close-modal="accountModal" class="text-2xl leading-none text-slate-400 hover:text-slate-700" aria-label="Close">&times;</button>
                     </div>
@@ -231,7 +231,6 @@
                             <label class="text-sm font-semibold text-slate-700">Role</label>
                             <select name="role" required class="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2.5">
                                 <option value="staff">Staff</option>
-                                <option value="admin">Admin</option>
                             </select>
                         </div>
                         <div>

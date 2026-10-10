@@ -34,6 +34,7 @@ class AdminEmailChangeController extends Controller
         $cooldown = $this->otpService->canResend($request->user(), 'admin_email_change');
 
         return view('admin.email-change', [
+            'admin' => $request->user(),
             'pendingEmail' => $pendingEmail,
             'maskedEmail' => $pendingEmail ? $this->maskEmail($pendingEmail) : null,
             'cooldownSeconds' => $cooldown['seconds_remaining'] ?? 0,

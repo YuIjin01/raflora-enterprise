@@ -1,36 +1,36 @@
 <x-admin-layout title="Admin Dashboard">
     <!-- Statistics Cards: Summary metrics for admin monitoring -->
-    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div class="rf-panel p-5 sm:p-6">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+    <div class="mb-6 grid grid-cols-3 gap-2 sm:gap-4">
+        <div class="rf-panel min-w-0 p-3 sm:p-6">
+            <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-100 sm:h-12 sm:w-12">
                     <i class="fa-solid fa-calendar-days text-purple-700 text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-gray-500 text-sm font-medium">Total Bookings</p>
-                    <p class="text-2xl font-bold text-gray-800">{{ $totalBookings }}</p>
+                    <p class="text-[11px] font-medium leading-tight text-gray-500 sm:text-sm">Total Bookings</p>
+                    <p class="text-xl font-bold text-gray-800 sm:text-2xl">{{ $totalBookings }}</p>
                 </div>
             </div>
         </div>
-        <div class="rf-panel p-5 sm:p-6">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
+        <div class="rf-panel min-w-0 p-3 sm:p-6">
+            <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 sm:h-12 sm:w-12">
                     <i class="fa-solid fa-clock text-amber-700 text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-gray-500 text-sm font-medium">Pending Bookings</p>
-                    <p class="text-2xl font-bold text-gray-800">{{ $pendingBookings }}</p>
+                    <p class="text-[11px] font-medium leading-tight text-gray-500 sm:text-sm">Pending Bookings</p>
+                    <p class="text-xl font-bold text-gray-800 sm:text-2xl">{{ $pendingBookings }}</p>
                 </div>
             </div>
         </div>
-        <div class="rf-panel p-5 sm:p-6">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-lg bg-emerald-100 flex items-center justify-center">
+        <div class="rf-panel min-w-0 p-3 sm:p-6">
+            <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-4">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 sm:h-12 sm:w-12">
                     <i class="fa-solid fa-users text-emerald-700 text-xl"></i>
                 </div>
                 <div>
-                    <p class="text-gray-500 text-sm font-medium">Total Users</p>
-                    <p class="text-2xl font-bold text-gray-800">{{ $totalUsers }}</p>
+                    <p class="text-[11px] font-medium leading-tight text-gray-500 sm:text-sm">Total Users</p>
+                    <p class="text-xl font-bold text-gray-800 sm:text-2xl">{{ $totalUsers }}</p>
                 </div>
             </div>
         </div>
@@ -65,7 +65,13 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-0.5">
                         <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $alert->type === 'inventory_shortage' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700' }}">
-                            {{ $alert->type === 'inventory_shortage' ? 'Stock Shortage' : 'Quotation Expired' }}
+                            {{ match ($alert->type) {
+                                'inventory_shortage' => 'Stock Shortage',
+                                'quotation_expired' => 'Quotation Expired',
+                                'meeting_requested' => 'Meeting Request',
+                                'meeting_cancelled' => 'Meeting Cancelled',
+                                default => \Illuminate\Support\Str::headline((string) $alert->type),
+                            } }}
                         </span>
                         <span class="text-xs text-gray-400">{{ $alert->created_at->diffForHumans() }}</span>
                     </div>
@@ -146,7 +152,7 @@
             <h2 id="recent-bookings-heading" class="text-lg font-bold text-gray-800">Recent Bookings</h2>
         </div>
         <div class="overflow-x-auto w-full">
-            <table class="w-full text-left">
+            <table class="w-full text-left rf-table--stack">
                 <thead class="bg-gray-50">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-xs uppercase tracking-wider text-gray-500 font-semibold">Client</th>

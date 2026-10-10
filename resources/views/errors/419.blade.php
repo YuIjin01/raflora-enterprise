@@ -1,5 +1,5 @@
 <x-app-layout title="Page Expired">
-    <x-auth-layout>
+    <x-auth-layout :hide-branding-on-mobile="true">
         {{-- 
         RAFLORA UI FUNCTION
 

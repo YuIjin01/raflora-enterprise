@@ -824,6 +824,7 @@ class Step16GCoreWorkflowEndToEndVerificationTest extends TestCase
         ]);
 
         // Scenario 1: Both bookings confirmed because total demand (2) <= stock (2)
+        $this->recordVerifiedPayment($booking1);
         $this->actingAs($this->adminUser)->put(route('admin.bookings.update', $booking1), [
             'event_type' => 'wedding',
             'event_date' => $eventDate,
@@ -833,6 +834,7 @@ class Step16GCoreWorkflowEndToEndVerificationTest extends TestCase
         ])->assertSessionMissing('error');
         $this->assertSame('confirmed', $booking1->fresh()->status);
 
+        $this->recordVerifiedPayment($booking2);
         $this->actingAs($this->adminUser)->put(route('admin.bookings.update', $booking2), [
             'event_type' => 'debut',
             'event_date' => $eventDate,
@@ -857,6 +859,7 @@ class Step16GCoreWorkflowEndToEndVerificationTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($booking3);
         $failResp = $this->actingAs($this->adminUser)->put(route('admin.bookings.update', $booking3), [
             'event_type' => 'anniversary',
             'event_date' => $eventDate,
@@ -903,6 +906,7 @@ class Step16GCoreWorkflowEndToEndVerificationTest extends TestCase
             'confirmed_at' => now(),
         ]);
 
+        $this->recordVerifiedPayment($bookingDiff);
         $this->actingAs($this->adminUser)->put(route('admin.bookings.update', $bookingDiff), [
             'event_type' => 'corporate',
             'event_date' => $diffDate,
