@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AdminAlert;
+use App\Models\AssetReturn;
 use App\Models\AuditLog;
 use App\Models\Booking;
 use App\Models\Client;
@@ -247,6 +248,24 @@ class DashboardController extends Controller
             ->limit(20)
             ->get();
 
+        // 16. Work queues awaiting an admin decision. Booking queues use the same stage
+        // definitions as the Bookings page so each count matches the list it links to.
+        $attentionQueues = [
+            'review' => Booking::whereIn('status', ['pending', 'change_requested', 'cancellation_requested'])->count(),
+            'approval' => Booking::whereIn('status', ['approved', 'admin_approved'])->count(),
+            'payment' => Booking::where(function ($query) {
+                $query->whereIn('status', ['payment_submitted', 'payment_pending'])
+                      ->orWhereHas('payments', function ($q) {
+                          $q->where('status', 'pending');
+                      });
+            })->count(),
+            'returns' => AssetReturn::where(function ($q) {
+                $q->whereIn('status', ['Pending', 'Partially Returned'])
+                  ->orWhere('approval_status', 'pending');
+            })->count(),
+            'stock' => $lowStockCount + $outOfStockCount,
+        ];
+
         return view('admin.dashboard', [
             // Backward compatibility
             'totalBookings' => $totalBookings,
@@ -283,6 +302,7 @@ class DashboardController extends Controller
             'inventoryStatus' => $inventoryStatus,
             'lowStockItems' => $lowStockItems,
             'recentActivities' => $recentActivities,
+            'attentionQueues' => $attentionQueues,
         ]);
     }
 }

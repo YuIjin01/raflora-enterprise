@@ -122,7 +122,7 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4 mt-6">
-                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-[#1E7E34] border-2 border-[#1E7E34] text-white font-bold py-3 rounded-full hover:bg-white hover:text-[#1E7E34] transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
+                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-brand-700 border-2 border-brand-700 text-white font-bold py-3 rounded-full hover:bg-white hover:text-brand-700 transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
                             <i class="fa-solid fa-arrow-left mr-2"></i> Back to Login
                         </a>
                         <button
@@ -162,7 +162,7 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4 mt-6">
-                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-[#1E7E34] border-2 border-[#1E7E34] text-white font-bold py-3 rounded-full hover:bg-white hover:text-[#1E7E34] transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
+                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-brand-700 border-2 border-brand-700 text-white font-bold py-3 rounded-full hover:bg-white hover:text-brand-700 transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
                             <i class="fa-solid fa-arrow-left mr-2"></i> Back to Login
                         </a>
                         <button
@@ -205,7 +205,7 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4 mt-6">
-                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-[#1E7E34] border-2 border-[#1E7E34] text-white font-bold py-3 rounded-full hover:bg-white hover:text-[#1E7E34] transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
+                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-brand-700 border-2 border-brand-700 text-white font-bold py-3 rounded-full hover:bg-white hover:text-brand-700 transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
                             <i class="fa-solid fa-arrow-left mr-2"></i> Back to Login
                         </a>
                         <button
@@ -291,7 +291,7 @@
                     </div>
 
                     <div class="flex flex-col sm:flex-row gap-4 mt-6">
-                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-[#1E7E34] border-2 border-[#1E7E34] text-white font-bold py-3 rounded-full hover:bg-white hover:text-[#1E7E34] transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
+                        <a href="{{ route('login') }}" class="w-full sm:w-1/2 inline-flex items-center justify-center bg-brand-700 border-2 border-brand-700 text-white font-bold py-3 rounded-full hover:bg-white hover:text-brand-700 transition-all text-sm tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25">
                             <i class="fa-solid fa-arrow-left mr-2"></i> Back to Login
                         </a>
                         <button
@@ -328,7 +328,7 @@
 
                     <a
                         href="{{ route('login') }}"
-                        class="block w-full text-center bg-[#1E7E34] text-white border-2 border-[#1E7E34] serif font-bold py-3 rounded-full hover:bg-white hover:text-[#1E7E34] transition-all text-lg tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25 mt-4"
+                        class="block w-full text-center bg-brand-700 text-white border-2 border-brand-700 serif font-bold py-3 rounded-full hover:bg-white hover:text-brand-700 transition-all text-lg tracking-wide focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-green-500/25 mt-4"
                     >
                         I Have Saved My New Code &mdash; Log In &rarr;
                     </a>

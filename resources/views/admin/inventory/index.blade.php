@@ -12,7 +12,7 @@
                 <p class="text-2xl sm:text-3xl font-extrabold text-slate-900">{{ number_format($totalItemsCount) }}</p>
                 <p class="text-xs text-slate-500 mt-1">All active inventory items</p>
             </div>
-            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center shrink-0">
+            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 border border-brand-100 flex items-center justify-center shrink-0">
                 <i class="fa-solid fa-boxes-stacked text-lg"></i>
             </div>
         </div>
@@ -93,7 +93,7 @@
                             id="inventorySearchInput"
                             value="{{ request('search') }}"
                             placeholder="Search inventory items..."
-                            class="w-full pl-9 pr-3.5 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                            class="w-full pl-9 pr-3.5 py-2 bg-slate-50/70 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                         >
                     </div>
 
@@ -152,7 +152,7 @@
                             aria-haspopup="true"
                             aria-expanded="false"
                             aria-controls="csvToolsMenu"
-                            class="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50/40 text-slate-700 hover:text-emerald-700 font-semibold text-xs rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer"
+                            class="inline-flex items-center gap-2 px-3.5 py-2 border border-slate-200 hover:border-emerald-600 bg-white hover:bg-emerald-50/40 text-slate-700 hover:text-emerald-700 font-semibold text-xs rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                             title="CSV Tools"
                         >
                             <i class="fa-regular fa-file-lines text-emerald-600 text-sm"></i>
@@ -230,7 +230,7 @@
                     </a>
 
                     <!-- + Add Item Button -->
-                    <a href="{{ route('admin.inventory.create') }}" onclick="event.preventDefault(); openCreateModal();" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer">
+                    <a href="{{ route('admin.inventory.create') }}" onclick="event.preventDefault(); openCreateModal();" class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-semibold text-xs rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-brand-500 whitespace-nowrap cursor-pointer">
                         <i class="fa-solid fa-plus text-xs"></i>
                         <span>+ Add Item</span>
                     </a>
@@ -251,7 +251,7 @@
                             id="filterCategory"
                             name="category"
                             onchange="this.form.submit()"
-                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                         >
                             <option value="all" {{ $currentCategory === 'all' ? 'selected' : '' }}>All Categories</option>
                             @foreach($categories as $cat)
@@ -267,7 +267,7 @@
                             id="filterStatus"
                             name="status"
                             onchange="this.form.submit()"
-                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                         >
                             <option value="all" {{ $currentStatus === 'all' ? 'selected' : '' }}>All Statuses</option>
                             <option value="in_stock" {{ $currentStatus === 'in_stock' ? 'selected' : '' }}>In Stock</option>
@@ -283,7 +283,7 @@
                             id="filterPerishable"
                             name="perishable"
                             onchange="this.form.submit()"
-                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                         >
                             <option value="all" {{ $currentPerishable === 'all' ? 'selected' : '' }}>All Types</option>
                             <option value="yes" {{ $currentPerishable === 'yes' ? 'selected' : '' }}>Perishable</option>
@@ -298,7 +298,7 @@
                             id="filterStockLevel"
                             name="stock_level"
                             onchange="this.form.submit()"
-                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                         >
                             <option value="all" {{ ($currentStockLevel ?? 'all') === 'all' ? 'selected' : '' }}>All Stock Levels</option>
                             <option value="in_stock" {{ ($currentStockLevel ?? '') === 'in_stock' ? 'selected' : '' }}>Above Minimum</option>
@@ -314,7 +314,7 @@
                             id="filterSort"
                             name="sort"
                             onchange="this.form.submit()"
-                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-1.5 px-3 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                         >
                             <option value="default" {{ ($currentSort ?? 'default') === 'default' ? 'selected' : '' }}>Default (Shortage Priority)</option>
                             <option value="name_asc" {{ ($currentSort ?? '') === 'name_asc' ? 'selected' : '' }}>Name (A - Z)</option>
@@ -334,7 +334,7 @@
                                 Clear Filters
                             </a>
                         @endif
-                        <button type="submit" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition shadow-2xs">
+                        <button type="submit" class="px-3.5 py-1.5 bg-brand-700 hover:bg-brand-800 text-white font-semibold text-xs rounded-lg transition shadow-2xs">
                             Apply Filters
                         </button>
                     </div>
@@ -684,7 +684,7 @@
                                                         <button
                                                             type="button"
                                                             onclick="openReceiveStockModal({{ $item->id }}, '{{ addslashes($item->name) }}', '{{ addslashes($item->item_code ?? ('INV-' . str_pad($item->id, 4, '0', STR_PAD_LEFT))) }}', '{{ addslashes($item->unit) }}', {{ (float) $item->current_stock }}, {{ (float) $item->reserved_stock }}, {{ (float) $item->to_procure }}, {{ (float) $item->unit_cost }})"
-                                                            class="flex items-center justify-center gap-1.5 p-2.5 bg-emerald-600 hover:bg-emerald-700 border border-emerald-600 rounded-xl text-xs font-semibold text-white shadow-2xs transition cursor-pointer"
+                                                            class="flex items-center justify-center gap-1.5 p-2.5 bg-brand-700 hover:bg-brand-800 border border-brand-700 rounded-xl text-xs font-semibold text-white shadow-2xs transition cursor-pointer"
                                                         >
                                                             <i class="fa-solid fa-boxes-packing"></i>
                                                             <span>Receive Stock</span>
@@ -698,7 +698,7 @@
                                                             <span>Adjust Stock</span>
                                                         </button>
                                                         <a href="{{ route('admin.inventory.edit', $item) }}" class="flex items-center justify-center gap-1.5 p-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:text-slate-900 transition">
-                                                            <i class="fa-solid fa-pen-to-square text-purple-600"></i>
+                                                            <i class="fa-solid fa-pen-to-square text-brand-700"></i>
                                                             <span>Edit Item</span>
                                                         </a>
                                                         <form
@@ -741,7 +741,7 @@
                                                                         <div class="flex items-center gap-2">
                                                                             <span class="font-bold text-slate-800 capitalize">{{ $tx->transaction_type === 'procurement' ? 'Stock Received' : str_replace('_', ' ', $tx->transaction_type) }}</span>
                                                                             @if($tx->booking_id)
-                                                                                <span class="text-[10px] font-mono bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-100">
+                                                                                <span class="text-[10px] font-mono bg-brand-50 text-brand-700 px-1.5 py-0.2 rounded border border-brand-100">
                                                                                     Booking #{{ $tx->booking_id }}
                                                                                 </span>
                                                                             @endif
@@ -781,7 +781,7 @@
                                                                     <div class="flex items-center gap-2">
                                                                         <span class="font-bold text-slate-800 capitalize">{{ $tx->transaction_type === 'procurement' ? 'Stock Received' : str_replace('_', ' ', $tx->transaction_type) }}</span>
                                                                         @if($tx->booking_id)
-                                                                            <span class="text-[10px] font-mono bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-100">
+                                                                            <span class="text-[10px] font-mono bg-brand-50 text-brand-700 px-1.5 py-0.2 rounded border border-brand-100">
                                                                                 Booking #{{ $tx->booking_id }}
                                                                             </span>
                                                                         @endif
@@ -963,7 +963,7 @@
                         <p class="text-xs text-gray-500">Import new items or update existing records in bulk</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeUploadModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer" aria-label="Close modal">
+                <button type="button" onclick="closeUploadModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer" aria-label="Close modal">
                     <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
@@ -978,7 +978,7 @@
                         Select CSV File <span class="text-red-500">*</span>
                     </label>
                     <input type="file" name="csv_file" id="csv_file" accept=".csv,text/csv" required
-                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition">
+                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition">
                 </div>
 
                 <!-- Format Guidance Box -->
@@ -1010,7 +1010,7 @@
                     <button type="button" onclick="closeUploadModal()" class="px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="submitUploadBtn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition inline-flex items-center gap-2 cursor-pointer">
+                    <button type="submit" id="submitUploadBtn" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition inline-flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-upload" aria-hidden="true"></i> Upload CSV
                     </button>
                 </div>
@@ -1036,7 +1036,7 @@
                         <p class="text-xs text-gray-500">Format specifications, column definitions, and upload guidelines</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeInstructionsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer" aria-label="Close modal">
+                <button type="button" onclick="closeInstructionsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer" aria-label="Close modal">
                     <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
@@ -1110,7 +1110,7 @@
                     <button type="button" onclick="closeInstructionsModal()" class="px-4 py-2 border border-gray-300 text-xs font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition cursor-pointer">
                         Close
                     </button>
-                    <button type="button" onclick="closeInstructionsModal(); openUploadModal();" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition inline-flex items-center gap-1.5 cursor-pointer">
+                    <button type="button" onclick="closeInstructionsModal(); openUploadModal();" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-500 transition inline-flex items-center gap-1.5 cursor-pointer">
                         <i class="fa-solid fa-upload"></i> Upload CSV Now
                     </button>
                 </div>
@@ -1136,7 +1136,7 @@
                         <p class="text-xs text-gray-500">Record physically received and procured inventory</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeReceiveStockModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition cursor-pointer" aria-label="Close modal">
+                <button type="button" onclick="closeReceiveStockModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer" aria-label="Close modal">
                     <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
@@ -1194,7 +1194,7 @@
                             step="any"
                             min="0.01"
                             required
-                            class="w-full py-2 px-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                            class="w-full py-2 px-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition"
                             placeholder="e.g. 50"
                         >
                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
@@ -1219,7 +1219,7 @@
                             name="unit_cost"
                             step="0.01"
                             min="0"
-                            class="w-full py-2 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                            class="w-full py-2 pl-7 pr-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition"
                             placeholder="0.00"
                         >
                     </div>
@@ -1236,7 +1236,7 @@
                         id="referenceNotesInput"
                         name="notes"
                         maxlength="500"
-                        class="w-full py-2 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                        class="w-full py-2 px-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition"
                         placeholder="e.g., Receipt #10492 / Supplier delivery batch"
                     >
                     <p class="text-[11px] text-slate-500 mt-1">Traceable operational reference recorded in the inventory transaction ledger.</p>
@@ -1254,7 +1254,7 @@
                     <button
                         type="submit"
                         id="submitReceiveStockBtn"
-                        class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-emerald-500 transition inline-flex items-center gap-2 cursor-pointer"
+                        class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded-xl shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 transition inline-flex items-center gap-2 cursor-pointer"
                     >
                         <i class="fa-solid fa-boxes-packing" aria-hidden="true"></i>
                         <span>Receive Stock</span>
@@ -1331,7 +1331,7 @@
                                 name="name"
                                 required
                                 placeholder="e.g. Pink Rose (Fresh)"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                         </div>
 
@@ -1366,7 +1366,7 @@
                                 required
                                 list="modalCategoriesList"
                                 placeholder="e.g. Fresh Flowers"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                             <datalist id="modalCategoriesList">
                                 @foreach($categories as $cat)
@@ -1393,7 +1393,7 @@
                                 required
                                 list="modalUnitsList"
                                 placeholder="e.g. stem, pcs, bunch"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                             <datalist id="modalUnitsList">
                                 <option value="stem">stem</option>
@@ -1435,7 +1435,7 @@
                                         name="item_type"
                                         value="non_perishable"
                                         onchange="handleModalItemTypeChange('non_perishable')"
-                                        class="text-emerald-600 focus:ring-emerald-500 text-xs"
+                                        class="text-emerald-600 focus:ring-brand-500 text-xs"
                                     >
                                     <div class="min-w-0">
                                         <p class="text-xs font-bold text-slate-800">Non-Perishable</p>
@@ -1457,7 +1457,7 @@
                                 rows="2"
                                 maxlength="1000"
                                 placeholder="Describe item quality, color, origin, or usage notes..."
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             ></textarea>
                         </div>
                     </div>
@@ -1479,7 +1479,7 @@
                                 name="initial_quantity"
                                 value="0"
                                 required
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                             <p class="text-[10px] text-slate-400 mt-1">Starting physical count.</p>
                         </div>
@@ -1497,7 +1497,7 @@
                                 name="reorder_level"
                                 value="10"
                                 required
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                             <p class="text-[10px] text-slate-400 mt-1">Threshold for low-stock alerts.</p>
                         </div>
@@ -1517,7 +1517,7 @@
                                     name="unit_cost"
                                     value="0.00"
                                     required
-                                    class="w-full pl-7 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                    class="w-full pl-7 pr-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                                 >
                             </div>
                             <p class="text-[10px] text-slate-400 mt-1">Cost per unit of measure.</p>
@@ -1535,7 +1535,7 @@
                                 value="{{ date('Y-m-d') }}"
                                 required
                                 onchange="calculateModalUsableUntil()"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                             <p id="modalHintReceivedDate" class="text-[10px] text-slate-400 mt-1">Date materials entered custody.</p>
                         </div>
@@ -1554,14 +1554,14 @@
                                     value="7"
                                     required
                                     oninput="calculateModalUsableUntil()"
-                                    class="w-20 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                    class="w-20 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                                 >
                                 <select
                                     id="modal_create_usable_life_unit"
                                     name="usable_life_unit"
                                     required
                                     onchange="calculateModalUsableUntil()"
-                                    class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                    class="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                                 >
                                     <option value="days" selected>days</option>
                                     <option value="weeks">weeks</option>
@@ -1610,7 +1610,7 @@
                                 id="modal_create_supplier_name"
                                 name="supplier_name"
                                 placeholder="e.g. Blooming Fields PH"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                             >
                         </div>
                         <div>
@@ -1622,7 +1622,7 @@
                                 id="modal_create_supplier_contact_person"
                                 name="supplier_contact_person"
                                 placeholder="e.g. Ana Reyes"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                             >
                         </div>
                         <div>
@@ -1634,7 +1634,7 @@
                                 id="modal_create_supplier_contact_number"
                                 name="supplier_contact_number"
                                 placeholder="e.g. 0917 123 4567"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                             >
                         </div>
                         <div class="sm:col-span-3">
@@ -1646,7 +1646,7 @@
                                 id="modal_create_storage_location"
                                 name="storage_location"
                                 placeholder="e.g. Cold Storage Room A, Shelf 2"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                             >
                         </div>
 
@@ -1704,7 +1704,7 @@
                                 id="modal_create_status"
                                 name="status"
                                 required
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                             >
                                 <option value="active" selected>Active — Available for new event planning</option>
                                 <option value="inactive">Inactive — Discontinued / Locked from planning</option>
@@ -1722,7 +1722,7 @@
                                 id="modal_create_tags"
                                 name="tags"
                                 placeholder="e.g. Wedding, Bouquet, Premium, Centerpiece"
-                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                                class="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                             >
                             <p class="text-[10px] text-slate-400 mt-1">Comma-separated tags for filtering.</p>
                         </div>
@@ -1763,7 +1763,7 @@
                         type="button"
                         id="btnModalSave"
                         onclick="document.getElementById('addInventoryItemForm').submit();"
-                        class="hidden px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
+                        class="hidden px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                     >
                         <i class="fa-solid fa-check text-xs"></i>
                         <span>Save Item</span>
@@ -1816,7 +1816,7 @@
                         name="new_stock"
                         required
                         placeholder="e.g. 100"
-                        class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                        class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                     >
                 </div>
 
@@ -1831,7 +1831,7 @@
                         required
                         maxlength="500"
                         placeholder="e.g. Physical inventory cycle count correction"
-                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 shadow-2xs"
                     ></textarea>
                 </div>
 
@@ -1839,7 +1839,7 @@
                     <button type="button" onclick="closeAdjustStockModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
+                    <button type="submit" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer">
                         Confirm Adjustment
                     </button>
                 </div>

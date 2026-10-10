@@ -44,7 +44,7 @@
         --}}
         <div class="w-full max-w-lg mx-auto bg-white rounded-3xl shadow-lg border border-raflora-border p-6 sm:p-8 lg:p-10">
             <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-raflora-primary-50 text-[#1E7E34] mb-3 border border-raflora-primary-200">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-raflora-primary-50 text-brand-700 mb-3 border border-raflora-primary-200">
                     <i class="fa-solid fa-shield-halved text-2xl"></i>
                 </div>
                 <h1 class="font-serif text-2xl md:text-3xl font-bold text-raflora-heading tracking-wide">ADMINISTRATOR SETUP</h1>
@@ -53,13 +53,13 @@
                 </p>
                 <!-- Step progress indicator -->
                 <div class="flex items-center justify-center space-x-2 mt-4 text-xs font-semibold uppercase tracking-wider">
-                    <span class="px-2.5 py-1 rounded-full {{ $step === 'email' ? 'bg-[#1E7E34] text-white' : 'bg-gray-100 text-gray-500' }}">1. Email</span>
+                    <span class="px-2.5 py-1 rounded-full {{ $step === 'email' ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-500' }}">1. Email</span>
                     <span class="text-gray-300">&rarr;</span>
-                    <span class="px-2.5 py-1 rounded-full {{ $step === 'otp' ? 'bg-[#1E7E34] text-white' : 'bg-gray-100 text-gray-500' }}">2. Verify</span>
+                    <span class="px-2.5 py-1 rounded-full {{ $step === 'otp' ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-500' }}">2. Verify</span>
                     <span class="text-gray-300">&rarr;</span>
-                    <span class="px-2.5 py-1 rounded-full {{ $step === 'password' ? 'bg-[#1E7E34] text-white' : 'bg-gray-100 text-gray-500' }}">3. Password</span>
+                    <span class="px-2.5 py-1 rounded-full {{ $step === 'password' ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-500' }}">3. Password</span>
                     <span class="text-gray-300">&rarr;</span>
-                    <span class="px-2.5 py-1 rounded-full {{ $step === 'recovery_code' ? 'bg-[#1E7E34] text-white' : 'bg-gray-100 text-gray-500' }}">4. Recovery</span>
+                    <span class="px-2.5 py-1 rounded-full {{ $step === 'recovery_code' ? 'bg-brand-700 text-white' : 'bg-gray-100 text-gray-500' }}">4. Recovery</span>
                 </div>
             </div>
 
@@ -162,7 +162,7 @@
                     <button
                         type="submit"
                         id="resend-btn"
-                        class="text-xs text-[#1E7E34] hover:text-[#155b25] underline disabled:opacity-50 disabled:no-underline font-semibold"
+                        class="text-xs text-brand-700 hover:text-brand-800 underline disabled:opacity-50 disabled:no-underline font-semibold"
                         @if($cooldownSeconds > 0) disabled @endif
                     >
                         Resend Code <span id="cooldown-timer">@if($cooldownSeconds > 0)({{ $cooldownSeconds }}s)@endif</span>
@@ -284,7 +284,7 @@
                             Emergency Recovery Code
                         </label>
                         <div class="p-4 bg-gray-50 border border-gray-200 rounded-2xl text-center select-all">
-                            <span class="font-mono text-2xl font-bold tracking-widest text-[#1E7E34]">
+                            <span class="font-mono text-2xl font-bold tracking-widest text-brand-700">
                                 {{ $recoveryCode }}
                             </span>
                         </div>
@@ -296,7 +296,7 @@
                     <form method="POST" action="{{ route('admin.setup.acknowledge') }}">
                         @csrf
                         <div class="flex items-center gap-2 mb-4 justify-center">
-                            <input type="checkbox" id="saved_code" required class="rf-checkbox w-4 h-4 cursor-pointer rounded border-raflora-border text-[#1E7E34] focus:ring-[#1E7E34]">
+                            <input type="checkbox" id="saved_code" required class="rf-checkbox w-4 h-4 cursor-pointer rounded border-raflora-border text-brand-700 focus:ring-brand-700">
                             <label for="saved_code" class="text-sm text-raflora-heading font-semibold cursor-pointer select-none">
                                 I have safely stored my recovery code
                             </label>
@@ -334,7 +334,7 @@
             <div class="mt-8 pt-6 border-t border-gray-100 text-center">
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="text-sm text-[#1E7E34] font-bold hover:text-[#155b25] transition underline bg-transparent border-0 p-0 cursor-pointer">
+                    <button type="submit" class="text-sm text-brand-700 font-bold hover:text-brand-800 transition underline bg-transparent border-0 p-0 cursor-pointer">
                         Log Out &amp; Return Later
                     </button>
                 </form>

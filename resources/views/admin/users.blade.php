@@ -3,13 +3,13 @@
     <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-4">
             <!-- Role Filter: Dropdown to filter users by role -->
-            <select class="border border-purple-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500">
+            <select class="border border-brand-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500">
                 <option>All Roles</option>
                 <option>Admin</option>
                 <option>Client</option>
             </select>
         </div>
-        <button class="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
+        <button class="bg-brand-700 hover:bg-brand-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
             <i class="fa-solid fa-plus mr-1"></i> Add User
         </button>
     </div>

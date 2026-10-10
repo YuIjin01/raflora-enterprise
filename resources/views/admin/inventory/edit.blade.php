@@ -43,7 +43,7 @@
             <button
                 type="button"
                 onclick="openAdjustModal()"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer"
             >
                 <i class="fa-solid fa-sliders text-xs"></i>
                 <span>Adjust Stock</span>
@@ -110,7 +110,7 @@
                             value="{{ old('name', $inventoryItem->name) }}"
                             required
                             placeholder="e.g. Pink Rose (Fresh)"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         @error('name') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -147,7 +147,7 @@
                             required
                             list="categoriesList"
                             placeholder="e.g. Fresh Flowers, Decor"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <datalist id="categoriesList">
                             @foreach($inventoryCategories as $cat)
@@ -175,7 +175,7 @@
                             required
                             list="unitsList"
                             placeholder="e.g. Stem, Piece, Bunch, Roll"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <datalist id="unitsList">
                             <option value="stem">stem</option>
@@ -221,7 +221,7 @@
                                     name="item_type"
                                     value="non_perishable"
                                     onchange="handleItemTypeChange('non_perishable')"
-                                    class="text-emerald-600 focus:ring-emerald-500"
+                                    class="text-emerald-600 focus:ring-brand-500"
                                     {{ !$isPerish ? 'checked' : '' }}
                                 >
                                 <div class="min-w-0">
@@ -247,7 +247,7 @@
                             maxlength="500"
                             oninput="document.getElementById('descCharCount').textContent = this.value.length + '/500'"
                             placeholder="Add item characteristics, color shade, dimensions, or handling instructions..."
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >{{ old('description', $inventoryItem->description) }}</textarea>
                     </div>
                 </div>
@@ -274,7 +274,7 @@
                             name="min_stock"
                             value="{{ old('min_stock', (float) $inventoryItem->min_stock) }}"
                             required
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <p class="text-[11px] text-slate-400 mt-1">Triggers low-stock warning threshold.</p>
                         @error('min_stock') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -293,7 +293,7 @@
                             name="unit_cost"
                             value="{{ old('unit_cost', (float) $inventoryItem->unit_cost) }}"
                             required
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <p class="text-[11px] text-slate-400 mt-1">Cost per single unit.</p>
                         @error('unit_cost') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -311,12 +311,12 @@
                                 id="edit_usable_life_value"
                                 name="usable_life_value"
                                 value="{{ old('usable_life_value', $inventoryItem->usable_life_value ?? ($isPerish ? 7 : 3)) }}"
-                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                             >
                             <select
                                 id="edit_usable_life_unit"
                                 name="usable_life_unit"
-                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                             >
                                 @php
                                     $curUnit = old('usable_life_unit', $inventoryItem->usable_life_unit ?? ($isPerish ? 'days' : 'years'));
@@ -350,7 +350,7 @@
                             name="supplier_name"
                             value="{{ old('supplier_name', $inventoryItem->supplier_name) }}"
                             placeholder="e.g. Blooming Fields PH"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -364,7 +364,7 @@
                             name="supplier_contact_person"
                             value="{{ old('supplier_contact_person', $inventoryItem->supplier_contact_person) }}"
                             placeholder="e.g. Ana Reyes"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -378,7 +378,7 @@
                             name="supplier_contact_number"
                             value="{{ old('supplier_contact_number', $inventoryItem->supplier_contact_number) }}"
                             placeholder="e.g. 0917 123 4567"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -392,7 +392,7 @@
                             name="storage_location"
                             value="{{ old('storage_location', $inventoryItem->storage_location) }}"
                             placeholder="e.g. Cold Room Shelf B-2, Warehouse Rack 4"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
                 </div>
@@ -414,7 +414,7 @@
                         <select
                             id="edit_status"
                             name="status"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                             @php
                                 $statusVal = old('status', $inventoryItem->status ?? 'active');
@@ -436,7 +436,7 @@
                             name="tags"
                             value="{{ old('tags', $inventoryItem->tags) }}"
                             placeholder="e.g. Wedding, Bouquet, Premium, Centerpiece"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -453,7 +453,7 @@
                                 type="text"
                                 oninput="filterSubstitutes(this.value)"
                                 placeholder="Search items by name or category..."
-                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500"
                             >
                         </div>
 
@@ -470,7 +470,7 @@
                                             name="substitute_ids[]"
                                             value="{{ $subItem->id }}"
                                             {{ in_array($subItem->id, $selectedSubs) ? 'checked' : '' }}
-                                            class="rounded text-emerald-600 focus:ring-emerald-500"
+                                            class="rounded text-emerald-600 focus:ring-brand-500"
                                         >
                                         <span class="font-bold text-slate-800">{{ $subItem->name }}</span>
                                         <span class="text-[10px] text-slate-400 font-mono">({{ $subItem->item_code ?? 'INV-' . $subItem->id }})</span>
@@ -574,7 +574,7 @@
                         name="new_stock"
                         required
                         placeholder="{{ (float) $inventoryItem->current_stock }}"
-                        class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500"
+                        class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-brand-500"
                     >
                 </div>
 
@@ -588,7 +588,7 @@
                         rows="2"
                         required
                         placeholder="e.g. Physical inventory cycle count correction"
-                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500"
+                        class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500"
                     ></textarea>
                 </div>
 
@@ -596,7 +596,7 @@
                     <button type="button" onclick="closeAdjustModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition">
+                    <button type="submit" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs rounded-xl shadow-xs transition">
                         Confirm Adjustment
                     </button>
                 </div>

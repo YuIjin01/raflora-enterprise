@@ -50,6 +50,21 @@
             'segComplete' => 'bg-purple-600',
             'segCurrent' => 'bg-purple-300 ring-2 ring-purple-600 ring-offset-1',
         ],
+        // Raflora Green, used by the admin workspace.
+        'brand' => [
+            'badge' => 'border-brand-200 bg-brand-50 text-brand-800',
+            'now' => 'border-brand-200 bg-gradient-to-br from-brand-50 to-white',
+            'nowIcon' => 'bg-brand-700 text-white',
+            'nowLabel' => 'text-brand-700',
+            'phaseCurrent' => 'border-brand-300 bg-brand-50/40 ring-1 ring-brand-100',
+            'dotComplete' => 'bg-brand-700 text-white',
+            'dotCurrent' => 'border-2 border-brand-700 bg-white ring-4 ring-brand-100',
+            'dotCurrentInner' => 'bg-brand-700',
+            'labelCurrent' => 'text-brand-800 font-bold',
+            'currentTag' => 'bg-brand-700 text-white',
+            'segComplete' => 'bg-brand-600',
+            'segCurrent' => 'bg-brand-300 ring-2 ring-brand-600 ring-offset-1',
+        ],
         default => [
             'badge' => 'border-emerald-200 bg-emerald-50 text-emerald-800',
             'now' => 'border-emerald-200 bg-gradient-to-br from-emerald-50 to-white',

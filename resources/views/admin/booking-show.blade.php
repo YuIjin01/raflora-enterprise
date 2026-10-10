@@ -1,401 +1,665 @@
-<x-admin-layout title="Booking Review">
-    <div class="mb-6 flex flex-col items-start justify-between gap-4 lg:flex-row lg:items-center">
-        <div>
-            <p class="text-xs font-bold uppercase tracking-[0.24em] text-purple-700">Operational booking review</p>
-            <h1 class="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">Booking #{{ $booking->id }} · {{ ucfirst($booking->event_type) }}</h1>
-            <p class="mt-1 text-sm text-slate-500">Client: {{ $booking->client?->full_name ?? 'Guest' }}</p>
-            <p class="mt-2">
-                @if($booking->status === 'pending')
-                    <span class="rf-badge rf-badge--warning">
-                        Pending Admin Review
-                    </span>
-                @elseif($booking->status === 'downpayment_received')
-                    <span class="rf-badge rf-badge--success">
-                        {{ $booking->status_display_label }}
-                    </span>
-                @else
-                    <span class="rf-badge rf-badge--primary">
-                        {{ $booking->status_display_label }}
-                    </span>
-                @endif
-            </p>
-        </div>
-        <a href="{{ route('admin.bookings') }}" class="rf-btn rf-btn-outline">
-            &larr; Back to Bookings
+@php
+    $bookingHeading = 'Booking #' . $booking->id . ' · ' . ucfirst($booking->event_type);
+    $bookingClientName = $booking->client?->full_name ?? 'Guest';
+    try {
+        $bookingEventTime = $booking->event_time ? \Illuminate\Support\Carbon::parse($booking->event_time)->format('g:i A') : null;
+    } catch (\Throwable $e) {
+        $bookingEventTime = $booking->event_time;
+    }
+@endphp
+<x-admin-layout :title="$bookingHeading" :description="'Client: ' . $bookingClientName">
+    <x-slot:actions>
+        <a href="{{ route('admin.bookings') }}" class="inline-flex items-center gap-2 h-9 px-3.5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition">
+            <i class="fa-solid fa-arrow-left text-xs" aria-hidden="true"></i>
+            Back to Bookings
         </a>
-    </div>
-
-    @if(session('success'))
-        <div class="rf-alert rf-alert--success mb-6" role="status"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>{{ session('success') }}</div>
-    @endif
-
-    @if(session('error'))
-        <div class="rf-alert rf-alert--danger mb-6" role="alert"><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>{{ session('error') }}</div>
-    @endif
-
-    @if(!empty($quoteReadOnly) && $quoteReadOnly)
-        <div class="rf-alert rf-alert--warning mb-6" role="status">
-            This quotation is locked because the booking is currently {{ strtoupper($booking->status) }}.
-        </div>
-    @endif
+    </x-slot:actions>
 
     @php
         $quoteReadOnly = $quoteReadOnly ?? false;
         $bookingLocked = $quoteReadOnly;
-    @endphp
 
-        <!-- Booking Navigation Tabs -->
-    <div class="mb-6 border-b border-slate-200">
-        <nav class="-mb-px flex space-x-1 sm:space-x-6 overflow-x-auto" aria-label="Tabs">
-            <button type="button" onclick="switchTab('tab-overview')" class="tab-button active border-purple-500 text-purple-600 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-overview">Overview</button>
-            <button type="button" onclick="switchTab('tab-details')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-details">Event Details & AI</button>
-            <button type="button" onclick="switchTab('tab-quotation')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-quotation">Quotation</button>
-            <button type="button" onclick="switchTab('tab-materials')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-materials">Materials & Inventory</button>
-            <button type="button" onclick="switchTab('tab-preparation')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-preparation">Preparation</button>
-            <button type="button" onclick="switchTab('tab-staff')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition" data-target="tab-staff">Staff Assignment</button>
-            <button type="button" onclick="switchTab('tab-communication')" class="tab-button border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium transition inline-flex items-center gap-1.5" data-target="tab-communication">
-                <span>Communication</span>
-                <span id="admin-comm-unread-badge" class="rounded-full bg-purple-100 text-purple-700 px-2 py-0.5 text-xs font-bold {{ ($unreadMessageCount ?? 0) > 0 ? '' : 'hidden' }}">
-                    {{ $unreadMessageCount ?? 0 }}
-                </span>
-            </button>
-        </nav>
-    </div>
-
-    <div id="tab-overview" class="tab-content block space-y-6">
-    @php
         $bookingWorkflow = app(\App\Services\BookingWorkflowService::class)->resolve($booking);
         $canCompleteReview = $booking->status === 'pending'
             && !is_null($booking->client_id)
             && !$booking->isReviewed()
             && $bookingWorkflow['current'] === 'raflora_review';
-    @endphp
 
-    {{-- README end-to-end booking workflow: Guest → Client → Staff --}}
-    <x-booking-workflow
-        :workflow="$bookingWorkflow"
-        accent="purple"
-        id="admin-booking-workflow"
-        heading="Booking Workflow"
-        description="Guest → Client → Staff. Stages update from the booking, quotation, payment, inventory, and return records."
-        class="mb-6" />
-
-    @if($canCompleteReview)
-        <section class="rf-panel mb-6 p-5 sm:p-6" aria-labelledby="raflora-review-heading">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h2 id="raflora-review-heading" class="text-lg font-bold text-slate-900">Raflora Review</h2>
-                    <p class="mt-1 text-sm text-slate-500">Review the event details, inspiration, and client messages. Completing the review moves this booking to Material Preparation / Validation. Confirming, linking, or promoting a material also completes the review.</p>
-                </div>
-                <form method="POST" action="{{ route('admin.bookings.complete-review', $booking) }}" class="shrink-0">
-                    @csrf
-                    <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-800 sm:w-auto">
-                        <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Complete Raflora Review
-                    </button>
-                </form>
-            </div>
-        </section>
-    @endif
-{{-- Split forms: items adjustments and admin note/quote actions are separate to avoid validation collisions --}}
-
-    @php
         $totalObligation = (float) $booking->total_obligation;
         $paidAmount = (float) $booking->total_paid;
         $remaining = max(0, $totalObligation - $paidAmount);
-        
+        $paidPercent = $totalObligation > 0 ? min(100, round(($paidAmount / $totalObligation) * 100, 1)) : 0;
+
         $canLogFinalPayment = in_array($booking->status, ['event_in_progress', 'event_completed', 'pending_return', 'pending_resolution'], true) && ($remaining > 0);
         $showMarkInProgress = in_array($booking->status, ['downpayment_received', 'confirmed'], true);
         $showMarkEventCompleted = $booking->status === 'event_in_progress';
         $hasCompletedReturn = $booking->returns->where('status', 'Completed')->isNotEmpty();
         $hasCancellationRecovery = ($booking->status === 'cancelled') && ($booking->returns->isNotEmpty() || $booking->hasDispatchedReusableMaterials());
-        
-        $showOperationalActions = $canLogFinalPayment || $showMarkInProgress || $showMarkEventCompleted || ($booking->status === 'event_completed') || in_array($booking->status, ['pending_return', 'pending_resolution'], true) || $hasCancellationRecovery || $booking->status === 'completed';
-        
+        $showReturnAuditLink = $booking->status === 'event_completed' || in_array($booking->status, ['pending_return', 'pending_resolution'], true) || $hasCancellationRecovery || $booking->status === 'completed';
+
+        $showOperationalActions = $canLogFinalPayment || $showMarkInProgress || $showMarkEventCompleted || $showReturnAuditLink;
+
         $damageLoss = $booking->returns ? $booking->returns->sum('total_damage_charge') : 0;
         $baseQuote = $booking->final_quoted_price ?: $booking->total_quoted;
+
+        $materialItems = ($bookingItems ?? $booking->bookingItems)->filter(fn ($bi) => (float) $bi->quantity > 0)->values();
+        $validatedMaterialCount = $materialItems->filter(fn ($bi) => !is_null($bi->confirmed_at))->count();
+        $allMaterialsValidated = $materialItems->isNotEmpty() && $validatedMaterialCount === $materialItems->count();
+        $formatMaterialQty = fn ($qty) => rtrim(rtrim(number_format((float) $qty, 2, '.', ','), '0'), '.');
+
+        $prepChecklist = $booking->staffChecklistItems()->with('completedBy')->orderBy('id')->get();
+        $prepCompletedCount = $prepChecklist->where('is_completed', true)->count();
+        $prepAllComplete = $prepChecklist->isNotEmpty() && $prepCompletedCount === $prepChecklist->count();
+
+        $assignedStaff = $booking->assignedStaff;
+        $pendingPaymentCount = $booking->payments->where('status', 'pending')->count();
+
+        // Only values persisted by the AI analysis are shown; nothing is estimated in the view.
+        $aiSuggestions = collect($analysis?->suggested_materials ?? [])->filter(fn ($m) => is_array($m))->values();
+        $aiNeedsReviewCount = $aiSuggestions->filter(fn ($m) => !empty($m['needs_review']))->count();
+
+        $statusBadgeVariant = match (true) {
+            $booking->status === 'pending' => 'warning',
+            $booking->status === 'downpayment_received' => 'success',
+            default => 'primary',
+        };
+        $statusBadgeLabel = $booking->status === 'pending' ? 'Pending Admin Review' : $booking->status_display_label;
+
+        $tabs = [
+            ['id' => 'tab-overview', 'label' => 'Overview', 'icon' => 'fa-solid fa-table-columns'],
+            ['id' => 'tab-details', 'label' => 'Event Details & AI', 'icon' => 'fa-solid fa-wand-magic-sparkles',
+                'badge' => $aiNeedsReviewCount > 0 ? $aiNeedsReviewCount . ' to review' : null, 'tone' => 'bg-amber-100 text-amber-800'],
+            ['id' => 'tab-quotation', 'label' => 'Quotation', 'icon' => 'fa-solid fa-file-invoice-dollar',
+                'badge' => isset($activeQuotation) ? 'v' . $activeQuotation->version : null, 'tone' => 'bg-slate-100 text-slate-600'],
+            ['id' => 'tab-materials', 'label' => 'Materials & Inventory', 'icon' => 'fa-solid fa-boxes-stacked',
+                'badge' => $materialItems->isNotEmpty() ? $validatedMaterialCount . '/' . $materialItems->count() : null,
+                'tone' => $allMaterialsValidated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'],
+            ['id' => 'tab-preparation', 'label' => 'Preparation', 'icon' => 'fa-solid fa-clipboard-list',
+                'badge' => $prepChecklist->isNotEmpty() ? $prepCompletedCount . '/' . $prepChecklist->count() : null,
+                'tone' => $prepAllComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'],
+            ['id' => 'tab-staff', 'label' => 'Staff Assignment', 'icon' => 'fa-solid fa-user-gear',
+                'badge' => $assignedStaff ? null : 'Unassigned', 'tone' => 'bg-slate-100 text-slate-600'],
+            ['id' => 'tab-communication', 'label' => 'Communication', 'icon' => 'fa-regular fa-comments'],
+        ];
+
+        $cardHeader = 'flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between px-5 py-4 border-b border-slate-100';
+        $cardTitle = 'text-[15px] font-semibold text-slate-900';
+        $cardText = 'mt-0.5 text-[13px] text-slate-500';
+        $pill = 'inline-flex w-fit items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold';
+        $fieldLabel = 'block text-xs font-semibold text-slate-600 mb-1';
+        $fieldInput = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none';
+        $btnPrimary = 'inline-flex items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-800 transition disabled:cursor-not-allowed disabled:opacity-50';
+        $btnSecondary = 'inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition disabled:cursor-not-allowed disabled:opacity-50';
+        $btnDark = 'inline-flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 transition disabled:cursor-not-allowed disabled:opacity-50';
     @endphp
 
-    <section class="rf-panel overflow-hidden p-5 sm:p-6 mb-6" aria-labelledby="financial-summary-heading">
-        <h2 id="financial-summary-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Financial Summary &amp; Settlement</h2>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm">
-            <div>
-                <p class="text-slate-500 uppercase font-semibold text-[10px]">Base Quote</p>
-                <p class="font-bold text-slate-800">₱{{ number_format($baseQuote, 2) }}</p>
-            </div>
-            <div>
-                <p class="text-rose-500 uppercase font-semibold text-[10px]">Damage / Loss</p>
-                <p class="font-bold text-rose-700">₱{{ number_format($damageLoss, 2) }}</p>
-            </div>
-            <div>
-                <p class="text-purple-600 uppercase font-semibold text-[10px]">Total Obligation</p>
-                <p class="font-bold text-purple-900">₱{{ number_format($totalObligation, 2) }}</p>
-            </div>
-            <div>
-                <p class="text-emerald-600 uppercase font-semibold text-[10px]">Verified Paid</p>
-                <p class="font-bold text-emerald-900">₱{{ number_format($paidAmount, 2) }}</p>
-            </div>
-            <div>
-                <p class="text-indigo-600 uppercase font-semibold text-[10px]">Remaining Balance</p>
-                <p class="font-bold text-indigo-900">₱{{ number_format($remaining, 2) }}</p>
-                @if($totalObligation <= 0)
-                    <span class="inline-flex items-center justify-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 mt-1">Not yet quoted</span>
-                @elseif($remaining > 0)
-                    <span class="inline-flex items-center justify-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-800 mt-1">Balance Pending</span>
-                @else
-                    <span class="inline-flex items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-800 mt-1">Fully Paid</span>
+    @if($quoteReadOnly)
+        <div class="mb-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
+            <i class="fa-solid fa-lock mt-0.5 text-amber-600" aria-hidden="true"></i>
+            <p>This quotation is locked because the booking is currently <strong>{{ $booking->status_display_label }}</strong>. Pricing and materials are read-only.</p>
+        </div>
+    @endif
+
+    {{-- Booking summary: identity, current step and money at a glance on every tab --}}
+    <section class="rf-admin-card mb-5 overflow-hidden" aria-label="Booking summary">
+        <div class="lg:hidden px-5 pt-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand-700">Operational booking review</p>
+            <h2 class="mt-1 text-xl font-semibold text-slate-900">{{ $bookingHeading }}</h2>
+            <p class="text-sm text-slate-500">Client: {{ $bookingClientName }}</p>
+        </div>
+        <div class="px-5 py-4 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="rf-badge rf-badge--{{ $statusBadgeVariant }}">{{ $statusBadgeLabel }}</span>
+                    @if(!empty($bookingWorkflow['terminal']))
+                        <span class="text-xs font-semibold text-rose-700">{{ $bookingWorkflow['terminal_label'] }}</span>
+                    @elseif($bookingWorkflow['current'])
+                        <span class="text-xs text-slate-500">Now: <span class="font-semibold text-slate-800">{{ $bookingWorkflow['current_label'] }}</span></span>
+                    @endif
+                </div>
+                @if(empty($bookingWorkflow['terminal']) && !empty($bookingWorkflow['current_detail']))
+                    <p class="mt-1.5 text-sm text-slate-600 max-w-2xl">{{ $bookingWorkflow['current_detail'] }}</p>
                 @endif
             </div>
+            <dl class="grid grid-cols-3 gap-4 sm:gap-8 shrink-0">
+                <div>
+                    <dt class="text-xs font-medium text-slate-500">Total</dt>
+                    <dd class="mt-0.5 text-base font-semibold text-slate-900 tabular-nums">₱{{ number_format($totalObligation, 2) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-slate-500">Paid</dt>
+                    <dd class="mt-0.5 text-base font-semibold text-emerald-700 tabular-nums">₱{{ number_format($paidAmount, 2) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-slate-500">Balance</dt>
+                    <dd class="mt-0.5 text-base font-semibold tabular-nums {{ $remaining > 0 ? 'text-slate-900' : 'text-emerald-700' }}">₱{{ number_format($remaining, 2) }}</dd>
+                </div>
+            </dl>
         </div>
+        <dl class="grid grid-cols-2 lg:grid-cols-4 border-t border-slate-100 bg-slate-50/60 text-sm">
+            <div class="px-5 py-3 min-w-0">
+                <dt class="text-xs font-medium text-slate-500">Event date</dt>
+                <dd class="mt-0.5 font-medium text-slate-900">
+                    {{ optional($booking->event_date)->format('D, M j, Y') ?? 'Not set' }}@if($bookingEventTime)<span class="text-slate-500 font-normal"> · {{ $bookingEventTime }}</span>@endif
+                </dd>
+            </div>
+            <div class="px-5 py-3 min-w-0 lg:border-l border-slate-100">
+                <dt class="text-xs font-medium text-slate-500">Venue</dt>
+                <dd class="mt-0.5 font-medium text-slate-900 truncate" title="{{ $booking->venue }}">{{ $booking->venue ?? 'Not set' }}</dd>
+            </div>
+            <div class="px-5 py-3 min-w-0 border-t lg:border-t-0 lg:border-l border-slate-100">
+                <dt class="text-xs font-medium text-slate-500">Client</dt>
+                <dd class="mt-0.5 font-medium text-slate-900 truncate">{{ $bookingClientName }}</dd>
+            </div>
+            <div class="px-5 py-3 min-w-0 border-t lg:border-t-0 lg:border-l border-slate-100">
+                <dt class="text-xs font-medium text-slate-500">Assigned staff</dt>
+                <dd class="mt-0.5 font-medium truncate {{ $assignedStaff ? 'text-slate-900' : 'text-slate-400' }}">{{ $assignedStaff?->name ?? 'Unassigned' }}</dd>
+            </div>
+        </dl>
     </section>
 
-    @if($showOperationalActions)
-    <section class="rf-panel overflow-hidden p-5 sm:p-6 mb-6" aria-labelledby="operational-actions-heading">
-        <h2 id="operational-actions-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Operational Actions</h2>
-        <div class="flex flex-wrap items-center gap-3">
-            @if($showMarkInProgress)
-                <form method="POST" action="{{ route('admin.bookings.update', ['booking' => $booking->id]) }}">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="event_type" value="{{ $booking->event_type }}">
-                    <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
-                    <input type="hidden" name="venue" value="{{ $booking->venue }}">
-                    <input type="hidden" name="status" value="{{ $booking->status }}">
-                    <button type="submit" name="action" value="mark_event_in_progress" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition shadow-sm">
-                        <i class="fa-solid fa-play mr-2"></i>Mark Event In Progress
-                    </button>
-                </form>
-            @endif
-
-            @if($showMarkEventCompleted)
-                <form method="POST" action="{{ route('admin.bookings.update', ['booking' => $booking->id]) }}">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="event_type" value="{{ $booking->event_type }}">
-                    <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
-                    <input type="hidden" name="venue" value="{{ $booking->venue }}">
-                    <input type="hidden" name="status" value="{{ $booking->status }}">
-                    <button type="submit" name="action" value="mark_event_completed" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition shadow-sm">
-                        <i class="fa-solid fa-flag-checkered mr-2"></i>Mark Event Completed
-                    </button>
-                </form>
-            @endif
-
-            @if($canLogFinalPayment)
-                <button type="button" onclick="openBookingModal('booking-show-final-payment-modal')" class="bg-purple-700 hover:bg-purple-800 text-white font-semibold px-4 py-2 rounded-lg text-sm transition shadow-sm">
-                    <i class="fa-solid fa-money-bill mr-2"></i>Log Final Payment
+    <!-- Booking Navigation Tabs -->
+    <div class="rf-admin-card mb-6 px-2 overflow-x-auto">
+        <nav class="-mb-px flex min-w-max" role="tablist" aria-label="Booking sections">
+            @foreach($tabs as $tab)
+                @php $isFirstTab = $loop->first; @endphp
+                <button
+                    type="button"
+                    role="tab"
+                    id="{{ $tab['id'] }}-button"
+                    aria-controls="{{ $tab['id'] }}"
+                    aria-selected="{{ $isFirstTab ? 'true' : 'false' }}"
+                    tabindex="{{ $isFirstTab ? '0' : '-1' }}"
+                    onclick="switchTab('{{ $tab['id'] }}')"
+                    class="tab-button group inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-3.5 py-3.5 text-sm font-medium transition focus:outline-none focus-visible:bg-slate-50 {{ $isFirstTab ? 'border-brand-600 text-brand-800' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800' }}"
+                    data-target="{{ $tab['id'] }}"
+                >
+                    <i class="{{ $tab['icon'] }} text-[13px] opacity-80" aria-hidden="true"></i>
+                    <span>{{ $tab['label'] }}</span>
+                    @if($tab['id'] === 'tab-communication')
+                        <span id="admin-comm-unread-badge" class="rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white tabular-nums {{ ($unreadMessageCount ?? 0) > 0 ? '' : 'hidden' }}">{{ $unreadMessageCount ?? 0 }}</span>
+                    @elseif(!empty($tab['badge']))
+                        <span class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold leading-none tabular-nums {{ $tab['tone'] }}">{{ $tab['badge'] }}</span>
+                    @endif
                 </button>
-            @endif
-
-            @if($booking->status === 'event_completed' || in_array($booking->status, ['pending_return', 'pending_resolution'], true) || $hasCancellationRecovery || $booking->status === 'completed')
-                @if(!$hasCompletedReturn)
-                    <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="bg-purple-50 text-purple-700 font-semibold px-4 py-2 rounded-lg border border-purple-200 hover:bg-purple-100 text-sm transition shadow-sm">
-                        <i class="fa-solid fa-box-open mr-2"></i>Manage Return Audit
-                    </a>
-                @else
-                    <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="bg-slate-50 text-slate-700 font-semibold px-4 py-2 rounded-lg border border-slate-200 hover:bg-slate-100 text-sm transition shadow-sm">
-                        <i class="fa-solid fa-box-open mr-2"></i>View Return Audit
-                    </a>
-                @endif
-            @endif
-        </div>
-        
-        @if($canLogFinalPayment)
-            <div id="booking-show-final-payment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 p-4">
-                <div class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
-                    <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-slate-900">Log Final Payment</h3>
-                            <p class="text-sm text-slate-500">#{{ $booking->id }} • {{ ucfirst($booking->event_type) }}</p>
-                        </div>
-                        <button type="button" onclick="closeBookingModal('booking-show-final-payment-modal')" class="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
-                    </div>
-
-                    <div class="space-y-6 p-6">
-                        <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 grid grid-cols-1 gap-3">
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">Total Obligation</span><span class="font-semibold">₱{{ number_format($totalObligation, 2) }}</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">Already Paid</span><span class="font-semibold">₱{{ number_format($paidAmount, 2) }}</span></div>
-                            <div class="flex justify-between"><span class="text-sm text-slate-600">Remaining Balance</span><span class="font-semibold">₱{{ number_format($remaining, 2) }}</span></div>
-                        </div>
-
-                        <form method="POST" action="{{ route('admin.bookings.final_payment', ['booking' => $booking->id]) }}" class="space-y-4">
-                            @csrf
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700">Final Payment Amount Received</label>
-                                <input type="number" step="0.01" name="amount_received" value="{{ number_format($remaining, 2, '.', '') }}" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700">Payment Method</label>
-                                <select name="payment_type" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                                    <option value="gcash">GCash</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                    <option value="cash">Cash</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <button type="submit" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">
-                                    Confirm Final Payment
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="flex justify-end border-t border-slate-200 px-6 py-4">
-                        <button type="button" onclick="closeBookingModal('booking-show-final-payment-modal')" class="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition">Close</button>
-                    </div>
-                </div>
-            </div>
-        @endif
-    </section>
-    @endif
-
-    @if($booking->payments->count() > 0)
-    <section class="rf-panel overflow-hidden p-5 sm:p-6 mb-6" aria-labelledby="payments-heading">
-        <h2 id="payments-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Submitted Payments</h2>
-        <div class="space-y-4">
-            @foreach($booking->payments as $payment)
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                    <div>
-                        <p class="font-bold text-slate-800">Amount: ₱{{ number_format($payment->amount, 2) }} <span class="text-xs text-slate-500 ml-2 uppercase">{{ $payment->payment_option }}</span></p>
-                        <p class="text-sm text-slate-600 mt-1">Ref: <span class="font-mono">{{ $payment->reference_number }}</span> ({{ strtoupper($payment->payment_type) }})</p>
-                        <p class="text-xs text-slate-500 mt-1">Status: <span class="font-semibold text-slate-700">{{ ucfirst($payment->status) }}</span></p>
-                    </div>
-                    @if($payment->status === 'pending')
-                    <div class="flex gap-2">
-                        <form method="POST" action="{{ route('admin.payments.verify', $payment->id) }}">
-                            @csrf
-                            <button type="submit" onclick="return confirm('Verify this payment?')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm">Verify</button>
-                        </form>
-                        <form method="POST" action="{{ route('admin.payments.reject', $payment->id) }}">
-                            @csrf
-                            <button type="submit" onclick="return confirm('Reject this payment?')" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm">Reject</button>
-                        </form>
-                    </div>
-                    @else
-                        @if($payment->verified_by)
-                            <div class="text-xs text-slate-500">Verified at {{ optional($payment->verified_at)->format('M d, Y h:i A') }}</div>
-                        @endif
-                    @endif
-                </div>
             @endforeach
-        </div>
-    </section>
-    @endif
-
+        </nav>
     </div>
-    <div id="tab-details" class="tab-content hidden space-y-6">
-        <!-- SECTION 1: CLIENT REQUEST & INSPIRATION -->
-        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="event-details-heading">
-            <h2 id="event-details-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Event Details &amp; Inspiration</h2>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-                <!-- Inspiration Image -->
-                <div class="col-span-1 rounded-lg overflow-hidden bg-slate-50 border border-slate-200">
-                    @if($booking->inspiration_image)
-                        <div class="aspect-[4/5] relative">
-                            <img src="{{ asset('storage/' . $booking->inspiration_image) }}" alt="Inspiration Image" class="absolute inset-0 w-full h-full object-cover">
+
+    {{-- ============================== OVERVIEW ============================== --}}
+    <div id="tab-overview" class="tab-content block space-y-6" role="tabpanel" aria-labelledby="tab-overview-button" tabindex="0">
+        @if($canCompleteReview)
+            <section class="rf-admin-card border-brand-200 bg-brand-50/40" aria-labelledby="raflora-review-heading">
+                <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-start gap-3">
+                        <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-700 text-white" aria-hidden="true"><i class="fa-solid fa-clipboard-check text-sm"></i></span>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-brand-700">Your next step</p>
+                            <h2 id="raflora-review-heading" class="mt-0.5 {{ $cardTitle }}">Raflora Review</h2>
+                            <p class="{{ $cardText }} max-w-3xl">Review the event details, inspiration, and client messages. Completing the review moves this booking to Material Preparation / Validation. Confirming, linking, or promoting a material also completes the review.</p>
                         </div>
+                    </div>
+                    <form method="POST" action="{{ route('admin.bookings.complete-review', $booking) }}" class="shrink-0">
+                        @csrf
+                        <button type="submit" class="{{ $btnPrimary }} w-full sm:w-auto">
+                            <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Complete Raflora Review
+                        </button>
+                    </form>
+                </div>
+            </section>
+        @endif
+
+        {{-- README end-to-end booking workflow: Guest → Client → Staff --}}
+        <x-booking-workflow
+            :workflow="$bookingWorkflow"
+            accent="brand"
+            id="admin-booking-workflow"
+            heading="Booking Workflow"
+            description="Guest → Client → Staff. Stages update from the booking, quotation, payment, inventory, and return records." />
+
+        <div class="grid grid-cols-1 gap-6 {{ $showOperationalActions ? 'xl:grid-cols-12' : '' }}">
+            <section class="rf-admin-card {{ $showOperationalActions ? 'xl:col-span-7' : '' }}" aria-labelledby="financial-summary-heading">
+                <div class="{{ $cardHeader }}">
+                    <div>
+                        <h2 id="financial-summary-heading" class="{{ $cardTitle }}">Financial Summary &amp; Settlement</h2>
+                        <p class="{{ $cardText }}">Verified payments against the total obligation, including any damage or loss charges.</p>
+                    </div>
+                    @if($totalObligation <= 0)
+                        <span class="{{ $pill }} bg-slate-100 text-slate-600">Not yet quoted</span>
+                    @elseif($remaining > 0)
+                        <span class="{{ $pill }} bg-amber-100 text-amber-800">Balance Pending</span>
                     @else
-                        <div class="aspect-[4/5] flex items-center justify-center">
-                            <span class="text-slate-400 text-sm">No Image Provided</span>
-                        </div>
+                        <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Fully Paid</span>
                     @endif
                 </div>
-                
-                <!-- Booking Details -->
-                <div class="col-span-2 space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-xs text-slate-500 uppercase font-semibold">Event Date</p>
-                            <p class="text-slate-800 font-medium">{{ optional($booking->event_date)->format('F j, Y') ?? 'N/A' }}</p>
+                <div class="p-5">
+                    <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div class="rounded-lg border border-slate-200 p-3.5">
+                            <dt class="text-xs font-medium text-slate-500">Total Obligation</dt>
+                            <dd class="mt-1 text-lg font-semibold text-slate-900 tabular-nums">₱{{ number_format($totalObligation, 2) }}</dd>
                         </div>
-                        <div>
-                            <p class="text-xs text-slate-500 uppercase font-semibold">Venue</p>
-                            <p class="text-slate-800 font-medium">{{ $booking->venue ?? 'N/A' }}</p>
+                        <div class="rounded-lg border border-slate-200 p-3.5">
+                            <dt class="text-xs font-medium text-slate-500">Verified Paid</dt>
+                            <dd class="mt-1 text-lg font-semibold text-emerald-700 tabular-nums">₱{{ number_format($paidAmount, 2) }}</dd>
                         </div>
-                        <div>
-                            <p class="text-xs text-slate-500 uppercase font-semibold">Client Mobile</p>
-                            <p class="text-slate-800 font-medium">{{ $booking->client?->phone ?? $booking->guest_phone ?? 'Not provided' }}</p>
+                        <div class="rounded-lg border border-slate-200 p-3.5">
+                            <dt class="text-xs font-medium text-slate-500">Remaining Balance</dt>
+                            <dd class="mt-1 text-lg font-semibold text-slate-900 tabular-nums">₱{{ number_format($remaining, 2) }}</dd>
                         </div>
-                        <div>
-                            <p class="text-xs text-slate-500 uppercase font-semibold">Client Email</p>
-                            <p class="text-slate-800 font-medium">{{ $booking->client?->email ?? $booking->guest_email ?? 'Not provided' }}</p>
+                    </dl>
+
+                    <div class="mt-4">
+                        <div class="flex items-center justify-between text-xs text-slate-500">
+                            <span>Collected</span>
+                            <span class="font-medium text-slate-700 tabular-nums">{{ $paidPercent }}%</span>
                         </div>
-                    <div>
-                        <p class="text-xs text-slate-500 uppercase font-semibold mb-1">Special Request Notes from Client</p>
-                        <div class="bg-slate-50 p-4 rounded-lg text-sm text-slate-700 border border-slate-100 min-h-[5rem]">
-                            {{ $booking->special_requests ?: 'No special requests provided.' }}
+                        <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100" role="progressbar" aria-label="Share of total obligation collected" aria-valuenow="{{ $paidPercent }}" aria-valuemin="0" aria-valuemax="100">
+                            <div class="h-2 rounded-full bg-[#0ca30c]" style="width: {{ $paidPercent }}%;"></div>
                         </div>
                     </div>
-                    
-                </div>
-            </div>
-        </section>
 
-    </div>
-    <div id="tab-quotation" class="tab-content hidden space-y-6">
-        <!-- SECTION 2: PROPOSAL UPLOADS -->
-        <section class="rf-panel mt-6 overflow-hidden p-5 sm:p-6" aria-labelledby="proposal-uploads-heading">
-            <div class="flex items-center justify-between gap-4 mb-4 border-b border-purple-50 pb-2">
-                <h2 id="proposal-uploads-heading" class="text-lg font-bold text-gray-800">Proposal &amp; Presentation Versions</h2>
-                @if(!$quoteReadOnly)
-                    <form method="POST" action="{{ route('admin.bookings.presentations.store', ['booking' => $booking->id]) }}" enctype="multipart/form-data" class="flex items-center gap-2">
-                        @csrf
-                        <input type="file" name="proposal_file" class="text-sm text-slate-600" required>
-                        <button type="submit" class="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-sm font-semibold">Upload Proposal</button>
-                    </form>
-                @else
-                    <span class="text-sm text-slate-500">Proposal uploads are disabled while this booking is locked.</span>
-                @endif
-            </div>
-            @php $presentations = $booking->presentations()->orderBy('created_at')->get(); @endphp
-            @forelse($presentations as $presentation)
-                <div class="rounded-lg border border-slate-200 p-4 mb-3 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                        <p class="font-semibold text-slate-800">{{ $presentation->version }} · {{ $presentation->file_name }}</p>
-                        <p class="text-sm text-slate-500">Uploaded {{ optional($presentation->sent_at)->format('M d, Y h:i A') }}</p>
-                        @if($presentation->feedback_text)
-                            <p class="text-sm text-slate-600 mt-2">Client feedback: {{ $presentation->feedback_text }}</p>
+                    <dl class="mt-5 grid grid-cols-2 gap-4 border-t border-slate-100 pt-4 text-sm">
+                        <div>
+                            <dt class="text-xs font-medium text-slate-500">Base Quote</dt>
+                            <dd class="mt-0.5 font-medium text-slate-800 tabular-nums">₱{{ number_format($baseQuote, 2) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium text-slate-500">Damage / Loss</dt>
+                            <dd class="mt-0.5 font-medium tabular-nums {{ $damageLoss > 0 ? 'text-rose-700' : 'text-slate-800' }}">₱{{ number_format($damageLoss, 2) }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+
+            @if($showOperationalActions)
+                <section class="rf-admin-card xl:col-span-5" aria-labelledby="operational-actions-heading">
+                    <div class="{{ $cardHeader }}">
+                        <div>
+                            <h2 id="operational-actions-heading" class="{{ $cardTitle }}">Operational Actions</h2>
+                            <p class="{{ $cardText }}">Event-day status updates, settlement and return audit.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-2.5 p-5">
+                        @if($showMarkInProgress)
+                            <form method="POST" action="{{ route('admin.bookings.update', ['booking' => $booking->id]) }}">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="event_type" value="{{ $booking->event_type }}">
+                                <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
+                                <input type="hidden" name="venue" value="{{ $booking->venue }}">
+                                <input type="hidden" name="status" value="{{ $booking->status }}">
+                                <button type="submit" name="action" value="mark_event_in_progress" class="{{ $btnPrimary }} w-full">
+                                    <i class="fa-solid fa-play" aria-hidden="true"></i>Mark Event In Progress
+                                </button>
+                            </form>
+                        @endif
+
+                        @if($showMarkEventCompleted)
+                            <form method="POST" action="{{ route('admin.bookings.update', ['booking' => $booking->id]) }}">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="event_type" value="{{ $booking->event_type }}">
+                                <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
+                                <input type="hidden" name="venue" value="{{ $booking->venue }}">
+                                <input type="hidden" name="status" value="{{ $booking->status }}">
+                                <button type="submit" name="action" value="mark_event_completed" class="{{ $btnPrimary }} w-full">
+                                    <i class="fa-solid fa-flag-checkered" aria-hidden="true"></i>Mark Event Completed
+                                </button>
+                            </form>
+                        @endif
+
+                        @if($canLogFinalPayment)
+                            <button type="button" onclick="openBookingModal('booking-show-final-payment-modal')" class="{{ $btnPrimary }} w-full">
+                                <i class="fa-solid fa-money-bill" aria-hidden="true"></i>Log Final Payment
+                            </button>
+                        @endif
+
+                        @if($showReturnAuditLink)
+                            @if(!$hasCompletedReturn)
+                                <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="{{ $btnSecondary }} w-full">
+                                    <i class="fa-solid fa-box-open" aria-hidden="true"></i>Manage Return Audit
+                                </a>
+                            @else
+                                <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="{{ $btnSecondary }} w-full">
+                                    <i class="fa-solid fa-box-open" aria-hidden="true"></i>View Return Audit
+                                </a>
+                            @endif
                         @endif
                     </div>
-                    <a href="{{ asset('storage/' . $presentation->file_path) }}" target="_blank" class="text-sm font-semibold text-purple-700">Preview / Download</a>
-                </div>
-            @empty
-                <p class="text-sm text-slate-500">No proposal versions uploaded yet.</p>
-            @endforelse
-        </section>
 
-        <!-- SECTION 3: ITEM & PRICING BREAKDOWN -->
-        <section class="rf-panel mt-6 overflow-hidden p-5 sm:p-6" aria-labelledby="pricing-breakdown-heading">
-            <h2 id="pricing-breakdown-heading" class="mb-2 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Material review &amp; quotation</h2>
-            <p class="mb-4 text-sm leading-6 text-slate-500">AI-suggested materials remain awaiting Admin confirmation until explicitly reviewed. Stock indicators reflect the existing inventory state.</p>
-            
-            @if(isset($activeQuotation))
-                <div class="mb-6 rounded-lg border border-purple-100 bg-purple-50 p-4">
-                    <h3 class="text-sm font-bold text-purple-900 mb-2">Active Issued Quotation (v{{ $activeQuotation->version }})</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    @if($canLogFinalPayment)
+                        <div id="booking-show-final-payment-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 p-4" role="dialog" aria-modal="true" aria-labelledby="final-payment-title" onclick="closeBookingModal('booking-show-final-payment-modal')">
+                            <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl" onclick="event.stopPropagation()">
+                                <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-6 py-4">
+                                    <div>
+                                        <h3 id="final-payment-title" class="text-base font-semibold text-slate-900">Log Final Payment</h3>
+                                        <p class="text-sm text-slate-500">#{{ $booking->id }} • {{ ucfirst($booking->event_type) }}</p>
+                                    </div>
+                                    <button type="button" onclick="closeBookingModal('booking-show-final-payment-modal')" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+
+                                <div class="space-y-5 p-6">
+                                    <dl class="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-sm">
+                                        <div class="flex justify-between"><dt class="text-slate-600">Total Obligation</dt><dd class="font-semibold tabular-nums">₱{{ number_format($totalObligation, 2) }}</dd></div>
+                                        <div class="flex justify-between"><dt class="text-slate-600">Already Paid</dt><dd class="font-semibold tabular-nums">₱{{ number_format($paidAmount, 2) }}</dd></div>
+                                        <div class="flex justify-between border-t border-slate-200 pt-2"><dt class="font-medium text-slate-800">Remaining Balance</dt><dd class="font-semibold tabular-nums">₱{{ number_format($remaining, 2) }}</dd></div>
+                                    </dl>
+
+                                    <form method="POST" action="{{ route('admin.bookings.final_payment', ['booking' => $booking->id]) }}" class="space-y-4">
+                                        @csrf
+                                        <div>
+                                            <label for="final-payment-amount" class="{{ $fieldLabel }}">Final Payment Amount Received</label>
+                                            <input id="final-payment-amount" type="number" step="0.01" name="amount_received" value="{{ number_format($remaining, 2, '.', '') }}" class="{{ $fieldInput }}">
+                                        </div>
+
+                                        <div>
+                                            <label for="final-payment-method" class="{{ $fieldLabel }}">Payment Method</label>
+                                            <select id="final-payment-method" name="payment_type" class="{{ $fieldInput }}">
+                                                <option value="gcash">GCash</option>
+                                                <option value="bank_transfer">Bank Transfer</option>
+                                                <option value="cash">Cash</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                                            <button type="button" onclick="closeBookingModal('booking-show-final-payment-modal')" class="{{ $btnSecondary }}">Close</button>
+                                            <button type="submit" class="{{ $btnPrimary }}">Confirm Final Payment</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </section>
+            @endif
+        </div>
+
+        @if($booking->payments->count() > 0)
+            <section class="rf-admin-card overflow-hidden" aria-labelledby="payments-heading">
+                <div class="{{ $cardHeader }}">
+                    <div>
+                        <h2 id="payments-heading" class="{{ $cardTitle }}">Submitted Payments</h2>
+                        <p class="{{ $cardText }}">A submitted payment counts toward the balance only after you verify it.</p>
+                    </div>
+                    @if($pendingPaymentCount > 0)
+                        <span class="{{ $pill }} bg-amber-100 text-amber-800"><i class="fa-solid fa-hourglass-half" aria-hidden="true"></i>{{ $pendingPaymentCount }} awaiting verification</span>
+                    @endif
+                </div>
+                <ul class="divide-y divide-slate-100" role="list">
+                    @foreach($booking->payments as $payment)
+                        @php
+                            $paymentTone = match ($payment->status) {
+                                'pending' => 'bg-amber-100 text-amber-800',
+                                'rejected' => 'bg-rose-100 text-rose-800',
+                                default => 'bg-emerald-100 text-emerald-800',
+                            };
+                        @endphp
+                        <li class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500" aria-hidden="true"><i class="fa-solid fa-receipt text-sm"></i></span>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-slate-900">
+                                        Amount: <span class="tabular-nums">₱{{ number_format($payment->amount, 2) }}</span>
+                                        <span class="ml-1.5 text-xs font-medium text-slate-500">{{ $payment->payment_option }}</span>
+                                    </p>
+                                    <p class="mt-0.5 text-[13px] text-slate-600">Ref: <span class="font-mono">{{ $payment->reference_number }}</span> · {{ strtoupper($payment->payment_type) }}</p>
+                                    <p class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                                        <span class="{{ $pill }} {{ $paymentTone }}">Status: {{ ucfirst($payment->status) }}</span>
+                                        @if($payment->status !== 'pending' && $payment->verified_by)
+                                            <span>Verified at {{ optional($payment->verified_at)->format('M d, Y h:i A') }}</span>
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                            @if($payment->status === 'pending')
+                                <div class="flex shrink-0 gap-2">
+                                    <form method="POST" action="{{ route('admin.payments.reject', $payment->id) }}">
+                                        @csrf
+                                        <button type="submit" onclick="return confirm('Reject this payment?')" class="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3.5 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition">Reject</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('admin.payments.verify', $payment->id) }}">
+                                        @csrf
+                                        <button type="submit" onclick="return confirm('Verify this payment?')" class="{{ $btnPrimary }}"><i class="fa-solid fa-check" aria-hidden="true"></i>Verify</button>
+                                    </form>
+                                </div>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+    </div>
+
+    {{-- ============================== EVENT DETAILS & AI ============================== --}}
+    <div id="tab-details" class="tab-content hidden space-y-6" role="tabpanel" aria-labelledby="tab-details-button" tabindex="0">
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="event-details-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="event-details-heading" class="{{ $cardTitle }}">Event Details &amp; Inspiration</h2>
+                    <p class="{{ $cardText }}">What the client asked for, as submitted with the booking.</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-6 p-5 lg:grid-cols-12">
+                <figure class="lg:col-span-4">
+                    <div class="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                        @if($booking->inspiration_image)
+                            <a href="{{ asset('storage/' . $booking->inspiration_image) }}" target="_blank" rel="noopener" class="group relative block aspect-[4/5]">
+                                <img src="{{ asset('storage/' . $booking->inspiration_image) }}" alt="Inspiration Image" class="absolute inset-0 h-full w-full object-cover">
+                                <span class="absolute bottom-2 right-2 inline-flex items-center gap-1.5 rounded-md bg-slate-900/70 px-2 py-1 text-[11px] font-medium text-white opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                                    <i class="fa-solid fa-up-right-from-square" aria-hidden="true"></i> Open full size
+                                </span>
+                            </a>
+                        @else
+                            <div class="flex aspect-[4/5] flex-col items-center justify-center gap-2 text-slate-400">
+                                <i class="fa-regular fa-image text-3xl" aria-hidden="true"></i>
+                                <span class="text-sm">No Image Provided</span>
+                            </div>
+                        @endif
+                    </div>
+                    <figcaption class="mt-2 text-xs text-slate-500">Client inspiration image</figcaption>
+                </figure>
+
+                <div class="lg:col-span-8 space-y-5">
+                    <dl class="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
                         <div>
-                            <p class="text-purple-700 text-xs uppercase font-semibold">Total Cost</p>
-                            <p class="font-bold text-purple-900">₱{{ number_format($activeQuotation->final_quoted_price, 2) }}</p>
+                            <dt class="text-xs font-medium text-slate-500">Event Type</dt>
+                            <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ ucfirst($booking->event_type) }}</dd>
                         </div>
                         <div>
-                            <p class="text-purple-700 text-xs uppercase font-semibold">Valid Until</p>
-                            <p class="font-medium text-purple-900">{{ optional($activeQuotation->valid_until)->format('M d, Y') ?? 'N/A' }}</p>
+                            <dt class="text-xs font-medium text-slate-500">Event Date</dt>
+                            <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ optional($booking->event_date)->format('F j, Y') ?? 'N/A' }}@if($bookingEventTime) · {{ $bookingEventTime }}@endif</dd>
                         </div>
-                        <div>
-                            <p class="text-purple-700 text-xs uppercase font-semibold">Status</p>
-                            <p class="font-medium text-purple-900">{{ ucfirst($activeQuotation->status) }}</p>
+                        <div class="sm:col-span-2">
+                            <dt class="text-xs font-medium text-slate-500">Venue</dt>
+                            <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ $booking->venue ?? 'N/A' }}</dd>
                         </div>
-                        <div>
-                            <p class="text-purple-700 text-xs uppercase font-semibold">Issued By</p>
-                            <p class="font-medium text-purple-900">{{ $activeQuotation->issuedBy?->name ?? 'Admin' }}</p>
-                        </div>
+                        @if($booking->event_size)
+                            <div>
+                                <dt class="text-xs font-medium text-slate-500">Event Size</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ ucfirst((string) $booking->event_size) }}</dd>
+                            </div>
+                        @endif
+                        @if($booking->table_count)
+                            <div>
+                                <dt class="text-xs font-medium text-slate-500">Tables</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-slate-900 tabular-nums">{{ $booking->table_count }}</dd>
+                            </div>
+                        @endif
+                        @if($booking->setup_type)
+                            <div>
+                                <dt class="text-xs font-medium text-slate-500">Setup Type</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ \Illuminate\Support\Str::headline((string) $booking->setup_type) }}</dd>
+                            </div>
+                        @endif
+                        @if($booking->package)
+                            <div>
+                                <dt class="text-xs font-medium text-slate-500">Package</dt>
+                                <dd class="mt-0.5 text-sm font-medium text-slate-900">{{ $booking->package->title }}</dd>
+                            </div>
+                        @endif
+                    </dl>
+
+                    <div class="rounded-xl border border-slate-200 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Client contact</p>
+                        <dl class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2 text-sm">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fa-solid fa-phone text-xs text-slate-400" aria-hidden="true"></i>
+                                <dt class="sr-only">Client Mobile</dt>
+                                <dd class="font-medium text-slate-800 truncate">{{ $booking->client?->phone ?? $booking->guest_phone ?? 'Not provided' }}</dd>
+                            </div>
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fa-regular fa-envelope text-xs text-slate-400" aria-hidden="true"></i>
+                                <dt class="sr-only">Client Email</dt>
+                                <dd class="font-medium text-slate-800 truncate">{{ $booking->client?->email ?? $booking->guest_email ?? 'Not provided' }}</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-medium text-slate-500 mb-1.5">Special Request Notes from Client</p>
+                        <div class="min-h-[5rem] whitespace-pre-line rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed text-slate-700">{{ $booking->special_requests ?: 'No special requests provided.' }}</div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="ai-analysis-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="ai-analysis-heading" class="{{ $cardTitle }} flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-brand-700 text-sm" aria-hidden="true"></i> AI Material Analysis
+                    </h2>
+                    <p class="{{ $cardText }}">
+                        @if($analysis && $analysis->analyzed_at)
+                            Analyzed {{ $analysis->analyzed_at->format('M j, Y g:i A') }} · {{ $aiSuggestions->count() }} {{ \Illuminate\Support\Str::plural('suggestion', $aiSuggestions->count()) }}
+                        @else
+                            Materials the AI identified from the inspiration image.
+                        @endif
+                    </p>
+                </div>
+                @if($aiSuggestions->isNotEmpty())
+                    <button type="button" onclick="switchTab('tab-quotation')" class="{{ $btnSecondary }} shrink-0">
+                        Review in Quotation <i class="fa-solid fa-arrow-right text-xs" aria-hidden="true"></i>
+                    </button>
+                @endif
+            </div>
+
+            @if($aiSuggestions->isEmpty())
+                <div class="flex flex-col items-center justify-center gap-2 px-5 py-10 text-center">
+                    <i class="fa-solid fa-wand-magic-sparkles text-2xl text-slate-300" aria-hidden="true"></i>
+                    <p class="text-sm font-medium text-slate-700">No AI analysis recorded for this booking</p>
+                    <p class="text-xs text-slate-500">Suggestions appear here after the inspiration image has been analyzed.</p>
+                </div>
+            @else
+                <div class="flex items-start gap-2.5 border-b border-slate-100 bg-amber-50/60 px-5 py-3 text-[13px] text-amber-900">
+                    <i class="fa-solid fa-circle-info mt-0.5 text-amber-600" aria-hidden="true"></i>
+                    <p>AI suggestions are decision support only. Confirm, link, or promote each material in the Quotation tab before sending the official quote.@if($aiNeedsReviewCount > 0) <strong>{{ $aiNeedsReviewCount }}</strong> {{ \Illuminate\Support\Str::plural('item', $aiNeedsReviewCount) }} flagged for review.@endif</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[720px] text-left text-[13px]">
+                        <thead class="rf-admin-thead">
+                            <tr>
+                                <th scope="col" class="!pl-5">Material</th>
+                                <th scope="col">Category</th>
+                                <th scope="col" class="!text-right">Est. Quantity</th>
+                                <th scope="col">Placement</th>
+                                <th scope="col" class="!text-right">Confidence</th>
+                                <th scope="col" class="!pr-5">Review</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach($aiSuggestions as $suggestion)
+                                @php
+                                    $suggestedQty = $suggestion['quantity'] ?? $suggestion['estimated_quantity'] ?? null;
+                                    $confidence = isset($suggestion['confidence']) && is_numeric($suggestion['confidence']) ? (float) $suggestion['confidence'] : null;
+                                @endphp
+                                <tr class="align-top hover:bg-slate-50/70">
+                                    <td class="py-3 pl-5 pr-4">
+                                        <p class="font-medium text-slate-900">{{ $suggestion['item_name'] ?? 'Unnamed material' }}</p>
+                                        @if(!empty($suggestion['note']))
+                                            <p class="mt-0.5 text-xs text-slate-500">{{ $suggestion['note'] }}</p>
+                                        @endif
+                                        @if(!empty($suggestion['suggested_alternative']))
+                                            <p class="mt-0.5 text-xs text-slate-500">Alternative: {{ $suggestion['suggested_alternative'] }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3">{{ !empty($suggestion['category']) ? ucfirst($suggestion['category']) : '—' }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums whitespace-nowrap">
+                                        @if(is_numeric($suggestedQty))
+                                            {{ $formatMaterialQty($suggestedQty) }} <span class="text-slate-500">{{ $suggestion['unit_type'] ?? '' }}</span>
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3">{{ !empty($suggestion['area']) ? ucfirst($suggestion['area']) : '—' }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums">{{ $confidence !== null ? round($confidence * 100) . '%' : '—' }}</td>
+                                    <td class="py-3 pl-4 pr-5">
+                                        @if(!empty($suggestion['needs_review']))
+                                            <span class="{{ $pill }} bg-amber-100 text-amber-800" title="{{ $suggestion['review_message'] ?? '' }}"><i class="fa-solid fa-flag" aria-hidden="true"></i>Needs review</span>
+                                        @elseif(!empty($suggestion['is_recommendation']))
+                                            <span class="{{ $pill }} bg-slate-100 text-slate-600">Recommendation</span>
+                                        @elseif(!empty($suggestion['is_detected']))
+                                            <span class="{{ $pill }} bg-navy-50 text-navy-700">Detected in image</span>
+                                        @else
+                                            <span class="text-slate-400">—</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
+        </section>
+    </div>
+
+    {{-- ============================== QUOTATION ============================== --}}
+    <div id="tab-quotation" class="tab-content hidden space-y-6" role="tabpanel" aria-labelledby="tab-quotation-button" tabindex="0">
+        @if(isset($activeQuotation))
+            <section class="rf-admin-card border-brand-200" aria-label="Active issued quotation">
+                <div class="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700" aria-hidden="true"><i class="fa-solid fa-file-signature"></i></span>
+                        <div>
+                            <h3 class="text-sm font-semibold text-slate-900">Active Issued Quotation (v{{ $activeQuotation->version }})</h3>
+                            <p class="text-xs text-slate-500">The version the client currently sees.</p>
+                        </div>
+                    </div>
+                    <dl class="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
+                        <div>
+                            <dt class="text-xs font-medium text-slate-500">Total Cost</dt>
+                            <dd class="mt-0.5 font-semibold text-slate-900 tabular-nums">₱{{ number_format($activeQuotation->final_quoted_price, 2) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium text-slate-500">Valid Until</dt>
+                            <dd class="mt-0.5 font-medium text-slate-900">{{ optional($activeQuotation->valid_until)->format('M d, Y') ?? 'N/A' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium text-slate-500">Status</dt>
+                            <dd class="mt-0.5 font-medium text-slate-900">{{ ucfirst($activeQuotation->status) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-medium text-slate-500">Issued By</dt>
+                            <dd class="mt-0.5 font-medium text-slate-900">{{ $activeQuotation->issuedBy?->name ?? 'Admin' }}</dd>
+                        </div>
+                    </dl>
+                </div>
+            </section>
+        @endif
+
+        <!-- Item & pricing breakdown -->
+        <section class="rf-admin-card" aria-labelledby="pricing-breakdown-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="pricing-breakdown-heading" class="{{ $cardTitle }}">Material review &amp; quotation</h2>
+                    <p class="{{ $cardText }} max-w-3xl">AI-suggested materials remain awaiting Admin confirmation until explicitly reviewed. Stock indicators reflect the existing inventory state.</p>
+                </div>
+                @if($materialItems->isNotEmpty())
+                    <span class="{{ $pill }} {{ $allMaterialsValidated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }} shrink-0">{{ $validatedMaterialCount }}/{{ $materialItems->count() }} validated</span>
+                @endif
+            </div>
 
             <form id="mainBookingForm" method="POST" action="{{ route('admin.bookings.update', ['booking' => $booking->id]) }}">
                 @csrf
@@ -405,391 +669,455 @@
                 <input type="hidden" name="venue" value="{{ $booking->venue }}">
                 <input type="hidden" name="status" value="{{ $booking->status }}">
 
-                <div class="overflow-x-auto -mx-4 sm:mx-0 w-full">
-                    <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-purple-50 text-purple-900 text-xs uppercase tracking-wide">
-                            <th scope="col" class="px-4 py-3 rounded-tl-lg font-semibold">Item Name</th>
-                            <th scope="col" class="px-4 py-3 font-semibold">Qty</th>
-                            <th scope="col" class="px-4 py-3 font-semibold">Unit Cost (₱)</th>
-                            <th scope="col" class="px-4 py-3 font-semibold">Total Cost (₱)</th>
-                            <th scope="col" class="px-4 py-3 rounded-tr-lg font-semibold text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-purple-50">
-                        @php
-                            $itemsToDisplay = [];
-                            $seenItemKeys = [];
-                            $addDisplayItem = function ($id, $name, $qty, $unitPrice, $inventoryId = null, $isAiSuggested = false, $notes = null, $confirmedAt = null) use (&$itemsToDisplay, &$seenItemKeys) {
-                                $normalizedName = strtolower(trim((string) $name));
-                                if ($normalizedName === '') {
-                                    return;
-                                }
-
-                                if (isset($seenItemKeys[$normalizedName])) {
-                                    return;
-                                }
-
-                                $seenItemKeys[$normalizedName] = true;
-                                $itemsToDisplay[] = [
-                                    'id' => $id,
-                                    'name' => $name,
-                                    'qty' => $qty,
-                                    'unit_price' => $unitPrice,
-                                    'inventory_id' => $inventoryId,
-                                    'is_ai_suggested' => $isAiSuggested,
-                                    'notes' => $notes,
-                                    'confirmed_at' => $confirmedAt,
-                                ];
-                            };
-
-                            if ($booking->bookingItems->count() > 0) {
-                                foreach ($booking->bookingItems as $bookingItem) {
-                                    $addDisplayItem(
-                                        $bookingItem->id,
-                                        $bookingItem->item_name ?? ($bookingItem->inventoryItem?->name ?? 'Unknown Item'),
-                                        $bookingItem->quantity,
-                                        $bookingItem->quoted_unit_price,
-                                        $bookingItem->inventory_item_id,
-                                        (bool) $bookingItem->is_ai_suggested,
-                                        $bookingItem->notes,
-                                        $bookingItem->confirmed_at,
-                                    );
-                                }
-                            }
-
-                            if ($analysis) {
-                                foreach ($analysis->suggested_materials as $item) {
-                                    $addDisplayItem(
-                                        null,
-                                        $item['item_name'] ?? 'Unknown Item',
-                                        $item['quantity'] ?? $item['estimated_quantity'] ?? 0,
-                                        $item['estimated_unit_cost_php'] ?? 0,
-                                        null,
-                                        true,
-                                        null,
-                                        null,
-                                    );
-                                }
-                            }
-
-                            if (empty($itemsToDisplay) && $booking->inventoryItems->count() > 0) {
-                                foreach ($booking->inventoryItems as $inv) {
-                                    $addDisplayItem(
-                                        null,
-                                        $inv->name,
-                                        $inv->pivot->quantity,
-                                        $inv->pivot->quoted_unit_price,
-                                        $inv->id,
-                                        false,
-                                        null,
-                                        null,
-                                    );
-                                }
-                            }
-                        @endphp
-                        
-                        @forelse($itemsToDisplay as $idx => $item)
-                            @php
-                                $invData = isset($allInventoryItems) ? $allInventoryItems->firstWhere('name', $item['name']) : null;
-                                $isOutOfStock = $invData ? ($item['qty'] > $invData->current_stock) : false;
-                                $stockStr = $invData ? floatval($invData->current_stock) : 0;
-                                $isUnmatchedSuggestion = $item['is_ai_suggested'] && empty($item['inventory_id']);
-                                $isConfirmed = !empty($item['confirmed_at']);
-                                $rowClass = $isUnmatchedSuggestion ? 'bg-amber-50/40' : ($isOutOfStock ? 'bg-red-50/50' : 'bg-emerald-50/40');
-                                $stockBadgeClass = $isUnmatchedSuggestion ? 'bg-amber-100 text-amber-700' : ($isOutOfStock ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700');
-                                $stockBadgeLabel = $isUnmatchedSuggestion ? 'Unmatched' : ($isOutOfStock ? 'Out of Stock' : 'In Stock');
-                            @endphp
-                            <tr class="{{ $rowClass }} hover:bg-slate-50 transition" id="row_{{ $idx }}">
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <span class="font-medium text-slate-800 text-sm" id="display_name_{{ $idx }}">{{ $item['name'] }}</span>
-                                        @if($isUnmatchedSuggestion)
-                                            <span class="badge badge-warning px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-amber-100 text-amber-700 rounded-full">Unmatched / AI Suggestion</span>
-                                            <div class="flex flex-wrap gap-2 mt-1">
-                                                <button type="button" onclick="openAiMaterialModal({{ $idx }}, 'link')" class="text-[10px] font-semibold underline text-purple-700">Link to Existing Inventory</button>
-                                                <button type="button" onclick="openAiMaterialModal({{ $idx }}, 'promote')" class="text-[10px] font-semibold underline text-emerald-700">Promote to Catalog</button>
-                                            </div>
-                                        @elseif($isConfirmed)
-                                            <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-emerald-100 text-emerald-700 rounded-full">{{ $item['is_ai_suggested'] ? 'Admin Confirmed' : 'Package Inclusion' }}</span>
-                                            <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold {{ $stockBadgeClass }} rounded-full" title="{{ $isOutOfStock ? 'Only ' . $stockStr . ' left in master inventory' : 'Inventory remains available for this item' }}">{{ $stockBadgeLabel }}</span>
-                                        @else
-                                            @if($item['is_ai_suggested'])
-                                                <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-amber-100 text-amber-700 rounded-full">AI Suggested - Awaiting Admin Confirmation</span>
-                                                @if(!empty($item['id']) && !empty($item['inventory_id']))
-                                                    <button type="submit" form="confirmMaterial_{{ $idx }}" class="text-[10px] font-semibold underline text-emerald-700">Confirm Material</button>
-                                                @endif
-                                            @endif
-                                            <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold {{ $stockBadgeClass }} rounded-full" title="{{ $isOutOfStock ? 'Only ' . $stockStr . ' left in master inventory' : 'Inventory remains available for this item' }}">{{ $stockBadgeLabel }}</span>
-                                        @endif
-                                        @if(!$quoteReadOnly && $isOutOfStock && $invData && $invData->substitutes->count() > 0)
-                                            <button type="button" onclick="openSubstituteModal({{ $idx }}, {{ $invData->id }})" class="text-xs font-semibold text-purple-600 hover:text-purple-800 underline"><i class="fa-solid fa-rotate mr-1"></i>Substitute</button>
-                                        @endif
-                                    </div>
-                                    <input type="hidden" id="input_name_{{ $idx }}" name="items[{{ $idx }}][item_name]" value="{{ $item['name'] }}">
-                                    <input type="hidden" id="input_inventory_{{ $idx }}" name="items[{{ $idx }}][inventory_item_id]" value="{{ $item['inventory_id'] ?? '' }}">
-                                    <input type="hidden" name="items[{{ $idx }}][is_ai_suggested]" value="{{ !empty($item['is_ai_suggested']) ? '1' : '0' }}">
-                                    @if(!empty($item['id']))
-                                        <input type="hidden" name="items[{{ $idx }}][booking_item_id]" value="{{ $item['id'] }}">
-                                    @endif
-                                    {{-- Simplified UI: AI-suggested items are shown as editable rows without inventory linking controls. --}}
-                                </td>
-                                <td class="px-4 py-3 w-28">
-                                    @if($quoteReadOnly)
-                                        <div class="text-sm text-slate-800">{{ (int) $item['qty'] }}</div>
-                                    @else
-                                        <input type="number" id="input_qty_{{ $idx }}" name="items[{{ $idx }}][quantity]" min="0" step="1" inputmode="numeric" value="{{ (int) $item['qty'] }}" class="w-full border border-slate-300 rounded px-2 py-1.5 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500" @if($bookingLocked) disabled @endif>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 w-36">
-                                    @if($quoteReadOnly)
-                                        <div class="text-sm text-slate-800">₱ {{ number_format((float) $item['unit_price'], 2) }}</div>
-                                    @else
-                                        <div class="relative">
-                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">₱</span>
-                                            <input type="number" step="0.01" id="input_price_{{ $idx }}" name="items[{{ $idx }}][unit_price]" min="0" value="{{ number_format((float) $item['unit_price'], 2, '.', '') }}" class="w-full border border-slate-300 rounded pl-7 pr-2 py-1.5 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500" @if($bookingLocked) disabled @endif>
-                                        </div>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-3 text-slate-700 font-medium text-sm" id="total_cost_{{ $idx }}">
-                                    ₱ {{ number_format((float) $item['qty'] * (float) $item['unit_price'], 2) }}
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    @if(!$quoteReadOnly)
-                                        <label class="inline-flex items-center justify-center cursor-pointer text-red-500 hover:text-red-700 transition">
-                                            <input type="checkbox" name="items[{{ $idx }}][remove]" value="1" class="w-4 h-4 rounded border-slate-300 text-red-600 focus:ring-red-500 mr-1.5" @if($bookingLocked) disabled @endif>
-                                            <span class="text-xs font-semibold uppercase">Remove</span>
-                                        </label>
-                                    @else
-                                        <span class="text-xs text-slate-500">Read-only</span>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[760px] text-left text-sm">
+                        <thead class="rf-admin-thead">
                             <tr>
-                                <td colspan="5" class="px-4 py-8 text-center text-slate-500 text-sm">No items suggested or added.</td>
+                                <th scope="col" class="!pl-5">Item Name</th>
+                                <th scope="col" class="w-28">Qty</th>
+                                <th scope="col" class="w-40">Unit Cost (₱)</th>
+                                <th scope="col" class="w-36 !text-right">Total Cost (₱)</th>
+                                <th scope="col" class="w-28 !pr-5 !text-center">Actions</th>
                             </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @php
+                                $itemsToDisplay = [];
+                                $seenItemKeys = [];
+                                $addDisplayItem = function ($id, $name, $qty, $unitPrice, $inventoryId = null, $isAiSuggested = false, $notes = null, $confirmedAt = null) use (&$itemsToDisplay, &$seenItemKeys) {
+                                    $normalizedName = strtolower(trim((string) $name));
+                                    if ($normalizedName === '') {
+                                        return;
+                                    }
+
+                                    if (isset($seenItemKeys[$normalizedName])) {
+                                        return;
+                                    }
+
+                                    $seenItemKeys[$normalizedName] = true;
+                                    $itemsToDisplay[] = [
+                                        'id' => $id,
+                                        'name' => $name,
+                                        'qty' => $qty,
+                                        'unit_price' => $unitPrice,
+                                        'inventory_id' => $inventoryId,
+                                        'is_ai_suggested' => $isAiSuggested,
+                                        'notes' => $notes,
+                                        'confirmed_at' => $confirmedAt,
+                                    ];
+                                };
+
+                                if ($booking->bookingItems->count() > 0) {
+                                    foreach ($booking->bookingItems as $bookingItem) {
+                                        $addDisplayItem(
+                                            $bookingItem->id,
+                                            $bookingItem->item_name ?? ($bookingItem->inventoryItem?->name ?? 'Unknown Item'),
+                                            $bookingItem->quantity,
+                                            $bookingItem->quoted_unit_price,
+                                            $bookingItem->inventory_item_id,
+                                            (bool) $bookingItem->is_ai_suggested,
+                                            $bookingItem->notes,
+                                            $bookingItem->confirmed_at,
+                                        );
+                                    }
+                                }
+
+                                if ($analysis) {
+                                    foreach ($analysis->suggested_materials as $item) {
+                                        $addDisplayItem(
+                                            null,
+                                            $item['item_name'] ?? 'Unknown Item',
+                                            $item['quantity'] ?? $item['estimated_quantity'] ?? 0,
+                                            $item['estimated_unit_cost_php'] ?? 0,
+                                            null,
+                                            true,
+                                            null,
+                                            null,
+                                        );
+                                    }
+                                }
+
+                                if (empty($itemsToDisplay) && $booking->inventoryItems->count() > 0) {
+                                    foreach ($booking->inventoryItems as $inv) {
+                                        $addDisplayItem(
+                                            null,
+                                            $inv->name,
+                                            $inv->pivot->quantity,
+                                            $inv->pivot->quoted_unit_price,
+                                            $inv->id,
+                                            false,
+                                            null,
+                                            null,
+                                        );
+                                    }
+                                }
+                            @endphp
+
+                            @forelse($itemsToDisplay as $idx => $item)
+                                @php
+                                    $invData = isset($allInventoryItems) ? $allInventoryItems->firstWhere('name', $item['name']) : null;
+                                    $isOutOfStock = $invData ? ($item['qty'] > $invData->current_stock) : false;
+                                    $stockStr = $invData ? floatval($invData->current_stock) : 0;
+                                    $isUnmatchedSuggestion = $item['is_ai_suggested'] && empty($item['inventory_id']);
+                                    $isConfirmed = !empty($item['confirmed_at']);
+                                    $rowClass = $isUnmatchedSuggestion ? 'bg-amber-50/40' : ($isOutOfStock ? 'bg-rose-50/40' : '');
+                                    $stockBadgeClass = $isUnmatchedSuggestion ? 'bg-amber-100 text-amber-800' : ($isOutOfStock ? 'bg-rose-100 text-rose-800' : 'bg-emerald-50 text-emerald-700');
+                                    $stockBadgeLabel = $isUnmatchedSuggestion ? 'Unmatched' : ($isOutOfStock ? 'Out of Stock' : 'In Stock');
+                                    $stockTitle = $isOutOfStock ? 'Only ' . $stockStr . ' left in master inventory' : 'Inventory remains available for this item';
+                                @endphp
+                                <tr class="{{ $rowClass }} align-top transition hover:bg-slate-50/80" id="row_{{ $idx }}">
+                                    <td class="py-3 pl-5 pr-4">
+                                        <span class="block font-medium text-slate-900" id="display_name_{{ $idx }}">{{ $item['name'] }}</span>
+                                        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                            @if($isUnmatchedSuggestion)
+                                                <span class="{{ $pill }} bg-amber-100 text-amber-800">Unmatched / AI Suggestion</span>
+                                            @elseif($isConfirmed)
+                                                <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check" aria-hidden="true"></i>{{ $item['is_ai_suggested'] ? 'Admin Confirmed' : 'Package Inclusion' }}</span>
+                                                <span class="{{ $pill }} {{ $stockBadgeClass }}" @if($isOutOfStock) data-stock-badge="out" @endif title="{{ $stockTitle }}">{{ $stockBadgeLabel }}</span>
+                                            @else
+                                                @if($item['is_ai_suggested'])
+                                                    <span class="{{ $pill }} bg-amber-100 text-amber-800">AI Suggested - Awaiting Admin Confirmation</span>
+                                                @endif
+                                                <span class="{{ $pill }} {{ $stockBadgeClass }}" @if($isOutOfStock) data-stock-badge="out" @endif title="{{ $stockTitle }}">{{ $stockBadgeLabel }}</span>
+                                            @endif
+                                        </div>
+                                        @if($isUnmatchedSuggestion || ($item['is_ai_suggested'] && !$isConfirmed && !empty($item['id']) && !empty($item['inventory_id'])) || (!$quoteReadOnly && $isOutOfStock && $invData && $invData->substitutes->count() > 0))
+                                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                                @if($isUnmatchedSuggestion)
+                                                    <button type="button" onclick="openAiMaterialModal({{ $idx }}, 'link')" class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-link text-[10px]" aria-hidden="true"></i>Link to Existing Inventory</button>
+                                                    <button type="button" onclick="openAiMaterialModal({{ $idx }}, 'promote')" class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-plus text-[10px]" aria-hidden="true"></i>Promote to Catalog</button>
+                                                @elseif($item['is_ai_suggested'] && !$isConfirmed && !empty($item['id']) && !empty($item['inventory_id']))
+                                                    <button type="submit" form="confirmMaterial_{{ $idx }}" class="inline-flex items-center rounded-md bg-brand-700 px-2.5 py-1 text-xs font-semibold text-white hover:bg-brand-800">Confirm Material</button>
+                                                @endif
+                                                @if(!$quoteReadOnly && $isOutOfStock && $invData && $invData->substitutes->count() > 0)
+                                                    <button type="button" onclick="openSubstituteModal({{ $idx }}, {{ $invData->id }})" class="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50"><i class="fa-solid fa-rotate text-[10px]" aria-hidden="true"></i>Substitute</button>
+                                                @endif
+                                            </div>
+                                        @endif
+                                        <input type="hidden" id="input_name_{{ $idx }}" name="items[{{ $idx }}][item_name]" value="{{ $item['name'] }}">
+                                        <input type="hidden" id="input_inventory_{{ $idx }}" name="items[{{ $idx }}][inventory_item_id]" value="{{ $item['inventory_id'] ?? '' }}">
+                                        <input type="hidden" name="items[{{ $idx }}][is_ai_suggested]" value="{{ !empty($item['is_ai_suggested']) ? '1' : '0' }}">
+                                        @if(!empty($item['id']))
+                                            <input type="hidden" name="items[{{ $idx }}][booking_item_id]" value="{{ $item['id'] }}">
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @if($quoteReadOnly)
+                                            <div class="pt-1.5 text-sm text-slate-800 tabular-nums">{{ (int) $item['qty'] }}</div>
+                                        @else
+                                            <label class="sr-only" for="input_qty_{{ $idx }}">Quantity for {{ $item['name'] }}</label>
+                                            <input type="number" id="input_qty_{{ $idx }}" name="items[{{ $idx }}][quantity]" min="0" step="1" inputmode="numeric" value="{{ (int) $item['qty'] }}" class="w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm tabular-nums focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none" @if($bookingLocked) disabled @endif>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @if($quoteReadOnly)
+                                            <div class="pt-1.5 text-sm text-slate-800 tabular-nums">₱ {{ number_format((float) $item['unit_price'], 2) }}</div>
+                                        @else
+                                            <div class="relative">
+                                                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-slate-400">₱</span>
+                                                <label class="sr-only" for="input_price_{{ $idx }}">Unit cost for {{ $item['name'] }}</label>
+                                                <input type="number" step="0.01" id="input_price_{{ $idx }}" name="items[{{ $idx }}][unit_price]" min="0" value="{{ number_format((float) $item['unit_price'], 2, '.', '') }}" class="w-full rounded-md border border-slate-300 bg-white py-1.5 pl-7 pr-2.5 text-sm tabular-nums focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none" @if($bookingLocked) disabled @endif>
+                                            </div>
+                                        @endif
+                                    </td>
+                                    <td class="px-4 py-3 pt-4 text-right text-sm font-medium text-slate-900 tabular-nums whitespace-nowrap" id="total_cost_{{ $idx }}">
+                                        ₱ {{ number_format((float) $item['qty'] * (float) $item['unit_price'], 2) }}
+                                    </td>
+                                    <td class="py-3 pl-4 pr-5 text-center">
+                                        @if(!$quoteReadOnly)
+                                            <label class="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-semibold text-slate-500 transition hover:bg-rose-50 hover:text-rose-700">
+                                                <input type="checkbox" name="items[{{ $idx }}][remove]" value="1" class="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500" @if($bookingLocked) disabled @endif>
+                                                <span>Remove</span>
+                                            </label>
+                                        @else
+                                            <span class="text-xs text-slate-500">Read-only</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500">No items suggested or added.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
 
-            <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
-                <div class="lg:col-span-7 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                    <div class="mb-2 flex flex-wrap items-center justify-between gap-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Admin Notes / Message to Client</p>
-                    </div>
-                    <textarea id="admin_notes" name="admin_notes" rows="5" style="min-height: 140px;" class="w-full rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-500 placeholder-slate-400" placeholder="Write a custom message or update for the client...">{{ old('admin_notes', $booking->admin_notes) }}</textarea>
+                @php
+                    $quotationExpired = $booking->status === 'quotation_sent'
+                        && $booking->price_valid_until
+                        && \Carbon\Carbon::parse($booking->price_valid_until)->isPast();
+                    $tentativeQuote = $booking->tentativeQuotation();
+                    $hasTentative = !is_null($tentativeQuote);
+                    $reconfirmationDue = $booking->isPriceReconfirmationDue();
+                @endphp
 
-                    <div class="mt-4 flex flex-wrap items-center justify-start gap-3">
-                        @php
-                            $quotationExpired = $booking->status === 'quotation_sent'
-                                && $booking->price_valid_until
-                                && \Carbon\Carbon::parse($booking->price_valid_until)->isPast();
-                            $tentativeQuote = $booking->tentativeQuotation();
-                            $hasTentative = !is_null($tentativeQuote);
-                            $reconfirmationDue = $booking->isPriceReconfirmationDue();
-                        @endphp
+                <div class="space-y-5 border-t border-slate-200 p-5">
+                    @if($hasTentative)
+                        <div class="rounded-xl border {{ $reconfirmationDue ? 'border-amber-300 bg-amber-50' : 'border-brand-200 bg-brand-50/60' }} p-4">
+                            <div class="flex items-start gap-3">
+                                <i class="fa-solid {{ $reconfirmationDue ? 'fa-clock-rotate-left text-amber-600' : 'fa-circle-info text-brand-700' }} mt-0.5 text-lg" aria-hidden="true"></i>
+                                <div class="flex-1">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <h4 class="text-sm font-semibold {{ $reconfirmationDue ? 'text-amber-900' : 'text-brand-900' }}">
+                                            {{ $reconfirmationDue ? 'Price Reconfirmation Due (Event Approaches in <=' . \App\Models\Setting::getPriceReconfirmationThresholdDays() . ' Days)' : 'Tentative Long-Term Floral Pricing' }}
+                                        </h4>
+                                        <span class="inline-flex rounded-full {{ $reconfirmationDue ? 'bg-amber-200 text-amber-900' : 'bg-brand-100 text-brand-900' }} px-2.5 py-0.5 text-xs font-semibold">
+                                            v{{ $tentativeQuote->version }} Tentative
+                                        </span>
+                                    </div>
+                                    <p class="mt-1 text-xs text-slate-600">
+                                        This quotation's pricing is tentative due to long-term floral market volatility.
+                                        Review current material costs, inventory availability, and verified client payments before event execution.
+                                    </p>
 
-                        @if($hasTentative)
-                            <div class="w-full mb-4 rounded-xl border {{ $reconfirmationDue ? 'border-amber-300 bg-amber-50' : 'border-purple-200 bg-purple-50' }} p-4 shadow-sm">
-                                <div class="flex items-start gap-3">
-                                    <i class="fa-solid {{ $reconfirmationDue ? 'fa-clock-rotate-left text-amber-600' : 'fa-circle-info text-purple-600' }} text-lg mt-0.5"></i>
-                                    <div class="flex-1">
-                                        <div class="flex flex-wrap items-center justify-between gap-2">
-                                            <h4 class="text-sm font-bold {{ $reconfirmationDue ? 'text-amber-900' : 'text-purple-900' }}">
-                                                {{ $reconfirmationDue ? 'Price Reconfirmation Due (Event Approaches in <=' . \App\Models\Setting::getPriceReconfirmationThresholdDays() . ' Days)' : 'Tentative Long-Term Floral Pricing' }}
-                                            </h4>
-                                            <span class="inline-flex rounded-full {{ $reconfirmationDue ? 'bg-amber-200 text-amber-900' : 'bg-purple-200 text-purple-900' }} px-2.5 py-0.5 text-xs font-semibold">
-                                                v{{ $tentativeQuote->version }} Tentative
-                                            </span>
+                                    <dl class="mt-3 grid grid-cols-2 gap-3 border-t border-slate-200/70 pt-3 text-xs sm:grid-cols-4">
+                                        <div>
+                                            <dt class="text-slate-500">Quoted Price (v{{ $tentativeQuote->version }})</dt>
+                                            <dd class="font-semibold text-slate-800 tabular-nums">₱{{ number_format((float) $tentativeQuote->final_quoted_price, 2) }}</dd>
                                         </div>
-                                        <p class="mt-1 text-xs text-slate-600">
-                                            This quotation's pricing is tentative due to long-term floral market volatility.
-                                            Review current material costs, inventory availability, and verified client payments before event execution.
-                                        </p>
-
-                                        <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs border-t border-slate-200/60 pt-2.5">
-                                            <div>
-                                                <span class="text-slate-500 block">Quoted Price (v{{ $tentativeQuote->version }})</span>
-                                                <strong class="text-slate-800 font-semibold">₱{{ number_format((float) $tentativeQuote->final_quoted_price, 2) }}</strong>
-                                            </div>
-                                            <div>
-                                                <span class="text-slate-500 block">Current BOM Subtotal</span>
-                                                <strong class="text-purple-700 font-semibold">₱{{ number_format((float) (($booking->raw_materials_sum ?? 0) * ($booking->multiplier ?? 3.0)), 2) }}</strong>
-                                            </div>
-                                            <div>
-                                                <span class="text-slate-500 block">Verified Payments</span>
-                                                <strong class="text-emerald-700 font-semibold">₱{{ number_format((float) $booking->total_paid, 2) }}</strong>
-                                            </div>
-                                            <div>
-                                                <span class="text-slate-500 block">Remaining Balance</span>
-                                                <strong class="text-indigo-700 font-semibold">₱{{ number_format((float) $booking->remaining_balance, 2) }}</strong>
-                                            </div>
+                                        <div>
+                                            <dt class="text-slate-500">Current BOM Subtotal</dt>
+                                            <dd class="font-semibold text-slate-800 tabular-nums">₱{{ number_format((float) (($booking->raw_materials_sum ?? 0) * ($booking->multiplier ?? 3.0)), 2) }}</dd>
                                         </div>
-
-                                        <div class="mt-4 flex flex-wrap gap-2 pt-2 border-t border-slate-200/60">
-                                            <button type="submit" name="action" value="reconfirm_price_unchanged" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-800 transition">
-                                                <i class="fa-solid fa-check"></i> Reconfirm Current Price (Unchanged)
-                                            </button>
-                                            <button type="submit" name="action" value="reconfirm_price_revised" class="inline-flex items-center gap-1.5 rounded-lg bg-purple-700 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-purple-800 transition">
-                                                <i class="fa-solid fa-rotate"></i> Issue Revised Quotation (Price / Terms Changed)
-                                            </button>
+                                        <div>
+                                            <dt class="text-slate-500">Verified Payments</dt>
+                                            <dd class="font-semibold text-emerald-700 tabular-nums">₱{{ number_format((float) $booking->total_paid, 2) }}</dd>
                                         </div>
+                                        <div>
+                                            <dt class="text-slate-500">Remaining Balance</dt>
+                                            <dd class="font-semibold text-slate-800 tabular-nums">₱{{ number_format((float) $booking->remaining_balance, 2) }}</dd>
+                                        </div>
+                                    </dl>
+
+                                    <div class="mt-4 flex flex-wrap gap-2 border-t border-slate-200/70 pt-3">
+                                        <button type="submit" name="action" value="reconfirm_price_unchanged" class="{{ $btnPrimary }}">
+                                            <i class="fa-solid fa-check" aria-hidden="true"></i> Reconfirm Current Price (Unchanged)
+                                        </button>
+                                        <button type="submit" name="action" value="reconfirm_price_revised" class="{{ $btnSecondary }}">
+                                            <i class="fa-solid fa-rotate" aria-hidden="true"></i> Issue Revised Quotation (Price / Terms Changed)
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        </div>
+                    @endif
 
+                    <div class="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:items-start">
+                        <div class="lg:col-span-7">
+                            <label for="admin_notes" class="{{ $fieldLabel }}">Admin Notes / Message to Client</label>
+                            <textarea id="admin_notes" name="admin_notes" rows="6" class="{{ $fieldInput }} min-h-[150px]" placeholder="Write a custom message or update for the client...">{{ old('admin_notes', $booking->admin_notes) }}</textarea>
+                            <p class="mt-1.5 text-xs text-slate-500">Sent with the official quotation.</p>
+                        </div>
+
+                        <div class="lg:col-span-5">
+                            <div class="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Pricing</p>
+                                <dl class="mt-3 space-y-3 text-sm">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <dt class="text-slate-600">Raw Wholesale Subtotal (BOM Cost):</dt>
+                                        <dd id="raw-wholesale-subtotal" class="font-medium text-slate-800 tabular-nums">₱ {{ number_format($booking->raw_materials_sum ?? 0, 2) }}</dd>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <dt><label for="markup-multiplier" class="text-slate-600">Markup Multiplier:</label></dt>
+                                        <dd><input id="markup-multiplier" type="number" step="0.1" name="multiplier" value="{{ old('multiplier', $booking->multiplier ?? 3.0) }}" class="w-24 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none" @if($bookingLocked) disabled @endif></dd>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3">
+                                        <dt class="text-slate-600">Calculated Quotation Total:</dt>
+                                        <dd id="calculated-quotation-total" class="font-medium text-slate-800 tabular-nums">₱ {{ number_format(($booking->raw_materials_sum ?? 0) * ($booking->multiplier ?? 3.0), 2) }}</dd>
+                                    </div>
+                                    <div class="flex items-center justify-between gap-3 border-t border-slate-200 pt-3">
+                                        <dt><label for="final-quoted-total-override" class="font-semibold text-slate-900">Final Quoted Total (Override):</label></dt>
+                                        <dd class="relative w-44 shrink-0">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">₱</span>
+                                            <input id="final-quoted-total-override" type="number" step="0.01" name="final_quoted_price" value="{{ old('final_quoted_price', $booking->final_quoted_price ?: $booking->total_quoted) }}" class="w-full rounded-md border border-brand-300 bg-white py-2 pl-7 pr-2.5 text-right font-semibold text-brand-800 tabular-nums focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none" @if($bookingLocked) disabled @endif>
+                                        </dd>
+                                    </div>
+                                </dl>
+                                <p class="mt-3 text-xs text-slate-500">Calculated total = BOM subtotal × multiplier. Enter an override to set the official price.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 lg:flex-row lg:items-center lg:justify-end">
                         @unless($quoteReadOnly && !$hasTentative)
                             @if($quotationExpired)
-                                <div class="flex-1 min-w-[220px] flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2">
-                                    <i class="fa-solid fa-clock-rotate-left text-amber-500"></i>
-                                    Quotation expired on <strong class="ml-1">{{ \Carbon\Carbon::parse($booking->price_valid_until)->format('M d, Y') }}</strong>. Client cannot approve until re-issued.
+                                <div class="flex flex-1 items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                                    <i class="fa-solid fa-clock-rotate-left text-amber-500" aria-hidden="true"></i>
+                                    <span>Quotation expired on <strong>{{ \Carbon\Carbon::parse($booking->price_valid_until)->format('M d, Y') }}</strong>. Client cannot approve until re-issued.</span>
                                 </div>
-                                <button type="submit" name="action" value="reissue_quotation"
-                                    class="bg-amber-600 hover:bg-amber-700 text-white px-8 py-2.5 rounded-lg text-sm font-bold transition shadow-sm">
-                                    <i class="fa-solid fa-rotate-right mr-2"></i>Re-issue Quotation (Refresh 7-Day Window)
+                                <button type="submit" name="action" value="reissue_quotation" class="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-amber-700 transition">
+                                    <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>Re-issue Quotation (Refresh 7-Day Window)
                                 </button>
                             @else
                                 @if($booking->status === 'approved')
-                                    <button type="submit" form="finalApproveForm" class="bg-emerald-700 hover:bg-emerald-800 text-white px-8 py-2.5 rounded-lg text-sm font-bold transition shadow-sm">Final Approve &amp; Enable Payment</button>
+                                    <button type="submit" form="finalApproveForm" class="{{ $btnSecondary }} py-2.5">Final Approve &amp; Enable Payment</button>
                                 @endif
-                                <button type="submit" name="action" value="send_quotation" class="bg-purple-700 hover:bg-purple-800 text-white px-8 py-2.5 rounded-lg text-sm font-bold transition shadow-sm">
-                                    Approve &amp; Send Official Quote to Client
+                                <button type="submit" name="action" value="send_quotation" class="{{ $btnPrimary }} px-5 py-2.5">
+                                    <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Approve &amp; Send Official Quote to Client
                                 </button>
                             @endif
                         @else
-                            <div class="rounded-lg bg-slate-50 border border-slate-200 p-4 text-sm text-slate-700">
+                            <div class="flex flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
+                                <i class="fa-solid fa-lock text-slate-400" aria-hidden="true"></i>
                                 This quote is read-only while the booking is in progress or completed.
                             </div>
                         @endunless
                     </div>
                 </div>
+            </form>
+        </section>
 
-                <div class="lg:col-span-5">
-                    <div class="bg-slate-50 rounded-lg border border-slate-200 p-5 h-full">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-sm text-slate-600">Raw Wholesale Subtotal (BOM Cost):</span>
-                            <span id="raw-wholesale-subtotal" class="font-medium text-slate-800">₱ {{ number_format($booking->raw_materials_sum ?? 0, 2) }}</span>
-                        </div>
+        @if($booking->status === 'approved')
+            <form id="finalApproveForm" method="POST" action="{{ route('admin.bookings.final-approve', ['booking' => $booking->id]) }}" class="hidden">
+                @csrf
+            </form>
+        @endif
 
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-sm text-slate-600">Markup Multiplier:</span>
-                            <input id="markup-multiplier" type="number" step="0.1" name="multiplier" value="{{ old('multiplier', $booking->multiplier ?? 3.0) }}" class="w-24 text-right border border-slate-300 rounded px-2 py-1 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500" @if($bookingLocked) disabled @endif>
-                        </div>
+        @foreach($itemsToDisplay as $idx => $item)
+            @if($item['is_ai_suggested'] && empty($item['inventory_id']))
+                <form id="aiLinkForm_{{ $idx }}" method="POST" action="{{ !empty($item['id']) ? route('admin.bookings.ai.link', ['booking' => $booking->id, 'bookingItem' => $item['id']]) : route('admin.bookings.ai.link', ['booking' => $booking->id]) }}" class="hidden">
+                    @csrf
+                    @if(!empty($item['id']))
+                        <input type="hidden" name="booking_item_id" value="{{ $item['id'] }}">
+                    @endif
+                    <input type="hidden" name="link_inventory_item_id" id="aiLinkInventory_{{ $idx }}">
+                </form>
+                <form id="aiPromoteForm_{{ $idx }}" method="POST" action="{{ route('admin.bookings.ai.promote', ['booking' => $booking->id]) }}" class="hidden">
+                    @csrf
+                    @if(!empty($item['id']))
+                        <input type="hidden" name="booking_item_id" value="{{ $item['id'] }}">
+                    @endif
+                    <input type="hidden" name="catalog_name" id="aiPromoteName_{{ $idx }}">
+                    <input type="hidden" name="category" id="aiPromoteCategory_{{ $idx }}">
+                    <input type="hidden" name="unit" id="aiPromoteUnit_{{ $idx }}">
+                    <input type="hidden" name="is_perishable" id="aiPromotePerishable_{{ $idx }}" value="1">
+                </form>
+            @endif
+        @endforeach
 
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-sm text-slate-600">Calculated Quotation Total:</span>
-                            <span id="calculated-quotation-total" class="font-medium text-slate-800">₱ {{ number_format(($booking->raw_materials_sum ?? 0) * ($booking->multiplier ?? 3.0), 2) }}</span>
-                        </div>
+        @foreach($itemsToDisplay as $idx => $item)
+            @if(!empty($item['id']) && !$item['confirmed_at'] && !empty($item['inventory_id']))
+                {{-- The visible "Confirm Material" button submits this form through form="confirmMaterial_{idx}" --}}
+                <form id="confirmMaterial_{{ $idx }}" method="POST" action="{{ route('admin.bookings.items.confirm', ['booking' => $booking->id, 'bookingItem' => $item['id']]) }}" class="hidden">
+                    @csrf
+                </form>
+            @endif
+        @endforeach
 
-                        <div class="border-t border-slate-200 pt-3 mt-3 flex justify-between items-center">
-                            <span class="text-sm font-semibold text-slate-800">Final Quoted Total (Override):</span>
-                            <div class="relative w-32">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium">₱</span>
-                                <input id="final-quoted-total-override" type="number" step="0.01" name="final_quoted_price" value="{{ old('final_quoted_price', $booking->final_quoted_price ?: $booking->total_quoted) }}" class="w-full border border-purple-300 bg-white rounded pl-7 pr-2 py-1.5 font-bold text-purple-700 text-right focus:border-purple-500 focus:ring-1 focus:ring-purple-500" @if($bookingLocked) disabled @endif>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Proposal uploads -->
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="proposal-uploads-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="proposal-uploads-heading" class="{{ $cardTitle }}">Proposal &amp; Presentation Versions</h2>
+                    <p class="{{ $cardText }}">Design proposals shared with the client, with their feedback.</p>
                 </div>
+                @if(!$quoteReadOnly)
+                    <form method="POST" action="{{ route('admin.bookings.presentations.store', ['booking' => $booking->id]) }}" enctype="multipart/form-data" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        @csrf
+                        <label for="proposal_file" class="sr-only">Proposal file</label>
+                        <input id="proposal_file" type="file" name="proposal_file" class="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-slate-700 hover:file:bg-slate-200 sm:w-64" required>
+                        <button type="submit" class="{{ $btnPrimary }} shrink-0"><i class="fa-solid fa-upload" aria-hidden="true"></i>Upload Proposal</button>
+                    </form>
+                @else
+                    <span class="text-sm text-slate-500">Proposal uploads are disabled while this booking is locked.</span>
+                @endif
             </div>
-        </div>
-    </form>
+            @php $presentations = $booking->presentations()->orderBy('created_at')->get(); @endphp
+            @if($presentations->isEmpty())
+                <p class="px-5 py-6 text-sm text-slate-500">No proposal versions uploaded yet.</p>
+            @else
+                <ul class="divide-y divide-slate-100" role="list">
+                    @foreach($presentations as $presentation)
+                        <li class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500" aria-hidden="true"><i class="fa-regular fa-file-lines"></i></span>
+                                <div class="min-w-0">
+                                    <p class="font-medium text-slate-900 truncate">{{ $presentation->version }} · {{ $presentation->file_name }}</p>
+                                    <p class="text-xs text-slate-500">Uploaded {{ optional($presentation->sent_at)->format('M d, Y h:i A') }}</p>
+                                    @if($presentation->feedback_text)
+                                        <p class="mt-1.5 text-sm text-slate-600"><span class="font-medium text-slate-700">Client feedback:</span> {{ $presentation->feedback_text }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                            <a href="{{ asset('storage/' . $presentation->file_path) }}" target="_blank" class="{{ $btnSecondary }} shrink-0"><i class="fa-solid fa-arrow-up-right-from-square text-xs" aria-hidden="true"></i>Preview / Download</a>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+        </section>
 
-    @if($booking->status === 'approved')
-        <form id="finalApproveForm" method="POST" action="{{ route('admin.bookings.final-approve', ['booking' => $booking->id]) }}" class="hidden">
-            @csrf
-        </form>
-    @endif
-
-    @foreach($itemsToDisplay as $idx => $item)
-        @if($item['is_ai_suggested'] && empty($item['inventory_id']))
-            <form id="aiLinkForm_{{ $idx }}" method="POST" action="{{ !empty($item['id']) ? route('admin.bookings.ai.link', ['booking' => $booking->id, 'bookingItem' => $item['id']]) : route('admin.bookings.ai.link', ['booking' => $booking->id]) }}" class="hidden">
-                @csrf
-                @if(!empty($item['id']))
-                    <input type="hidden" name="booking_item_id" value="{{ $item['id'] }}">
-                @endif
-                <input type="hidden" name="link_inventory_item_id" id="aiLinkInventory_{{ $idx }}">
-            </form>
-            <form id="aiPromoteForm_{{ $idx }}" method="POST" action="{{ route('admin.bookings.ai.promote', ['booking' => $booking->id]) }}" class="hidden">
-                @csrf
-                @if(!empty($item['id']))
-                    <input type="hidden" name="booking_item_id" value="{{ $item['id'] }}">
-                @endif
-                <input type="hidden" name="catalog_name" id="aiPromoteName_{{ $idx }}">
-                <input type="hidden" name="category" id="aiPromoteCategory_{{ $idx }}">
-                <input type="hidden" name="unit" id="aiPromoteUnit_{{ $idx }}">
-                <input type="hidden" name="is_perishable" id="aiPromotePerishable_{{ $idx }}" value="1">
-            </form>
-        @endif
-    @endforeach
-
-    @foreach($itemsToDisplay as $idx => $item)
-        @if(!empty($item['id']) && !$item['confirmed_at'] && !empty($item['inventory_id']))
-            {{-- The visible "Confirm Material" button submits this form through form="confirmMaterial_{idx}" --}}
-            <form id="confirmMaterial_{{ $idx }}" method="POST" action="{{ route('admin.bookings.items.confirm', ['booking' => $booking->id, 'bookingItem' => $item['id']]) }}" class="hidden">
-                @csrf
-            </form>
-        @endif
-    @endforeach
-
-    <!-- Decline Form Separated -->
-    @unless($quoteReadOnly)
-        <form method="POST" action="{{ route('admin.bookings.decline', ['booking' => $booking->id]) }}" class="mt-4 flex justify-end">
-            @csrf
-            <!-- You could include a decline reason modal or text input here if needed, but for simplicity we keep the button isolated -->
-            <button type="submit" onclick="return confirm('Are you sure you want to reject this booking?')" class="bg-white border-2 border-red-200 hover:bg-red-50 text-red-600 px-6 py-2.5 rounded-lg text-sm font-bold transition">
-                Reject / Decline Booking
-            </button>
-        </form>
-    @endunless
-
+        <!-- Decline Form Separated -->
+        @unless($quoteReadOnly)
+            <section class="rf-admin-card border-rose-200" aria-labelledby="decline-heading">
+                <div class="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 id="decline-heading" class="text-sm font-semibold text-rose-800">Decline this booking</h2>
+                        <p class="mt-0.5 text-[13px] text-slate-500">Reject the request if Raflora cannot take this event.</p>
+                    </div>
+                    <form method="POST" action="{{ route('admin.bookings.decline', ['booking' => $booking->id]) }}" class="shrink-0">
+                        @csrf
+                        <button type="submit" onclick="return confirm('Are you sure you want to reject this booking?')" class="inline-flex items-center gap-2 rounded-lg border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition">
+                            <i class="fa-solid fa-ban" aria-hidden="true"></i>Reject / Decline Booking
+                        </button>
+                    </form>
+                </div>
+            </section>
+        @endunless
     </div>
-    <div id="tab-materials" class="tab-content hidden space-y-6">
-        @php
-            $materialItems = ($bookingItems ?? $booking->bookingItems)->filter(fn ($bi) => (float) $bi->quantity > 0)->values();
-            $validatedMaterialCount = $materialItems->filter(fn ($bi) => !is_null($bi->confirmed_at))->count();
-            $formatMaterialQty = fn ($qty) => rtrim(rtrim(number_format((float) $qty, 2, '.', ','), '0'), '.');
-        @endphp
 
+    {{-- ============================== MATERIALS & INVENTORY ============================== --}}
+    <div id="tab-materials" class="tab-content hidden space-y-6" role="tabpanel" aria-labelledby="tab-materials-button" tabindex="0">
         {{-- README Client Workflow: Material Preparation / Validation --}}
-        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="material-validation-heading">
-            <div class="mb-4 flex flex-col gap-2 border-b border-purple-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 id="material-validation-heading" class="text-lg font-bold text-gray-800">Material Preparation &amp; Validation</h2>
-                <span class="w-fit rounded-full px-2.5 py-0.5 text-xs font-bold {{ $materialItems->isNotEmpty() && $validatedMaterialCount === $materialItems->count() ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="material-validation-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="material-validation-heading" class="{{ $cardTitle }}">Material Preparation &amp; Validation</h2>
+                    <p class="{{ $cardText }}">Confirm, link, or promote materials in the Quotation tab. Every material must be validated before the official quotation can be sent.</p>
+                </div>
+                <span class="{{ $pill }} shrink-0 {{ $allMaterialsValidated ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
                     {{ $validatedMaterialCount }}/{{ $materialItems->count() }} validated
                 </span>
             </div>
-            <p class="mb-4 text-sm text-slate-500">Confirm, link, or promote materials in the Quotation tab. Every material must be validated before the official quotation can be sent.</p>
 
             @if($materialItems->isEmpty())
-                <p class="text-sm italic text-slate-500">No materials have been listed for this booking yet.</p>
+                <p class="px-5 py-6 text-sm text-slate-500">No materials have been listed for this booking yet.</p>
             @else
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
-                    <table class="w-full min-w-[520px] text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-xs uppercase text-slate-700">
+                @php $validationPercent = round(($validatedMaterialCount / max(1, $materialItems->count())) * 100); @endphp
+                <div class="px-5 pt-4">
+                    <div class="h-1.5 w-full rounded-full bg-slate-100" role="progressbar" aria-label="Materials validated" aria-valuenow="{{ $validationPercent }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="h-1.5 rounded-full {{ $allMaterialsValidated ? 'bg-[#0ca30c]' : 'bg-brand-600' }}" style="width: {{ $validationPercent }}%;"></div>
+                    </div>
+                </div>
+                <div class="overflow-x-auto pt-4">
+                    <table class="w-full min-w-[560px] text-left text-sm text-slate-700">
+                        <thead class="rf-admin-thead">
                             <tr>
-                                <th scope="col" class="px-4 py-3">Material</th>
-                                <th scope="col" class="px-4 py-3 text-right">Qty</th>
-                                <th scope="col" class="px-4 py-3">Source</th>
-                                <th scope="col" class="px-4 py-3">Validation</th>
+                                <th scope="col" class="!pl-5">Material</th>
+                                <th scope="col" class="!text-right">Qty</th>
+                                <th scope="col">Source</th>
+                                <th scope="col" class="!pr-5">Validation</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody class="divide-y divide-slate-100">
                             @foreach($materialItems as $materialItem)
-                                <tr>
-                                    <td class="px-4 py-3 font-medium text-slate-800">{{ $materialItem->item_name ?? $materialItem->inventoryItem?->name ?? 'Material' }}</td>
-                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($materialItem->quantity) }}</td>
-                                    <td class="px-4 py-3 text-xs">{{ $materialItem->is_ai_suggested ? 'AI suggestion' : 'Package / Admin' }}</td>
-                                    <td class="px-4 py-3">
-                                        @if($materialItem->confirmed_at)
-                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">Validated</span>
-                                        @elseif(!$materialItem->inventory_item_id)
-                                            <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">Unmatched — link or promote</span>
+                                <tr class="hover:bg-slate-50/70">
+                                    <td class="py-3 pl-5 pr-4 font-medium text-slate-900">{{ $materialItem->item_name ?? $materialItem->inventoryItem?->name ?? 'Material' }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums">{{ $formatMaterialQty($materialItem->quantity) }}</td>
+                                    <td class="px-4 py-3 text-[13px] text-slate-600">
+                                        @if($materialItem->is_ai_suggested)
+                                            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-wand-magic-sparkles text-[11px] text-slate-400" aria-hidden="true"></i>AI suggestion</span>
                                         @else
-                                            <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">Awaiting confirmation</span>
+                                            <span class="inline-flex items-center gap-1.5"><i class="fa-solid fa-gift text-[11px] text-slate-400" aria-hidden="true"></i>Package / Admin</span>
+                                        @endif
+                                    </td>
+                                    <td class="py-3 pl-4 pr-5">
+                                        @if($materialItem->confirmed_at)
+                                            <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-check" aria-hidden="true"></i>Validated</span>
+                                        @elseif(!$materialItem->inventory_item_id)
+                                            <span class="{{ $pill }} bg-amber-100 text-amber-800">Unmatched — link or promote</span>
+                                        @else
+                                            <span class="{{ $pill }} bg-slate-100 text-slate-700">Awaiting confirmation</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -801,36 +1129,44 @@
         </section>
 
         {{-- Inventory check for confirmed reusable materials (feeds Preparation & Reservation) --}}
-        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="reservation-status-heading">
-            <h2 id="reservation-status-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Reusable Material Reservation</h2>
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="reservation-status-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="reservation-status-heading" class="{{ $cardTitle }}">Reusable Material Reservation</h2>
+                    <p class="{{ $cardText }}">Stock held for this event from the master inventory.</p>
+                </div>
+                @if(!empty($reusableStatusList))
+                    <span class="{{ $pill }} shrink-0 {{ !empty($allReusableReserved) ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600' }}">{{ !empty($allReusableReserved) ? 'All reserved' : 'Not fully reserved' }}</span>
+                @endif
+            </div>
             @if(empty($reusableStatusList))
-                <p class="text-sm italic text-slate-500">No confirmed reusable materials require reservation.</p>
+                <p class="px-5 py-6 text-sm text-slate-500">No confirmed reusable materials require reservation.</p>
             @else
-                <div class="overflow-x-auto rounded-lg border border-slate-200">
-                    <table class="w-full min-w-[520px] text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-xs uppercase text-slate-700">
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[560px] text-left text-sm text-slate-700">
+                        <thead class="rf-admin-thead">
                             <tr>
-                                <th scope="col" class="px-4 py-3">Item</th>
-                                <th scope="col" class="px-4 py-3 text-right">Required</th>
-                                <th scope="col" class="px-4 py-3 text-right">Reserved</th>
-                                <th scope="col" class="px-4 py-3 text-right">Available</th>
-                                <th scope="col" class="px-4 py-3">Status</th>
+                                <th scope="col" class="!pl-5">Item</th>
+                                <th scope="col" class="!text-right">Required</th>
+                                <th scope="col" class="!text-right">Reserved</th>
+                                <th scope="col" class="!text-right">Available</th>
+                                <th scope="col" class="!pr-5">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 bg-white">
+                        <tbody class="divide-y divide-slate-100">
                             @foreach($reusableStatusList as $reusableRow)
-                                <tr>
-                                    <td class="px-4 py-3 font-medium text-slate-800">{{ $reusableRow['inventory_item']->name }}</td>
-                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($reusableRow['required']) }}</td>
-                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($reusableRow['locked']) }}</td>
-                                    <td class="px-4 py-3 text-right">{{ $formatMaterialQty($reusableRow['available']) }}</td>
-                                    <td class="px-4 py-3">
+                                <tr class="hover:bg-slate-50/70">
+                                    <td class="py-3 pl-5 pr-4 font-medium text-slate-900">{{ $reusableRow['inventory_item']->name }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums">{{ $formatMaterialQty($reusableRow['required']) }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums">{{ $formatMaterialQty($reusableRow['locked']) }}</td>
+                                    <td class="px-4 py-3 text-right tabular-nums {{ $reusableRow['has_shortage'] ? 'font-semibold text-rose-700' : '' }}">{{ $formatMaterialQty($reusableRow['available']) }}</td>
+                                    <td class="py-3 pl-4 pr-5">
                                         @if($reusableRow['is_reserved'])
-                                            <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">Reserved</span>
+                                            <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-lock" aria-hidden="true"></i>Reserved</span>
                                         @elseif($reusableRow['has_shortage'])
-                                            <span class="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-bold text-rose-800">Shortage</span>
+                                            <span class="{{ $pill }} bg-rose-100 text-rose-800"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>Shortage</span>
                                         @else
-                                            <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">Awaiting reservation</span>
+                                            <span class="{{ $pill }} bg-slate-100 text-slate-700">Awaiting reservation</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -841,216 +1177,259 @@
             @endif
 
             @if(isset($freshFlowerItems) && $freshFlowerItems->isNotEmpty())
-                <div class="mt-4 rounded-lg border border-pink-100 bg-pink-50/50 p-4">
-                    <p class="text-xs font-bold uppercase tracking-wider text-pink-800">Fresh flowers (procured, not reserved)</p>
-                    <ul class="mt-2 space-y-1 text-sm text-slate-700" role="list">
+                <div class="border-t border-slate-100 bg-brand-50/40 px-5 py-4">
+                    <p class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-800"><i class="fa-solid fa-seedling" aria-hidden="true"></i>Fresh flowers (procured, not reserved)</p>
+                    <ul class="mt-2 grid grid-cols-1 gap-1.5 text-sm text-slate-700 sm:grid-cols-2" role="list">
                         @foreach($freshFlowerItems as $freshItem)
-                            <li>{{ $freshItem->item_name ?? $freshItem->inventoryItem?->name }} — {{ $formatMaterialQty($freshItem->quantity) }} · {{ ucfirst($freshItem->procurement_status ?? 'pending') }}</li>
+                            <li class="flex items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 ring-1 ring-brand-100">
+                                <span class="truncate">{{ $freshItem->item_name ?? $freshItem->inventoryItem?->name }} — <span class="tabular-nums">{{ $formatMaterialQty($freshItem->quantity) }}</span></span>
+                                <span class="text-xs font-medium text-slate-500 shrink-0">{{ ucfirst($freshItem->procurement_status ?? 'pending') }}</span>
+                            </li>
                         @endforeach
                     </ul>
                 </div>
             @endif
         </section>
     </div>
-    <div id="tab-preparation" class="tab-content hidden space-y-6">
-        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="preparation-heading">
-            <h2 id="preparation-heading" class="mb-4 border-b border-purple-50 pb-2 text-lg font-bold text-gray-800">Operational Preparation & Dispatch</h2>
-            
-            <!-- 1. Preparation Scheduling -->
-            <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <h3 class="font-semibold text-slate-800 mb-2">1. Schedule Preparation</h3>
-                <p class="text-sm text-slate-600 mb-4">Set the date when material reservation and preparation should begin. This is under Admin control and must not be after the event date.</p>
-                
-                <form method="POST" action="{{ route('admin.bookings.update', $booking) }}" class="flex flex-wrap items-center gap-3">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="status" value="{{ $booking->status }}">
-                    <input type="hidden" name="event_type" value="{{ $booking->event_type }}">
-                    <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
-                    <input type="hidden" name="venue" value="{{ $booking->venue }}">
-                    
-                    <input type="date" name="preparation_start_date" class="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500" value="{{ optional($booking->preparation_start_date)->format('Y-m-d') }}" max="{{ optional($booking->event_date)->format('Y-m-d') }}" required>
-                    
-                    <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Save Date</button>
-                </form>
-            </div>
 
-            <!-- 2. Reserve Materials -->
-            @php
-                $isPrepDateValid = !is_null($booking->preparation_start_date) && !$booking->preparation_start_date->isFuture();
-                $canReserve = in_array($booking->status, ['downpayment_received', 'confirmed', 'in_preparation'], true) && $isPrepDateValid;
-            @endphp
-            <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <h3 class="font-semibold text-slate-800 mb-2">2. Reserve Materials</h3>
-                <p class="text-sm text-slate-600 mb-4">Lock the required reusable materials for this event. Requires a valid preparation start date that has been reached.</p>
-                
-                <form method="POST" action="{{ route('admin.bookings.reserve-materials', $booking) }}">
-                    @csrf
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed" {{ !$canReserve ? 'disabled' : '' }}>
-                        <i class="fa-solid fa-lock mr-2"></i>Reserve Materials
-                    </button>
-                    @if(!$isPrepDateValid)
-                        <p class="mt-2 text-xs text-amber-600 font-medium">Cannot reserve: Preparation start date is missing or in the future.</p>
-                    @endif
-                </form>
-            </div>
+    {{-- ============================== PREPARATION ============================== --}}
+    <div id="tab-preparation" class="tab-content hidden space-y-6" role="tabpanel" aria-labelledby="tab-preparation-button" tabindex="0">
+        @php
+            $isPrepDateValid = !is_null($booking->preparation_start_date) && !$booking->preparation_start_date->isFuture();
+            $canReserve = in_array($booking->status, ['downpayment_received', 'confirmed', 'in_preparation'], true) && $isPrepDateValid;
+            $hasFreshFlowers = $booking->bookingItems()->whereHas('inventoryItem', fn ($q) => $q->where('is_perishable', true))->exists();
+            $freshFlowersReady = $hasFreshFlowers && $booking->areFreshFlowersReady();
 
-            <!-- 3. Confirm Fresh Flowers -->
-            @php
-                $hasFreshFlowers = $booking->bookingItems()->whereHas('inventoryItem', fn ($q) => $q->where('is_perishable', true))->exists();
-            @endphp
-            @if($hasFreshFlowers)
-            <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                <h3 class="font-semibold text-slate-800 mb-2">3. Fresh Flower Procurement</h3>
-                <p class="text-sm text-slate-600 mb-4">Confirm that all required fresh flowers and perishable items have been procured and are ready for the event.</p>
-                
-                <form method="POST" action="{{ route('admin.bookings.confirm-fresh-flowers', $booking) }}">
-                    @csrf
-                    <button type="submit" class="bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition {{ $booking->areFreshFlowersReady() ? 'opacity-50 cursor-not-allowed' : '' }}" {{ $booking->areFreshFlowersReady() ? 'disabled' : '' }}>
-                        <i class="fa-solid fa-seedling mr-2"></i>{{ $booking->areFreshFlowersReady() ? 'Fresh Flowers Confirmed' : 'Confirm Fresh Flowers' }}
-                    </button>
-                </form>
-            </div>
-            @endif
+            // Mirrors InventoryDispatchService: outstanding = reserved (lock - release) - net dispatched, per inventory item.
+            $dispatchClosed = in_array($booking->status, ['event_completed', 'completed', 'cancelled', 'declined', 'rejected', 'pending_return', 'pending_resolution'], true);
+            $dispatchRows = \App\Models\InventoryTransaction::with('inventoryItem')
+                ->where('booking_id', $booking->id)
+                ->get()
+                ->filter(fn ($tx) => $tx->inventoryItem !== null)
+                ->groupBy('inventory_item_id')
+                ->map(function ($txs) {
+                    $locked = (float) $txs->where('transaction_type', 'booking_lock')->sum(fn ($t) => abs((float) $t->quantity_change));
+                    $released = (float) $txs->where('transaction_type', 'booking_release')->sum('quantity_change');
+                    $dispatched = abs((float) $txs->whereIn('transaction_type', ['dispatch', 'dispatch_correction'])->sum('quantity_change'));
+                    $reserved = max(0.0, $locked - $released);
 
-            <!-- 4. Inventory Dispatch & Tracking (README Staff Workflow: Dispatch) -->
-            @php
-                // Mirrors InventoryDispatchService: outstanding = reserved (lock - release) - net dispatched, per inventory item.
-                $dispatchClosed = in_array($booking->status, ['event_completed', 'completed', 'cancelled', 'declined', 'rejected', 'pending_return', 'pending_resolution'], true);
-                $dispatchRows = \App\Models\InventoryTransaction::with('inventoryItem')
-                    ->where('booking_id', $booking->id)
-                    ->get()
-                    ->filter(fn ($tx) => $tx->inventoryItem !== null)
-                    ->groupBy('inventory_item_id')
-                    ->map(function ($txs) {
-                        $locked = (float) $txs->where('transaction_type', 'booking_lock')->sum(fn ($t) => abs((float) $t->quantity_change));
-                        $released = (float) $txs->where('transaction_type', 'booking_release')->sum('quantity_change');
-                        $dispatched = abs((float) $txs->whereIn('transaction_type', ['dispatch', 'dispatch_correction'])->sum('quantity_change'));
-                        $reserved = max(0.0, $locked - $released);
+                    return [
+                        'item' => $txs->first()->inventoryItem,
+                        'reserved' => $reserved,
+                        'dispatched' => $dispatched,
+                        'outstanding' => max(0.0, round($reserved - $dispatched, 4)),
+                    ];
+                })
+                ->filter(fn ($row) => $row['reserved'] > 0 || $row['dispatched'] > 0)
+                ->values();
+            $hasOutstanding = $dispatchRows->contains(fn ($row) => $row['outstanding'] > 0);
+            $canDispatch = !$dispatchClosed && !is_null($booking->confirmed_at) && $hasOutstanding;
+            $fullyDispatched = $dispatchRows->isNotEmpty() && !$hasOutstanding;
+            $formatQty = fn ($qty) => rtrim(rtrim(number_format((float) $qty, 2, '.', ','), '0'), '.');
 
-                        return [
-                            'item' => $txs->first()->inventoryItem,
-                            'reserved' => $reserved,
-                            'dispatched' => $dispatched,
-                            'outstanding' => max(0.0, round($reserved - $dispatched, 4)),
-                        ];
-                    })
-                    ->filter(fn ($row) => $row['reserved'] > 0 || $row['dispatched'] > 0)
-                    ->values();
-                $hasOutstanding = $dispatchRows->contains(fn ($row) => $row['outstanding'] > 0);
-                $canDispatch = !$dispatchClosed && !is_null($booking->confirmed_at) && $hasOutstanding;
-                $formatQty = fn ($qty) => rtrim(rtrim(number_format((float) $qty, 2, '.', ','), '0'), '.');
-            @endphp
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-5" aria-labelledby="dispatch-tracking-heading">
-                <div class="mb-2 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <h3 id="dispatch-tracking-heading" class="font-semibold text-slate-800">4. Inventory Dispatch &amp; Tracking</h3>
-                    @if($dispatchClosed)
-                        <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-slate-200 px-2.5 py-0.5 text-xs font-bold text-slate-700">
-                            <i class="fa-solid fa-lock" aria-hidden="true"></i>Dispatch Closed ({{ $booking->status_display_label }})
-                        </span>
-                    @elseif($dispatchRows->isNotEmpty() && !$hasOutstanding)
-                        <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
-                            <i class="fa-solid fa-circle-check" aria-hidden="true"></i>Fully Dispatched
-                        </span>
-                    @elseif($hasOutstanding)
-                        <span class="inline-flex w-fit items-center gap-1.5 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-bold text-blue-800">
-                            <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>Reserved Materials Ready for Dispatch
-                        </span>
-                    @endif
+            $stepCircle = fn (bool $done) => $done
+                ? 'bg-emerald-600 text-white ring-4 ring-emerald-50'
+                : 'bg-white text-slate-500 ring-1 ring-slate-300';
+        @endphp
+
+        <section class="rf-admin-card" aria-labelledby="preparation-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="preparation-heading" class="{{ $cardTitle }}">Operational Preparation &amp; Dispatch</h2>
+                    <p class="{{ $cardText }}">Work through each step in order. Steps unlock as the booking is confirmed and paid.</p>
                 </div>
-                <p class="text-sm text-slate-600 mb-4">Dispatch the reserved reusable materials to the event location. Dispatch physically deducts stock and is required before the event can start.</p>
-
-                @if($dispatchRows->isEmpty())
-                    <p class="text-sm text-slate-500 italic">No reserved reusable materials available for dispatch. Please reserve materials first.</p>
-                @else
-                    <form method="POST" action="{{ route('admin.bookings.dispatch', $booking) }}" class="space-y-4">
-                        @csrf
-                        <input type="hidden" name="reason" value="Dispatch for Event #{{ $booking->id }}">
-
-                        <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                            <table class="w-full min-w-[560px] text-left text-sm text-slate-600">
-                                <thead class="bg-slate-50 text-xs uppercase text-slate-700">
-                                    <tr>
-                                        <th scope="col" class="px-4 py-3">Item</th>
-                                        <th scope="col" class="px-4 py-3 text-right">Reserved</th>
-                                        <th scope="col" class="px-4 py-3 text-right">Dispatched</th>
-                                        <th scope="col" class="px-4 py-3 text-right">Outstanding</th>
-                                        <th scope="col" class="px-4 py-3">Status</th>
-                                        @if($canDispatch)
-                                            <th scope="col" class="px-4 py-3 text-right">Qty to Dispatch</th>
-                                        @endif
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    @foreach($dispatchRows as $index => $row)
-                                        <tr>
-                                            <td class="px-4 py-3 font-medium text-slate-800">{{ $row['item']->name }}</td>
-                                            <td class="px-4 py-3 text-right">{{ $formatQty($row['reserved']) }}</td>
-                                            <td class="px-4 py-3 text-right">{{ $formatQty($row['dispatched']) }}</td>
-                                            <td class="px-4 py-3 text-right font-semibold {{ $row['outstanding'] > 0 ? 'text-amber-700' : 'text-slate-500' }}">{{ $formatQty($row['outstanding']) }}</td>
-                                            <td class="px-4 py-3">
-                                                @if($row['outstanding'] <= 0)
-                                                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">Fully Dispatched</span>
-                                                @elseif($row['dispatched'] > 0)
-                                                    <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-800">Partially Dispatched</span>
-                                                @else
-                                                    <span class="rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">Awaiting Dispatch</span>
-                                                @endif
-                                            </td>
-                                            @if($canDispatch)
-                                                <td class="px-4 py-3 text-right">
-                                                    @if($row['outstanding'] > 0)
-                                                        <input type="hidden" name="items[{{ $index }}][inventory_item_id]" value="{{ $row['item']->id }}">
-                                                        <label class="sr-only" for="dispatch-qty-{{ $index }}">Quantity to dispatch for {{ $row['item']->name }}</label>
-                                                        <input id="dispatch-qty-{{ $index }}" type="number" name="items[{{ $index }}][quantity]" value="{{ $row['outstanding'] }}" max="{{ $row['outstanding'] }}" min="0" step="0.01" class="w-24 rounded-lg border border-slate-300 px-2 py-1 text-right text-sm">
-                                                    @else
-                                                        <span class="text-xs text-slate-400">—</span>
-                                                    @endif
-                                                </td>
-                                            @endif
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-
-                        @if($canDispatch)
-                            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-                                <i class="fa-solid fa-truck-fast mr-2"></i>Dispatch Selected
-                            </button>
-                        @elseif($dispatchClosed)
-                            <p class="text-sm font-medium text-slate-600"><i class="fa-solid fa-lock mr-1" aria-hidden="true"></i>Dispatch unavailable — this booking is {{ strtolower($booking->status_display_label) }}.</p>
-                        @elseif(is_null($booking->confirmed_at))
-                            <p class="text-sm font-medium text-amber-700">Dispatch unavailable — the booking confirmation date is not recorded.</p>
-                        @else
-                            <p class="text-sm text-emerald-600 font-medium">All reserved materials have been fully dispatched.</p>
-                        @endif
-                    </form>
-                @endif
-
-                @if($dispatchClosed && $dispatchRows->isEmpty())
-                    <p class="mt-2 text-sm font-medium text-slate-600"><i class="fa-solid fa-lock mr-1" aria-hidden="true"></i>Dispatch unavailable — this booking is {{ strtolower($booking->status_display_label) }}.</p>
-                @endif
             </div>
+
+            <ol class="p-5" role="list">
+                <!-- 1. Preparation Scheduling -->
+                <li class="relative flex gap-4 pb-8">
+                    <span class="absolute left-4 top-9 bottom-0 w-px bg-slate-200" aria-hidden="true"></span>
+                    <span class="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold {{ $stepCircle(!is_null($booking->preparation_start_date)) }}" aria-hidden="true">
+                        @if($booking->preparation_start_date)<i class="fa-solid fa-check text-xs"></i>@else 1 @endif
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-slate-900">1. Schedule Preparation</h3>
+                            @if($booking->preparation_start_date)
+                                <span class="{{ $pill }} bg-emerald-100 text-emerald-800">Starts {{ $booking->preparation_start_date->format('M j, Y') }}</span>
+                            @else
+                                <span class="{{ $pill }} bg-slate-100 text-slate-600">Not scheduled</span>
+                            @endif
+                        </div>
+                        <p class="mt-1 text-[13px] text-slate-500">Set the date when material reservation and preparation should begin. This is under Admin control and must not be after the event date.</p>
+
+                        <form method="POST" action="{{ route('admin.bookings.update', $booking) }}" class="mt-3 flex flex-wrap items-center gap-2">
+                            @csrf
+                            @method('PUT')
+                            <input type="hidden" name="status" value="{{ $booking->status }}">
+                            <input type="hidden" name="event_type" value="{{ $booking->event_type }}">
+                            <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
+                            <input type="hidden" name="venue" value="{{ $booking->venue }}">
+
+                            <label for="preparation_start_date" class="sr-only">Preparation start date</label>
+                            <input id="preparation_start_date" type="date" name="preparation_start_date" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none" value="{{ optional($booking->preparation_start_date)->format('Y-m-d') }}" max="{{ optional($booking->event_date)->format('Y-m-d') }}" required>
+
+                            <button type="submit" class="{{ $btnDark }}">Save Date</button>
+                        </form>
+                    </div>
+                </li>
+
+                <!-- 2. Reserve Materials -->
+                <li class="relative flex gap-4 pb-8">
+                    <span class="absolute left-4 top-9 bottom-0 w-px bg-slate-200" aria-hidden="true"></span>
+                    <span class="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold {{ $stepCircle(!empty($allReusableReserved)) }}" aria-hidden="true">
+                        @if(!empty($allReusableReserved))<i class="fa-solid fa-check text-xs"></i>@else 2 @endif
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 class="text-sm font-semibold text-slate-900">2. Reserve Materials</h3>
+                            @if(!empty($allReusableReserved))
+                                <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-lock" aria-hidden="true"></i>All reserved</span>
+                            @elseif(!$canReserve)
+                                <span class="{{ $pill }} bg-slate-100 text-slate-600"><i class="fa-solid fa-lock" aria-hidden="true"></i>Locked</span>
+                            @endif
+                        </div>
+                        <p class="mt-1 text-[13px] text-slate-500">Lock the required reusable materials for this event. Requires a valid preparation start date that has been reached.</p>
+
+                        <form method="POST" action="{{ route('admin.bookings.reserve-materials', $booking) }}" class="mt-3">
+                            @csrf
+                            <button type="submit" class="{{ $btnPrimary }}" {{ !$canReserve ? 'disabled' : '' }}>
+                                <i class="fa-solid fa-lock" aria-hidden="true"></i>Reserve Materials
+                            </button>
+                            @if(!$isPrepDateValid)
+                                <p class="mt-2 flex items-center gap-1.5 text-xs font-medium text-amber-700"><i class="fa-solid fa-circle-info" aria-hidden="true"></i>Cannot reserve: Preparation start date is missing or in the future.</p>
+                            @endif
+                        </form>
+                    </div>
+                </li>
+
+                <!-- 3. Confirm Fresh Flowers -->
+                @if($hasFreshFlowers)
+                    <li class="relative flex gap-4 pb-8">
+                        <span class="absolute left-4 top-9 bottom-0 w-px bg-slate-200" aria-hidden="true"></span>
+                        <span class="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold {{ $stepCircle($freshFlowersReady) }}" aria-hidden="true">
+                            @if($freshFlowersReady)<i class="fa-solid fa-check text-xs"></i>@else 3 @endif
+                        </span>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-sm font-semibold text-slate-900">3. Fresh Flower Procurement</h3>
+                            <p class="mt-1 text-[13px] text-slate-500">Confirm that all required fresh flowers and perishable items have been procured and are ready for the event.</p>
+
+                            <form method="POST" action="{{ route('admin.bookings.confirm-fresh-flowers', $booking) }}" class="mt-3">
+                                @csrf
+                                <button type="submit" class="{{ $freshFlowersReady ? $btnSecondary : $btnPrimary }}" {{ $booking->areFreshFlowersReady() ? 'disabled' : '' }}>
+                                    <i class="fa-solid fa-seedling" aria-hidden="true"></i>{{ $booking->areFreshFlowersReady() ? 'Fresh Flowers Confirmed' : 'Confirm Fresh Flowers' }}
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                @endif
+
+                <!-- 4. Inventory Dispatch & Tracking (README Staff Workflow: Dispatch) -->
+                <li class="relative flex gap-4" aria-labelledby="dispatch-tracking-heading">
+                    <span class="relative z-[1] flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold {{ $stepCircle($fullyDispatched) }}" aria-hidden="true">
+                        @if($fullyDispatched)<i class="fa-solid fa-check text-xs"></i>@else {{ $hasFreshFlowers ? 4 : 3 }} @endif
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <h3 id="dispatch-tracking-heading" class="text-sm font-semibold text-slate-900">4. Inventory Dispatch &amp; Tracking</h3>
+                            @if($dispatchClosed)
+                                <span class="{{ $pill }} bg-slate-100 text-slate-700"><i class="fa-solid fa-lock" aria-hidden="true"></i>Dispatch Closed ({{ $booking->status_display_label }})</span>
+                            @elseif($fullyDispatched)
+                                <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Fully Dispatched</span>
+                            @elseif($hasOutstanding)
+                                <span class="{{ $pill }} bg-navy-50 text-navy-700"><i class="fa-solid fa-truck-fast" aria-hidden="true"></i>Reserved Materials Ready for Dispatch</span>
+                            @endif
+                        </div>
+                        <p class="mt-1 text-[13px] text-slate-500">Dispatch the reserved reusable materials to the event location. Dispatch physically deducts stock and is required before the event can start.</p>
+
+                        @if($dispatchRows->isEmpty())
+                            <p class="mt-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500">No reserved reusable materials available for dispatch. Please reserve materials first.</p>
+                        @else
+                            <form method="POST" action="{{ route('admin.bookings.dispatch', $booking) }}" class="mt-3 space-y-3">
+                                @csrf
+                                <input type="hidden" name="reason" value="Dispatch for Event #{{ $booking->id }}">
+
+                                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                                    <table class="w-full min-w-[560px] text-left text-sm text-slate-700">
+                                        <thead class="rf-admin-thead">
+                                            <tr>
+                                                <th scope="col">Item</th>
+                                                <th scope="col" class="!text-right">Reserved</th>
+                                                <th scope="col" class="!text-right">Dispatched</th>
+                                                <th scope="col" class="!text-right">Outstanding</th>
+                                                <th scope="col">Status</th>
+                                                @if($canDispatch)
+                                                    <th scope="col" class="!text-right">Qty to Dispatch</th>
+                                                @endif
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            @foreach($dispatchRows as $index => $row)
+                                                <tr>
+                                                    <td class="px-4 py-3 font-medium text-slate-900">{{ $row['item']->name }}</td>
+                                                    <td class="px-4 py-3 text-right tabular-nums">{{ $formatQty($row['reserved']) }}</td>
+                                                    <td class="px-4 py-3 text-right tabular-nums">{{ $formatQty($row['dispatched']) }}</td>
+                                                    <td class="px-4 py-3 text-right font-semibold tabular-nums {{ $row['outstanding'] > 0 ? 'text-amber-700' : 'text-slate-500' }}">{{ $formatQty($row['outstanding']) }}</td>
+                                                    <td class="px-4 py-3">
+                                                        @if($row['outstanding'] <= 0)
+                                                            <span class="{{ $pill }} bg-emerald-100 text-emerald-800">Fully Dispatched</span>
+                                                        @elseif($row['dispatched'] > 0)
+                                                            <span class="{{ $pill }} bg-amber-100 text-amber-800">Partially Dispatched</span>
+                                                        @else
+                                                            <span class="{{ $pill }} bg-slate-100 text-slate-700">Awaiting Dispatch</span>
+                                                        @endif
+                                                    </td>
+                                                    @if($canDispatch)
+                                                        <td class="px-4 py-3 text-right">
+                                                            @if($row['outstanding'] > 0)
+                                                                <input type="hidden" name="items[{{ $index }}][inventory_item_id]" value="{{ $row['item']->id }}">
+                                                                <label class="sr-only" for="dispatch-qty-{{ $index }}">Quantity to dispatch for {{ $row['item']->name }}</label>
+                                                                <input id="dispatch-qty-{{ $index }}" type="number" name="items[{{ $index }}][quantity]" value="{{ $row['outstanding'] }}" max="{{ $row['outstanding'] }}" min="0" step="0.01" class="w-24 rounded-md border border-slate-300 px-2.5 py-1.5 text-right text-sm tabular-nums focus:border-brand-600 focus:ring-2 focus:ring-brand-500/20 focus:outline-none">
+                                                            @else
+                                                                <span class="text-xs text-slate-400">—</span>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                @if($canDispatch)
+                                    <button type="submit" class="{{ $btnPrimary }}">
+                                        <i class="fa-solid fa-truck-fast" aria-hidden="true"></i>Dispatch Selected
+                                    </button>
+                                @elseif($dispatchClosed)
+                                    <p class="text-sm font-medium text-slate-600"><i class="fa-solid fa-lock mr-1" aria-hidden="true"></i>Dispatch unavailable — this booking is {{ strtolower($booking->status_display_label) }}.</p>
+                                @elseif(is_null($booking->confirmed_at))
+                                    <p class="text-sm font-medium text-amber-700">Dispatch unavailable — the booking confirmation date is not recorded.</p>
+                                @else
+                                    <p class="text-sm font-medium text-emerald-700">All reserved materials have been fully dispatched.</p>
+                                @endif
+                            </form>
+                        @endif
+
+                        @if($dispatchClosed && $dispatchRows->isEmpty())
+                            <p class="mt-2 text-sm font-medium text-slate-600"><i class="fa-solid fa-lock mr-1" aria-hidden="true"></i>Dispatch unavailable — this booking is {{ strtolower($booking->status_display_label) }}.</p>
+                        @endif
+                    </div>
+                </li>
+            </ol>
         </section>
 
         {{-- Staff Preparation Checklist (README Staff Workflow: Preparation & Reservation) — read-only for Admin --}}
-        @php
-            $prepChecklist = $booking->staffChecklistItems()->with('completedBy')->orderBy('id')->get();
-            $prepCompletedCount = $prepChecklist->where('is_completed', true)->count();
-            $prepAllComplete = $prepChecklist->isNotEmpty() && $prepCompletedCount === $prepChecklist->count();
-        @endphp
-        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="staff-checklist-heading">
-            <div class="mb-4 flex flex-col gap-2 border-b border-purple-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="staff-checklist-heading">
+            <div class="{{ $cardHeader }}">
                 <div>
-                    <h2 id="staff-checklist-heading" class="text-lg font-bold text-gray-800">Staff Preparation Checklist</h2>
-                    <p class="text-xs text-slate-500">Read-only view of the assigned Staff member's preparation progress.</p>
+                    <h2 id="staff-checklist-heading" class="{{ $cardTitle }}">Staff Preparation Checklist</h2>
+                    <p class="{{ $cardText }}">Read-only view of the assigned Staff member's preparation progress.</p>
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">Read-only</span>
+                <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                    <span class="{{ $pill }} bg-slate-100 text-slate-600"><i class="fa-regular fa-eye" aria-hidden="true"></i>Read-only</span>
                     @if($prepChecklist->isNotEmpty())
-                        <span class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ $prepCompletedCount }}/{{ $prepChecklist->count() }} complete</span>
-                        <span class="rounded-full px-2.5 py-0.5 text-xs font-bold {{ $prepAllComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
+                        <span class="{{ $pill }} bg-slate-100 text-slate-600 tabular-nums">{{ $prepCompletedCount }}/{{ $prepChecklist->count() }} complete</span>
+                        <span class="{{ $pill }} {{ $prepAllComplete ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800' }}">
                             {{ $prepAllComplete ? 'Preparation Complete' : 'Preparation Incomplete' }}
                         </span>
                     @endif
@@ -1058,65 +1437,102 @@
             </div>
 
             @if($prepChecklist->isEmpty())
-                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
-                    <p class="text-sm font-semibold text-slate-700">No preparation checklist items recorded</p>
+                <div class="m-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                    <i class="fa-solid fa-list-check text-2xl text-slate-300" aria-hidden="true"></i>
+                    <p class="mt-2 text-sm font-medium text-slate-700">No preparation checklist items recorded</p>
                     <p class="mt-1 text-xs text-slate-500">Checklist items will appear once operational staff accesses this assigned event.</p>
                 </div>
             @else
-                <ul class="space-y-3" role="list">
+                @php $prepPercent = round(($prepCompletedCount / max(1, $prepChecklist->count())) * 100); @endphp
+                <div class="px-5 pt-4">
+                    <div class="h-1.5 w-full rounded-full bg-slate-100" role="progressbar" aria-label="Checklist completion" aria-valuenow="{{ $prepPercent }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="h-1.5 rounded-full {{ $prepAllComplete ? 'bg-[#0ca30c]' : 'bg-brand-600' }}" style="width: {{ $prepPercent }}%;"></div>
+                    </div>
+                </div>
+                <ul class="divide-y divide-slate-100 pt-2" role="list">
                     @foreach($prepChecklist as $checklistItem)
-                        <li class="rounded-xl border {{ $checklistItem->is_completed ? 'border-emerald-200 bg-emerald-50/40' : 'border-slate-200 bg-slate-50' }} p-4">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                <p class="font-semibold text-slate-800">{{ $checklistItem->title }}</p>
-                                @if($checklistItem->is_completed)
-                                    <span class="inline-flex w-fit items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-bold text-emerald-800">
-                                        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>Completed
-                                    </span>
-                                @else
-                                    <span class="inline-flex w-fit items-center gap-1 rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-bold text-slate-700">
-                                        <i class="fa-regular fa-circle" aria-hidden="true"></i>Pending completion
-                                    </span>
+                        <li class="flex items-start gap-3 px-5 py-3.5">
+                            <span class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full {{ $checklistItem->is_completed ? 'bg-emerald-600 text-white' : 'ring-1 ring-slate-300 bg-white' }}" aria-hidden="true">
+                                @if($checklistItem->is_completed)<i class="fa-solid fa-check text-[10px]"></i>@endif
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                                    <p class="text-sm font-medium {{ $checklistItem->is_completed ? 'text-slate-900' : 'text-slate-700' }}">{{ $checklistItem->title }}</p>
+                                    @if($checklistItem->is_completed)
+                                        <span class="{{ $pill }} bg-emerald-100 text-emerald-800"><i class="fa-solid fa-circle-check" aria-hidden="true"></i>Completed</span>
+                                    @else
+                                        <span class="{{ $pill }} bg-slate-100 text-slate-600"><i class="fa-regular fa-circle" aria-hidden="true"></i>Pending completion</span>
+                                    @endif
+                                </div>
+                                @if($checklistItem->is_completed && $checklistItem->completed_at)
+                                    <p class="mt-0.5 text-xs text-slate-500">
+                                        {{ $checklistItem->completed_at->format('M d, Y h:i A') }}@if($checklistItem->completedBy) by {{ $checklistItem->completedBy->name }}@endif
+                                    </p>
+                                @endif
+                                @if($checklistItem->notes)
+                                    <p class="mt-1.5 whitespace-pre-line rounded-lg bg-slate-50 px-3 py-2 text-[13px] text-slate-600">{{ $checklistItem->notes }}</p>
                                 @endif
                             </div>
-                            @if($checklistItem->is_completed && $checklistItem->completed_at)
-                                <p class="mt-1 text-xs text-slate-500">
-                                    {{ $checklistItem->completed_at->format('M d, Y h:i A') }}@if($checklistItem->completedBy) by {{ $checklistItem->completedBy->name }}@endif
-                                </p>
-                            @endif
-                            @if($checklistItem->notes)
-                                <p class="mt-2 whitespace-pre-line text-sm text-slate-600">{{ $checklistItem->notes }}</p>
-                            @endif
                         </li>
                     @endforeach
                 </ul>
             @endif
         </section>
     </div>
-    <div id="tab-staff" class="tab-content hidden space-y-6">
-        <section class="rf-panel mt-6 p-5 sm:p-6" aria-labelledby="staff-assignment-heading">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+
+    {{-- ============================== STAFF ASSIGNMENT ============================== --}}
+    <div id="tab-staff" class="tab-content hidden space-y-6" role="tabpanel" aria-labelledby="tab-staff-button" tabindex="0">
+        <section class="rf-admin-card" aria-labelledby="staff-assignment-heading">
+            <div class="{{ $cardHeader }}">
                 <div>
-                    <h2 id="staff-assignment-heading" class="text-lg font-bold text-slate-900">Operational Staff Assignment</h2>
-                    <p class="mt-1 text-sm text-slate-500">Assign this event to one Staff member for operational follow-up. This does not change the Admin handler.</p>
+                    <h2 id="staff-assignment-heading" class="{{ $cardTitle }}">Operational Staff Assignment</h2>
+                    <p class="{{ $cardText }}">Assign this event to one Staff member for operational follow-up. This does not change the Admin handler.</p>
                 </div>
-                <form method="POST" action="{{ route('admin.bookings.assign-staff', ['booking' => $booking->id]) }}" class="flex w-full flex-col gap-2 sm:w-auto sm:min-w-[300px] sm:flex-row">
+            </div>
+            <div class="grid grid-cols-1 gap-6 p-5 lg:grid-cols-2">
+                <div class="flex items-center gap-4 rounded-xl border {{ $assignedStaff ? 'border-slate-200' : 'border-dashed border-slate-300 bg-slate-50' }} p-4">
+                    @if($assignedStaff)
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-800" aria-hidden="true">{{ strtoupper(substr($assignedStaff->name, 0, 2)) }}</span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-medium text-slate-500">Currently assigned</p>
+                            <p class="truncate text-sm font-semibold text-slate-900">{{ $assignedStaff->name }}</p>
+                            <p class="truncate text-xs text-slate-500">{{ $assignedStaff->email }}</p>
+                        </div>
+                    @else
+                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-slate-400 ring-1 ring-slate-200" aria-hidden="true"><i class="fa-solid fa-user-plus"></i></span>
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800">No staff assigned yet</p>
+                            <p class="text-xs text-slate-500">The assigned staff member sees this event and its checklist.</p>
+                        </div>
+                    @endif
+                </div>
+
+                <form method="POST" action="{{ route('admin.bookings.assign-staff', ['booking' => $booking->id]) }}" class="flex flex-col justify-center gap-2">
                     @csrf
-                    <label class="sr-only" for="staff_id">Operational Staff</label>
-                    <select id="staff_id" name="staff_id" class="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:border-purple-500 focus:ring-2 focus:ring-purple-100">
-                        <option value="">Unassigned</option>
-                        @foreach($staffUsers as $staffUser)
-                            <option value="{{ $staffUser->id }}" {{ (string) $booking->staff_id === (string) $staffUser->id ? 'selected' : '' }}>{{ $staffUser->name }} ({{ $staffUser->email }})</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-800"><i class="fa-solid fa-user-check"></i> Save Assignment</button>
+                    <label class="{{ $fieldLabel }}" for="staff_id">Operational Staff</label>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <select id="staff_id" name="staff_id" class="{{ $fieldInput }}">
+                            <option value="">Unassigned</option>
+                            @foreach($staffUsers as $staffUser)
+                                <option value="{{ $staffUser->id }}" {{ (string) $booking->staff_id === (string) $staffUser->id ? 'selected' : '' }}>{{ $staffUser->name }} ({{ $staffUser->email }})</option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="{{ $btnPrimary }} shrink-0"><i class="fa-solid fa-user-check" aria-hidden="true"></i> Save Assignment</button>
+                    </div>
                 </form>
             </div>
+            @if($prepChecklist->isNotEmpty())
+                <div class="flex items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 text-[13px] text-slate-600">
+                    <span>Checklist progress: <strong class="tabular-nums text-slate-900">{{ $prepCompletedCount }}/{{ $prepChecklist->count() }}</strong> items done</span>
+                    <button type="button" onclick="switchTab('tab-preparation')" class="rf-admin-card__link">View checklist</button>
+                </div>
+            @endif
         </section>
-
-        
     </div>
-    <div id="tab-communication" class="tab-content hidden space-y-6">
-        <x-booking-conversation 
+
+    {{-- ============================== COMMUNICATION ============================== --}}
+    <div id="tab-communication" class="tab-content hidden space-y-6" role="tabpanel" aria-labelledby="tab-communication-button" tabindex="0">
+        <x-booking-conversation
             :booking="$booking"
             role="admin"
             :booking-messages="$bookingMessages"
@@ -1130,82 +1546,91 @@
             $adminMeetingsAllowed = \App\Models\Meeting::bookingAllowsMeetings($booking);
             $openMeetingCount = $adminMeetings->filter(fn ($m) => $m->isOpen())->count();
         @endphp
-        <section class="rf-panel overflow-hidden p-5 sm:p-6" aria-labelledby="meetings-heading">
-            <div class="mb-4 flex flex-col gap-2 border-b border-purple-50 pb-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 id="meetings-heading" class="text-lg font-bold text-gray-800">Client Meetings</h2>
-                <span class="w-fit rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">{{ $openMeetingCount }} open</span>
+        <section class="rf-admin-card overflow-hidden" aria-labelledby="meetings-heading">
+            <div class="{{ $cardHeader }}">
+                <div>
+                    <h2 id="meetings-heading" class="{{ $cardTitle }}">Client Meetings</h2>
+                    <p class="{{ $cardText }}">Consultations and site visits with the client for this booking.</p>
+                </div>
+                <span class="{{ $pill }} shrink-0 bg-slate-100 text-slate-600 tabular-nums">{{ $openMeetingCount }} open</span>
             </div>
 
             @if(!$adminMeetingsAllowed && $adminMeetings->isEmpty())
-                <p class="text-sm text-slate-500">Meetings are available once a client account has claimed this booking and while it is still active.</p>
+                <p class="px-5 py-6 text-sm text-slate-500">Meetings are available once a client account has claimed this booking and while it is still active.</p>
             @endif
 
             @if($adminMeetings->isNotEmpty())
-                <ul class="mb-6 space-y-4" role="list">
+                <ul class="divide-y divide-slate-100" role="list">
                     @foreach($adminMeetings as $meeting)
-                        <li class="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-slate-800">{{ $meeting->type_label }} · {{ $meeting->scheduled_datetime->format('M j, Y g:i A') }}</p>
-                                    <p class="text-xs text-slate-500">
-                                        {{ $meeting->status === \App\Models\Meeting::STATUS_REQUESTED ? 'Client-requested time' : 'Scheduled by ' . ($meeting->scheduledBy?->name ?? 'Admin') }}
-                                    </p>
-                                    @if($meeting->meeting_link)
-                                        <p class="mt-1 text-sm break-all"><a href="{{ $meeting->meeting_link }}" target="_blank" rel="noopener noreferrer" class="font-medium text-purple-700 underline">{{ $meeting->meeting_link }}</a></p>
-                                    @endif
-                                    @if($meeting->address)
-                                        <p class="mt-1 text-sm text-slate-600">Location: {{ $meeting->address }}</p>
-                                    @endif
-                                    @if($meeting->agenda)
-                                        <p class="mt-1 text-xs text-slate-500 whitespace-pre-line">Agenda: {{ $meeting->agenda }}</p>
-                                    @endif
-                                    @if($meeting->outcome_notes)
-                                        <p class="mt-1 text-xs text-slate-500 whitespace-pre-line">Notes: {{ $meeting->outcome_notes }}</p>
-                                    @endif
+                        <li class="px-5 py-4">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="w-12 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white text-center" aria-hidden="true">
+                                        <span class="block bg-slate-50 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-slate-500">{{ $meeting->scheduled_datetime->format('M') }}</span>
+                                        <span class="block text-base font-semibold leading-6 text-slate-900 tabular-nums">{{ $meeting->scheduled_datetime->format('j') }}</span>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-semibold text-slate-900">{{ $meeting->type_label }} · {{ $meeting->scheduled_datetime->format('M j, Y g:i A') }}</p>
+                                        <p class="text-xs text-slate-500">
+                                            {{ $meeting->status === \App\Models\Meeting::STATUS_REQUESTED ? 'Client-requested time' : 'Scheduled by ' . ($meeting->scheduledBy?->name ?? 'Admin') }}
+                                        </p>
+                                        @if($meeting->meeting_link)
+                                            <p class="mt-1 text-sm break-all"><i class="fa-solid fa-video mr-1 text-xs text-slate-400" aria-hidden="true"></i><a href="{{ $meeting->meeting_link }}" target="_blank" rel="noopener noreferrer" class="font-medium text-brand-700 underline underline-offset-2">{{ $meeting->meeting_link }}</a></p>
+                                        @endif
+                                        @if($meeting->address)
+                                            <p class="mt-1 text-sm text-slate-600"><i class="fa-solid fa-location-dot mr-1 text-xs text-slate-400" aria-hidden="true"></i>Location: {{ $meeting->address }}</p>
+                                        @endif
+                                        @if($meeting->agenda)
+                                            <p class="mt-1 whitespace-pre-line text-xs text-slate-500">Agenda: {{ $meeting->agenda }}</p>
+                                        @endif
+                                        @if($meeting->outcome_notes)
+                                            <p class="mt-1 whitespace-pre-line text-xs text-slate-500">Notes: {{ $meeting->outcome_notes }}</p>
+                                        @endif
+                                    </div>
                                 </div>
-                                <span class="w-fit shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold {{ match($meeting->status) { 'scheduled' => 'bg-emerald-100 text-emerald-800', 'completed' => 'bg-slate-200 text-slate-700', 'cancelled' => 'bg-rose-100 text-rose-800', default => 'bg-amber-100 text-amber-800' } }}">{{ $meeting->status_label }}</span>
+                                <span class="{{ $pill }} shrink-0 {{ match($meeting->status) { 'scheduled' => 'bg-emerald-100 text-emerald-800', 'completed' => 'bg-slate-100 text-slate-700', 'cancelled' => 'bg-rose-100 text-rose-800', default => 'bg-amber-100 text-amber-800' } }}">{{ $meeting->status_label }}</span>
                             </div>
 
                             @if($meeting->status === \App\Models\Meeting::STATUS_REQUESTED && $adminMeetingsAllowed)
-                                <form method="POST" action="{{ route('admin.bookings.meetings.confirm', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-4 grid grid-cols-1 gap-3 border-t border-slate-200 pt-4 sm:grid-cols-2">
+                                <form method="POST" action="{{ route('admin.bookings.meetings.confirm', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-2">
                                     @csrf
                                     <div>
-                                        <label for="confirm-type-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Meeting type</label>
-                                        <select id="confirm-type-{{ $meeting->id }}" name="meeting_type" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                                        <label for="confirm-type-{{ $meeting->id }}" class="{{ $fieldLabel }}">Meeting type</label>
+                                        <select id="confirm-type-{{ $meeting->id }}" name="meeting_type" class="{{ $fieldInput }}" required>
                                             @foreach(\App\Models\Meeting::TYPES as $typeValue => $typeLabel)
                                                 <option value="{{ $typeValue }}" @selected($meeting->meeting_type === $typeValue)>{{ $typeLabel }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div>
-                                        <label for="confirm-time-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Date &amp; time</label>
-                                        <input id="confirm-time-{{ $meeting->id }}" type="datetime-local" name="scheduled_datetime" value="{{ $meeting->scheduled_datetime->format('Y-m-d\TH:i') }}" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                                        <label for="confirm-time-{{ $meeting->id }}" class="{{ $fieldLabel }}">Date &amp; time</label>
+                                        <input id="confirm-time-{{ $meeting->id }}" type="datetime-local" name="scheduled_datetime" value="{{ $meeting->scheduled_datetime->format('Y-m-d\TH:i') }}" class="{{ $fieldInput }}" required>
                                     </div>
                                     <div>
-                                        <label for="confirm-link-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Meeting link (online)</label>
-                                        <input id="confirm-link-{{ $meeting->id }}" type="url" name="meeting_link" placeholder="https://" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                                        <label for="confirm-link-{{ $meeting->id }}" class="{{ $fieldLabel }}">Meeting link (online)</label>
+                                        <input id="confirm-link-{{ $meeting->id }}" type="url" name="meeting_link" placeholder="https://" class="{{ $fieldInput }}">
                                     </div>
                                     <div>
-                                        <label for="confirm-address-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Address (in-person)</label>
-                                        <input id="confirm-address-{{ $meeting->id }}" type="text" name="address" maxlength="500" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                                        <label for="confirm-address-{{ $meeting->id }}" class="{{ $fieldLabel }}">Address (in-person)</label>
+                                        <input id="confirm-address-{{ $meeting->id }}" type="text" name="address" maxlength="500" class="{{ $fieldInput }}">
                                     </div>
-                                    <div class="sm:col-span-2 flex justify-end">
-                                        <button type="submit" class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Confirm Meeting</button>
+                                    <div class="flex justify-end sm:col-span-2">
+                                        <button type="submit" class="{{ $btnPrimary }}">Confirm Meeting</button>
                                     </div>
                                 </form>
                             @endif
 
                             @if($meeting->status === \App\Models\Meeting::STATUS_SCHEDULED)
-                                <form method="POST" action="{{ route('admin.bookings.meetings.complete', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-4 flex flex-col gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:items-end">
+                                <form method="POST" action="{{ route('admin.bookings.meetings.complete', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-4 flex flex-col gap-2 rounded-xl bg-slate-50 p-4 sm:flex-row sm:items-end">
                                     @csrf
                                     <div class="flex-1">
-                                        <label for="outcome-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Meeting notes (optional)</label>
-                                        <textarea id="outcome-{{ $meeting->id }}" name="outcome_notes" rows="2" maxlength="2000" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"></textarea>
+                                        <label for="outcome-{{ $meeting->id }}" class="{{ $fieldLabel }}">Meeting notes (optional)</label>
+                                        <textarea id="outcome-{{ $meeting->id }}" name="outcome_notes" rows="2" maxlength="2000" class="{{ $fieldInput }}"></textarea>
                                     </div>
-                                    <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-50" @disabled($meeting->scheduled_datetime->isFuture())>Mark Completed</button>
+                                    <button type="submit" class="{{ $btnDark }}" @disabled($meeting->scheduled_datetime->isFuture())>Mark Completed</button>
                                 </form>
                                 @if($meeting->scheduled_datetime->isFuture())
-                                    <p class="mt-1 text-xs text-slate-500">Can be marked completed after the scheduled time.</p>
+                                    <p class="mt-1.5 text-xs text-slate-500">Can be marked completed after the scheduled time.</p>
                                 @endif
                             @endif
 
@@ -1213,10 +1638,10 @@
                                 <form method="POST" action="{{ route('admin.bookings.meetings.cancel', ['booking' => $booking->id, 'meeting' => $meeting->id]) }}" class="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">
                                     @csrf
                                     <div class="flex-1">
-                                        <label for="cancel-reason-{{ $meeting->id }}" class="block text-xs font-semibold text-slate-700">Cancellation reason (optional)</label>
-                                        <input id="cancel-reason-{{ $meeting->id }}" type="text" name="reason" maxlength="500" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                                        <label for="cancel-reason-{{ $meeting->id }}" class="{{ $fieldLabel }}">Cancellation reason (optional)</label>
+                                        <input id="cancel-reason-{{ $meeting->id }}" type="text" name="reason" maxlength="500" class="{{ $fieldInput }}">
                                     </div>
-                                    <button type="submit" class="rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50">Cancel Meeting</button>
+                                    <button type="submit" class="inline-flex items-center justify-center rounded-lg border border-rose-200 bg-white px-4 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 transition">Cancel Meeting</button>
                                 </form>
                             @endif
                         </li>
@@ -1225,71 +1650,174 @@
             @endif
 
             @if($adminMeetingsAllowed)
-                <form method="POST" action="{{ route('admin.bookings.meetings.store', $booking) }}" class="grid grid-cols-1 gap-3 rounded-xl border border-dashed border-purple-200 bg-purple-50/40 p-4 sm:grid-cols-2">
+                <form method="POST" action="{{ route('admin.bookings.meetings.store', $booking) }}" class="grid grid-cols-1 gap-3 border-t border-slate-100 bg-slate-50/60 p-5 sm:grid-cols-2">
                     @csrf
-                    <h3 class="sm:col-span-2 text-sm font-bold text-slate-800">Schedule a meeting</h3>
+                    <h3 class="flex items-center gap-2 text-sm font-semibold text-slate-900 sm:col-span-2"><i class="fa-regular fa-calendar-plus text-brand-700" aria-hidden="true"></i>Schedule a meeting</h3>
                     <div>
-                        <label for="new-meeting-type" class="block text-xs font-semibold text-slate-700">Meeting type</label>
-                        <select id="new-meeting-type" name="meeting_type" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                        <label for="new-meeting-type" class="{{ $fieldLabel }}">Meeting type</label>
+                        <select id="new-meeting-type" name="meeting_type" class="{{ $fieldInput }}" required>
                             @foreach(\App\Models\Meeting::TYPES as $typeValue => $typeLabel)
                                 <option value="{{ $typeValue }}" @selected(old('meeting_type') === $typeValue)>{{ $typeLabel }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div>
-                        <label for="new-meeting-time" class="block text-xs font-semibold text-slate-700">Date &amp; time</label>
-                        <input id="new-meeting-time" type="datetime-local" name="scheduled_datetime" value="{{ old('scheduled_datetime') }}" min="{{ now()->format('Y-m-d\TH:i') }}" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" required>
+                        <label for="new-meeting-time" class="{{ $fieldLabel }}">Date &amp; time</label>
+                        <input id="new-meeting-time" type="datetime-local" name="scheduled_datetime" value="{{ old('scheduled_datetime') }}" min="{{ now()->format('Y-m-d\TH:i') }}" class="{{ $fieldInput }}" required>
                     </div>
                     <div>
-                        <label for="new-meeting-link" class="block text-xs font-semibold text-slate-700">Meeting link (online)</label>
-                        <input id="new-meeting-link" type="url" name="meeting_link" value="{{ old('meeting_link') }}" placeholder="https://" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                        <label for="new-meeting-link" class="{{ $fieldLabel }}">Meeting link (online)</label>
+                        <input id="new-meeting-link" type="url" name="meeting_link" value="{{ old('meeting_link') }}" placeholder="https://" class="{{ $fieldInput }}">
                     </div>
                     <div>
-                        <label for="new-meeting-address" class="block text-xs font-semibold text-slate-700">Address (in-person)</label>
-                        <input id="new-meeting-address" type="text" name="address" value="{{ old('address') }}" maxlength="500" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">
+                        <label for="new-meeting-address" class="{{ $fieldLabel }}">Address (in-person)</label>
+                        <input id="new-meeting-address" type="text" name="address" value="{{ old('address') }}" maxlength="500" class="{{ $fieldInput }}">
                     </div>
                     <div class="sm:col-span-2">
-                        <label for="new-meeting-agenda" class="block text-xs font-semibold text-slate-700">Agenda (optional)</label>
-                        <textarea id="new-meeting-agenda" name="agenda" rows="2" maxlength="1000" class="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm">{{ old('agenda') }}</textarea>
+                        <label for="new-meeting-agenda" class="{{ $fieldLabel }}">Agenda (optional)</label>
+                        <textarea id="new-meeting-agenda" name="agenda" rows="2" maxlength="1000" class="{{ $fieldInput }}">{{ old('agenda') }}</textarea>
                     </div>
                     @if($errors->hasAny(['meeting_type', 'scheduled_datetime', 'meeting_link', 'address', 'agenda']))
-                        <ul class="sm:col-span-2 list-disc pl-5 text-xs text-rose-600">
+                        <ul class="list-disc pl-5 text-xs text-rose-600 sm:col-span-2">
                             @foreach(['meeting_type', 'scheduled_datetime', 'meeting_link', 'address', 'agenda'] as $meetingField)
                                 @error($meetingField)<li>{{ $message }}</li>@enderror
                             @endforeach
                         </ul>
                     @endif
-                    <div class="sm:col-span-2 flex justify-end">
-                        <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800">Schedule Meeting</button>
+                    <div class="flex justify-end sm:col-span-2">
+                        <button type="submit" class="{{ $btnPrimary }}"><i class="fa-regular fa-calendar-check" aria-hidden="true"></i>Schedule Meeting</button>
                     </div>
                 </form>
             @endif
         </section>
     </div>
 
+    {{-- ============================== MODALS ============================== --}}
+    <div id="aiMaterialModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="aiMaterialModalTitle">
+        <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 id="aiMaterialModalTitle" class="text-base font-semibold text-slate-900">Review AI material</h2>
+                    <p id="aiMaterialModalDescription" class="mt-1 text-sm text-slate-500"></p>
+                </div>
+                <button type="button" onclick="closeAiMaterialModal()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700" aria-label="Close material review"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="aiMaterialLinkFields" class="mt-5 hidden">
+                <label for="aiMaterialInventorySelect" class="{{ $fieldLabel }}">Existing inventory item</label>
+                <select id="aiMaterialInventorySelect" class="{{ $fieldInput }}">
+                    <option value="">Select an inventory item</option>
+                    @foreach($allInventoryItems as $inventoryItem)
+                        <option value="{{ $inventoryItem->id }}">{{ $inventoryItem->name }} ({{ $inventoryItem->current_stock }} {{ $inventoryItem->unit }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div id="aiMaterialPromoteFields" class="mt-5 hidden space-y-3">
+                <div>
+                    <label for="aiMaterialCatalogName" class="{{ $fieldLabel }}">Catalog name <span class="text-rose-600">*</span></label>
+                    <input id="aiMaterialCatalogName" type="text" class="{{ $fieldInput }}" required>
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div>
+                        <label for="aiMaterialCategory" class="{{ $fieldLabel }}">Category</label>
+                        <input id="aiMaterialCategory" type="text" value="floral" class="{{ $fieldInput }}">
+                    </div>
+                    <div>
+                        <label for="aiMaterialUnit" class="{{ $fieldLabel }}">Unit</label>
+                        <input id="aiMaterialUnit" type="text" value="piece" class="{{ $fieldInput }}">
+                    </div>
+                </div>
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700"><input id="aiMaterialPerishable" type="checkbox" checked class="h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500"> Perishable material</label>
+            </div>
+            <p id="aiMaterialModalError" class="mt-3 hidden text-sm text-rose-700" role="alert"></p>
+            <div class="mt-6 flex justify-end gap-2">
+                <button type="button" onclick="closeAiMaterialModal()" class="{{ $btnSecondary }}">Cancel</button>
+                <button type="button" id="aiMaterialModalSubmit" onclick="submitAiMaterialModal()" class="{{ $btnPrimary }}">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Substitute Modal -->
+    <div id="substituteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 hidden" role="dialog" aria-modal="true" aria-labelledby="substituteModalTitle">
+        <div class="w-full max-w-lg rounded-2xl bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <h3 id="substituteModalTitle" class="text-base font-semibold text-slate-900">Select Substitute Item</h3>
+                <button type="button" onclick="closeSubstituteModal()" class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="max-h-[60vh] overflow-y-auto p-6">
+                <p class="mb-4 text-sm text-slate-600">Choose a designated alternative for this item:</p>
+                <div id="substitutesList" class="space-y-2.5">
+                    <!-- Substitutes will be rendered here by JS -->
+                </div>
+            </div>
+            <div class="flex justify-end border-t border-slate-200 px-6 py-4">
+                <button type="button" onclick="closeSubstituteModal()" class="{{ $btnSecondary }}">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('block'));
-            const selected = document.getElementById(tabId);
-            if(selected) {
+        (function () {
+            const ACTIVE = ['border-brand-600', 'text-brand-800'];
+            const INACTIVE = ['border-transparent', 'text-slate-500', 'hover:border-slate-300', 'hover:text-slate-800'];
+            const storageKey = 'raflora_admin_booking_tab_{{ $booking->id }}';
+
+            function switchTab(tabId) {
+                const selected = document.getElementById(tabId);
+                if (!selected || !selected.classList.contains('tab-content')) return;
+
+                document.querySelectorAll('.tab-content').forEach(el => {
+                    el.classList.add('hidden');
+                    el.classList.remove('block');
+                });
                 selected.classList.remove('hidden');
                 selected.classList.add('block');
+
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    const isActive = btn.dataset.target === tabId;
+                    btn.classList.remove(...(isActive ? INACTIVE : ACTIVE));
+                    btn.classList.add(...(isActive ? ACTIVE : INACTIVE));
+                    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                    btn.setAttribute('tabindex', isActive ? '0' : '-1');
+                });
+
+                // Remember the tab so a form submit (which reloads the page) returns here.
+                try { sessionStorage.setItem(storageKey, tabId); } catch (e) {}
+                if (history.replaceState) {
+                    history.replaceState(null, '', '#' + tabId.replace('tab-', ''));
+                }
+
+                if (tabId === 'tab-communication') {
+                    const refreshBtn = document.getElementById('comm-refresh-btn');
+                    if (refreshBtn) refreshBtn.click();
+                }
             }
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('border-purple-500', 'text-purple-600');
-                btn.classList.add('border-transparent', 'text-slate-500');
+            window.switchTab = switchTab;
+
+            // Arrow keys move between tabs (WAI-ARIA tabs pattern).
+            document.querySelectorAll('.tab-button').forEach((btn, index, all) => {
+                btn.addEventListener('keydown', (event) => {
+                    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+                    event.preventDefault();
+                    const last = all.length - 1;
+                    const next = event.key === 'Home' ? 0
+                        : event.key === 'End' ? last
+                        : event.key === 'ArrowRight' ? (index === last ? 0 : index + 1)
+                        : (index === 0 ? last : index - 1);
+                    all[next].focus();
+                    switchTab(all[next].dataset.target);
+                });
             });
-            const activeBtn = document.querySelector(`.tab-button[data-target="${tabId}"]`);
-            if(activeBtn) {
-                activeBtn.classList.remove('border-transparent', 'text-slate-500');
-                activeBtn.classList.add('border-purple-500', 'text-purple-600');
-            }
-            if (tabId === 'tab-communication') {
-                const refreshBtn = document.getElementById('comm-refresh-btn');
-                if (refreshBtn) refreshBtn.click();
-            }
-        }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const fromHash = location.hash ? 'tab-' + location.hash.slice(1) : null;
+                let stored = null;
+                try { stored = sessionStorage.getItem(storageKey); } catch (e) {}
+                const initial = [fromHash, stored].find(id => id && document.getElementById(id)?.classList.contains('tab-content'));
+                if (initial && initial !== 'tab-overview') {
+                    switchTab(initial);
+                }
+            });
+        })();
 
         function openBookingModal(id) {
             document.getElementById(id).classList.remove('hidden');
@@ -1301,328 +1829,271 @@
             document.getElementById(id).classList.remove('flex');
         }
     </script>
-</x-admin-layout>
 
-<div id="aiMaterialModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/50 p-4" role="dialog" aria-modal="true" aria-labelledby="aiMaterialModalTitle">
-    <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
-        <div class="flex items-start justify-between gap-4">
-            <div>
-                <h2 id="aiMaterialModalTitle" class="text-lg font-bold text-slate-900">Review AI material</h2>
-                <p id="aiMaterialModalDescription" class="mt-1 text-sm text-slate-500"></p>
-            </div>
-            <button type="button" onclick="closeAiMaterialModal()" class="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 text-slate-600" aria-label="Close material review">&times;</button>
-        </div>
-        <div id="aiMaterialLinkFields" class="mt-5 hidden">
-            <label for="aiMaterialInventorySelect" class="block text-sm font-semibold text-slate-700">Existing inventory item</label>
-            <select id="aiMaterialInventorySelect" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
-                <option value="">Select an inventory item</option>
-                @foreach($allInventoryItems as $inventoryItem)
-                    <option value="{{ $inventoryItem->id }}">{{ $inventoryItem->name }} ({{ $inventoryItem->current_stock }} {{ $inventoryItem->unit }})</option>
-                @endforeach
-            </select>
-        </div>
-        <div id="aiMaterialPromoteFields" class="mt-5 hidden space-y-3">
-            <div>
-                <label for="aiMaterialCatalogName" class="block text-sm font-semibold text-slate-700">Catalog name <span class="text-rose-600">*</span></label>
-                <input id="aiMaterialCatalogName" type="text" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" required>
-            </div>
-            <div class="grid gap-3 sm:grid-cols-2">
-                <div>
-                    <label for="aiMaterialCategory" class="block text-sm font-semibold text-slate-700">Category</label>
-                    <input id="aiMaterialCategory" type="text" value="floral" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
-                </div>
-                <div>
-                    <label for="aiMaterialUnit" class="block text-sm font-semibold text-slate-700">Unit</label>
-                    <input id="aiMaterialUnit" type="text" value="piece" class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm">
-                </div>
-            </div>
-            <label class="inline-flex items-center gap-2 text-sm text-slate-700"><input id="aiMaterialPerishable" type="checkbox" checked class="h-4 w-4 rounded border-slate-300"> Perishable material</label>
-        </div>
-        <p id="aiMaterialModalError" class="mt-3 hidden text-sm text-rose-700" role="alert"></p>
-        <div class="mt-6 flex justify-end gap-3">
-            <button type="button" onclick="closeAiMaterialModal()" class="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700">Cancel</button>
-            <button type="button" id="aiMaterialModalSubmit" onclick="submitAiMaterialModal()" class="rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white">Continue</button>
-        </div>
-    </div>
-</div>
+    <script>
+        let activeAiMaterialIndex = null;
+        let activeAiMaterialMode = null;
 
-<script>
-    let activeAiMaterialIndex = null;
-    let activeAiMaterialMode = null;
+        function openAiMaterialModal(index, mode) {
+            activeAiMaterialIndex = index;
+            activeAiMaterialMode = mode;
+            const modal = document.getElementById('aiMaterialModal');
+            const linkFields = document.getElementById('aiMaterialLinkFields');
+            const promoteFields = document.getElementById('aiMaterialPromoteFields');
+            const description = document.getElementById('aiMaterialModalDescription');
+            const error = document.getElementById('aiMaterialModalError');
+            error.classList.add('hidden');
+            linkFields.classList.toggle('hidden', mode !== 'link');
+            promoteFields.classList.toggle('hidden', mode !== 'promote');
+            description.textContent = mode === 'link'
+                ? 'Choose the existing inventory record that represents this AI suggestion.'
+                : 'Provide the catalog details required to create this AI suggestion as a new inventory item.';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            (mode === 'link' ? document.getElementById('aiMaterialInventorySelect') : document.getElementById('aiMaterialCatalogName')).focus();
+        }
 
-    function openAiMaterialModal(index, mode) {
-        activeAiMaterialIndex = index;
-        activeAiMaterialMode = mode;
-        const modal = document.getElementById('aiMaterialModal');
-        const linkFields = document.getElementById('aiMaterialLinkFields');
-        const promoteFields = document.getElementById('aiMaterialPromoteFields');
-        const description = document.getElementById('aiMaterialModalDescription');
-        const error = document.getElementById('aiMaterialModalError');
-        error.classList.add('hidden');
-        linkFields.classList.toggle('hidden', mode !== 'link');
-        promoteFields.classList.toggle('hidden', mode !== 'promote');
-        description.textContent = mode === 'link'
-            ? 'Choose the existing inventory record that represents this AI suggestion.'
-            : 'Provide the catalog details required to create this AI suggestion as a new inventory item.';
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        (mode === 'link' ? document.getElementById('aiMaterialInventorySelect') : document.getElementById('aiMaterialCatalogName')).focus();
-    }
+        function closeAiMaterialModal() {
+            const modal = document.getElementById('aiMaterialModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            activeAiMaterialIndex = null;
+            activeAiMaterialMode = null;
+        }
 
-    function closeAiMaterialModal() {
-        const modal = document.getElementById('aiMaterialModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        activeAiMaterialIndex = null;
-        activeAiMaterialMode = null;
-    }
+        function submitAiMaterialModal() {
+            const error = document.getElementById('aiMaterialModalError');
+            const index = activeAiMaterialIndex;
+            if (index === null) return;
 
-    function submitAiMaterialModal() {
-        const error = document.getElementById('aiMaterialModalError');
-        const index = activeAiMaterialIndex;
-        if (index === null) return;
+            if (activeAiMaterialMode === 'link') {
+                const inventoryId = document.getElementById('aiMaterialInventorySelect').value;
+                if (!inventoryId) {
+                    error.textContent = 'Select an existing inventory item before continuing.';
+                    error.classList.remove('hidden');
+                    return;
+                }
+                document.getElementById(`aiLinkInventory_${index}`).value = inventoryId;
+                document.getElementById(`aiLinkForm_${index}`).submit();
+                return;
+            }
 
-        if (activeAiMaterialMode === 'link') {
-            const inventoryId = document.getElementById('aiMaterialInventorySelect').value;
-            if (!inventoryId) {
-                error.textContent = 'Select an existing inventory item before continuing.';
+            const catalogName = document.getElementById('aiMaterialCatalogName').value.trim();
+            if (!catalogName) {
+                error.textContent = 'Catalog name is required.';
                 error.classList.remove('hidden');
                 return;
             }
-            document.getElementById(`aiLinkInventory_${index}`).value = inventoryId;
-            document.getElementById(`aiLinkForm_${index}`).submit();
-            return;
+            document.getElementById(`aiPromoteName_${index}`).value = catalogName;
+            document.getElementById(`aiPromoteCategory_${index}`).value = document.getElementById('aiMaterialCategory').value.trim();
+            document.getElementById(`aiPromoteUnit_${index}`).value = document.getElementById('aiMaterialUnit').value.trim();
+            document.getElementById(`aiPromotePerishable_${index}`).value = document.getElementById('aiMaterialPerishable').checked ? '1' : '0';
+            document.getElementById(`aiPromoteForm_${index}`).submit();
         }
 
-        const catalogName = document.getElementById('aiMaterialCatalogName').value.trim();
-        if (!catalogName) {
-            error.textContent = 'Catalog name is required.';
-            error.classList.remove('hidden');
-            return;
-        }
-        document.getElementById(`aiPromoteName_${index}`).value = catalogName;
-        document.getElementById(`aiPromoteCategory_${index}`).value = document.getElementById('aiMaterialCategory').value.trim();
-        document.getElementById(`aiPromoteUnit_${index}`).value = document.getElementById('aiMaterialUnit').value.trim();
-        document.getElementById(`aiPromotePerishable_${index}`).value = document.getElementById('aiMaterialPerishable').checked ? '1' : '0';
-        document.getElementById(`aiPromoteForm_${index}`).submit();
-    }
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && activeAiMaterialIndex !== null) closeAiMaterialModal();
-    });
-</script>
-
-<!-- Substitute Modal -->
-<div id="substituteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4">
-        <div class="flex justify-between items-center p-6 border-b border-gray-200">
-            <h3 class="text-lg font-bold text-gray-800">Select Substitute Item</h3>
-            <button onclick="closeSubstituteModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-times"></i></button>
-        </div>
-        <div class="p-6 max-h-[60vh] overflow-y-auto">
-            <p class="text-sm text-slate-600 mb-4">Choose a designated alternative for this item:</p>
-            <div id="substitutesList" class="space-y-3">
-                <!-- Substitutes will be rendered here by JS -->
-            </div>
-        </div>
-        <div class="p-6 border-t border-gray-200 flex justify-end gap-3">
-            <button type="button" onclick="closeSubstituteModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<script>
-    const inventoryData = @json(isset($allInventoryItems) ? $allInventoryItems->keyBy('id') : []);
-    let currentRowIdx = null;
-
-    function formatCurrency(value) {
-        const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
-        const formatted = new Intl.NumberFormat('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(numericValue);
-
-        return '₱ ' + formatted;
-    }
-
-    function formatQtyValue(value) {
-        const numericValue = Number(value) || 0;
-        return String(Math.max(0, Math.trunc(numericValue)));
-    }
-
-    function updateLineTotals() {
-        let subtotal = 0;
-
-        document.querySelectorAll('tr[id^="row_"]').forEach((row) => {
-            const qtyInput = row.querySelector('input[name$="[quantity]"]');
-            const unitPriceInput = row.querySelector('input[name$="[unit_price]"]');
-            const removeCheckbox = row.querySelector('input[name$="[remove]"]');
-            const totalCell = row.querySelector('[id^="total_cost_"]');
-            const nameDisplay = row.querySelector('[id^="display_name_"]');
-
-            if (!qtyInput || !unitPriceInput || !totalCell) {
-                return;
-            }
-
-            const qty = Number(qtyInput.value) || 0;
-            const unitPrice = Number(unitPriceInput.value) || 0;
-            const isRemoved = removeCheckbox ? removeCheckbox.checked : false;
-            const lineTotal = qty * unitPrice;
-
-            qtyInput.value = formatQtyValue(qtyInput.value);
-            totalCell.textContent = formatCurrency(lineTotal);
-
-            if (nameDisplay) {
-                nameDisplay.style.textDecoration = isRemoved ? 'line-through' : '';
-                nameDisplay.style.opacity = isRemoved ? '0.55' : '1';
-            }
-
-            row.classList.toggle('opacity-50', isRemoved);
-
-            if (!isRemoved) {
-                subtotal += lineTotal;
-            }
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && activeAiMaterialIndex !== null) closeAiMaterialModal();
         });
+    </script>
 
-        const rawSubtotalValue = document.getElementById('raw-wholesale-subtotal');
-        const calculatedTotalValue = document.getElementById('calculated-quotation-total');
-        const multiplierInput = document.getElementById('markup-multiplier');
-        const finalOverrideInput = document.getElementById('final-quoted-total-override');
+    <script>
+        const inventoryData = @json(isset($allInventoryItems) ? $allInventoryItems->keyBy('id') : []);
+        let currentRowIdx = null;
 
-        if (rawSubtotalValue) {
-            rawSubtotalValue.textContent = formatCurrency(subtotal);
+        function formatCurrency(value) {
+            const numericValue = Number.isFinite(Number(value)) ? Number(value) : 0;
+            const formatted = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            }).format(numericValue);
+
+            return '₱ ' + formatted;
         }
 
-        const multiplier = Number(multiplierInput?.value) || 0;
-        const calculatedTotal = subtotal * multiplier;
-
-        if (calculatedTotalValue) {
-            calculatedTotalValue.textContent = formatCurrency(calculatedTotal);
+        function formatQtyValue(value) {
+            const numericValue = Number(value) || 0;
+            return String(Math.max(0, Math.trunc(numericValue)));
         }
 
-        if (finalOverrideInput && !finalOverrideInput.matches(':focus')) {
-            // Only auto-update if the user hasn't manually overridden the value
-            if (finalOverrideInput.dataset.manualOverride !== 'true') {
-                finalOverrideInput.value = Number.isFinite(calculatedTotal) ? calculatedTotal.toFixed(2) : '0.00';
-            }
-        }
-    }
+        function updateLineTotals() {
+            let subtotal = 0;
 
-    function setupItemCalculationListeners() {
-        document.querySelectorAll('tr[id^="row_"]').forEach((row) => {
-            const qtyInput = row.querySelector('input[name$="[quantity]"]');
-            const unitPriceInput = row.querySelector('input[name$="[unit_price]"]');
-            const removeCheckbox = row.querySelector('input[name$="[remove]"]');
+            document.querySelectorAll('tr[id^="row_"]').forEach((row) => {
+                const qtyInput = row.querySelector('input[name$="[quantity]"]');
+                const unitPriceInput = row.querySelector('input[name$="[unit_price]"]');
+                const removeCheckbox = row.querySelector('input[name$="[remove]"]');
+                const totalCell = row.querySelector('[id^="total_cost_"]');
+                const nameDisplay = row.querySelector('[id^="display_name_"]');
 
-            [qtyInput, unitPriceInput].forEach((input) => {
-                if (input) {
-                    input.addEventListener('input', updateLineTotals);
-                    input.addEventListener('change', updateLineTotals);
+                if (!qtyInput || !unitPriceInput || !totalCell) {
+                    return;
+                }
+
+                const qty = Number(qtyInput.value) || 0;
+                const unitPrice = Number(unitPriceInput.value) || 0;
+                const isRemoved = removeCheckbox ? removeCheckbox.checked : false;
+                const lineTotal = qty * unitPrice;
+
+                qtyInput.value = formatQtyValue(qtyInput.value);
+                totalCell.textContent = formatCurrency(lineTotal);
+
+                if (nameDisplay) {
+                    nameDisplay.style.textDecoration = isRemoved ? 'line-through' : '';
+                    nameDisplay.style.opacity = isRemoved ? '0.55' : '1';
+                }
+
+                row.classList.toggle('opacity-50', isRemoved);
+
+                if (!isRemoved) {
+                    subtotal += lineTotal;
                 }
             });
 
-            if (removeCheckbox) {
-                removeCheckbox.addEventListener('change', updateLineTotals);
-            }
-        });
+            const rawSubtotalValue = document.getElementById('raw-wholesale-subtotal');
+            const calculatedTotalValue = document.getElementById('calculated-quotation-total');
+            const multiplierInput = document.getElementById('markup-multiplier');
+            const finalOverrideInput = document.getElementById('final-quoted-total-override');
 
-        const multiplierInput = document.getElementById('markup-multiplier');
-        if (multiplierInput) {
-            multiplierInput.addEventListener('input', updateLineTotals);
-            multiplierInput.addEventListener('change', updateLineTotals);
-        }
-
-        const finalOverrideInput = document.getElementById('final-quoted-total-override');
-        if (finalOverrideInput) {
-            // Initial check: if the server provided a value that differs from the calculation, treat it as a manual override
-            const initialVal = Number(finalOverrideInput.value);
-            const calculatedTotal = Number(document.getElementById('calculated-quotation-total')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
-            if (initialVal > 0 && Math.abs(initialVal - calculatedTotal) > 0.01) {
-                finalOverrideInput.dataset.manualOverride = 'true';
+            if (rawSubtotalValue) {
+                rawSubtotalValue.textContent = formatCurrency(subtotal);
             }
 
-            finalOverrideInput.addEventListener('input', () => {
-                finalOverrideInput.dataset.manualOverride = 'true';
-            });
+            const multiplier = Number(multiplierInput?.value) || 0;
+            const calculatedTotal = subtotal * multiplier;
 
-            finalOverrideInput.addEventListener('focus', () => {
-                finalOverrideInput.dataset.manualEdit = 'true';
-            });
+            if (calculatedTotalValue) {
+                calculatedTotalValue.textContent = formatCurrency(calculatedTotal);
+            }
 
-            finalOverrideInput.addEventListener('blur', () => {
-                finalOverrideInput.dataset.manualEdit = 'false';
-                updateLineTotals();
-            });
+            if (finalOverrideInput && !finalOverrideInput.matches(':focus')) {
+                // Only auto-update if the user hasn't manually overridden the value
+                if (finalOverrideInput.dataset.manualOverride !== 'true') {
+                    finalOverrideInput.value = Number.isFinite(calculatedTotal) ? calculatedTotal.toFixed(2) : '0.00';
+                }
+            }
         }
-    }
 
-    function openSubstituteModal(rowIdx, itemId) {
-        currentRowIdx = rowIdx;
-        const item = inventoryData[itemId];
-        const listDiv = document.getElementById('substitutesList');
-        listDiv.innerHTML = '';
+        function setupItemCalculationListeners() {
+            document.querySelectorAll('tr[id^="row_"]').forEach((row) => {
+                const qtyInput = row.querySelector('input[name$="[quantity]"]');
+                const unitPriceInput = row.querySelector('input[name$="[unit_price]"]');
+                const removeCheckbox = row.querySelector('input[name$="[remove]"]');
 
-        if (!item || !item.substitutes || item.substitutes.length === 0) {
-            listDiv.innerHTML = '<p class="text-sm text-slate-500">No designated substitutes available.</p>';
-        } else {
-            item.substitutes.forEach(sub => {
-                const isLow = sub.current_stock <= 0;
-                const stockBadge = isLow 
-                    ? `<span class="text-[10px] uppercase font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded-full ml-2">Out of Stock</span>`
-                    : `<span class="text-[10px] uppercase font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full ml-2">${sub.current_stock} in stock</span>`;
+                [qtyInput, unitPriceInput].forEach((input) => {
+                    if (input) {
+                        input.addEventListener('input', updateLineTotals);
+                        input.addEventListener('change', updateLineTotals);
+                    }
+                });
 
-                listDiv.innerHTML += `
-                    <div class="border border-slate-200 rounded-lg p-3 flex justify-between items-center hover:bg-slate-50 transition">
-                        <div>
-                            <p class="font-bold text-sm text-slate-800">${sub.name} ${stockBadge}</p>
-                            <p class="text-xs text-slate-500">Unit Cost: ₱${sub.unit_cost}</p>
+                if (removeCheckbox) {
+                    removeCheckbox.addEventListener('change', updateLineTotals);
+                }
+            });
+
+            const multiplierInput = document.getElementById('markup-multiplier');
+            if (multiplierInput) {
+                multiplierInput.addEventListener('input', updateLineTotals);
+                multiplierInput.addEventListener('change', updateLineTotals);
+            }
+
+            const finalOverrideInput = document.getElementById('final-quoted-total-override');
+            if (finalOverrideInput) {
+                // Initial check: if the server provided a value that differs from the calculation, treat it as a manual override
+                const initialVal = Number(finalOverrideInput.value);
+                const calculatedTotal = Number(document.getElementById('calculated-quotation-total')?.textContent.replace(/[^0-9.-]+/g, '')) || 0;
+                if (initialVal > 0 && Math.abs(initialVal - calculatedTotal) > 0.01) {
+                    finalOverrideInput.dataset.manualOverride = 'true';
+                }
+
+                finalOverrideInput.addEventListener('input', () => {
+                    finalOverrideInput.dataset.manualOverride = 'true';
+                });
+
+                finalOverrideInput.addEventListener('focus', () => {
+                    finalOverrideInput.dataset.manualEdit = 'true';
+                });
+
+                finalOverrideInput.addEventListener('blur', () => {
+                    finalOverrideInput.dataset.manualEdit = 'false';
+                    updateLineTotals();
+                });
+            }
+        }
+
+        function escapeSubstituteText(text) {
+            const div = document.createElement('div');
+            div.textContent = text == null ? '' : String(text);
+            return div.innerHTML;
+        }
+
+        function openSubstituteModal(rowIdx, itemId) {
+            currentRowIdx = rowIdx;
+            const item = inventoryData[itemId];
+            const listDiv = document.getElementById('substitutesList');
+            listDiv.innerHTML = '';
+
+            if (!item || !item.substitutes || item.substitutes.length === 0) {
+                listDiv.innerHTML = '<p class="text-sm text-slate-500">No designated substitutes available.</p>';
+            } else {
+                item.substitutes.forEach(sub => {
+                    const isLow = sub.current_stock <= 0;
+                    const stockBadge = isLow
+                        ? `<span class="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">Out of Stock</span>`
+                        : `<span class="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">${escapeSubstituteText(sub.current_stock)} in stock</span>`;
+
+                    listDiv.innerHTML += `
+                        <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 transition hover:bg-slate-50">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-900">${escapeSubstituteText(sub.name)} ${stockBadge}</p>
+                                <p class="text-xs text-slate-500">Unit Cost: ₱${escapeSubstituteText(sub.unit_cost)}</p>
+                            </div>
+                            <button type="button" onclick="applySubstitute(${Number(sub.id)})" class="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800 disabled:opacity-50" ${isLow ? 'disabled' : ''}>
+                                Select
+                            </button>
                         </div>
-                        <button type="button" onclick="applySubstitute(${sub.id})" class="px-3 py-1.5 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded shadow-sm" ${isLow ? 'disabled style="opacity: 0.5;"' : ''}>
-                            Select
-                        </button>
-                    </div>
-                `;
-            });
+                    `;
+                });
+            }
+
+            document.getElementById('substituteModal').classList.remove('hidden');
         }
 
-        document.getElementById('substituteModal').classList.remove('hidden');
-    }
+        function closeSubstituteModal() {
+            document.getElementById('substituteModal').classList.add('hidden');
+            currentRowIdx = null;
+        }
 
-    function closeSubstituteModal() {
-        document.getElementById('substituteModal').classList.add('hidden');
-        currentRowIdx = null;
-    }
+        function applySubstitute(subId) {
+            if (currentRowIdx === null) return;
 
-    function applySubstitute(subId) {
-        if (currentRowIdx === null) return;
-        
-        const sub = inventoryData[subId];
-        if (!sub) return;
+            const sub = inventoryData[subId];
+            if (!sub) return;
 
-        document.getElementById('input_name_' + currentRowIdx).value = sub.name;
-        document.getElementById('input_inventory_' + currentRowIdx).value = sub.id;
-        
-        const displaySpan = document.getElementById('display_name_' + currentRowIdx);
-        displaySpan.innerHTML = `${sub.name} <span class="px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold bg-blue-100 text-blue-700 rounded-full ml-2">Swapped</span>`;
-        
-        const priceInput = document.getElementById('input_price_' + currentRowIdx);
-        priceInput.value = sub.unit_cost;
+            document.getElementById('input_name_' + currentRowIdx).value = sub.name;
+            document.getElementById('input_inventory_' + currentRowIdx).value = sub.id;
 
-        const qtyInput = document.getElementById('input_qty_' + currentRowIdx);
-        const newTotal = (parseFloat(qtyInput.value) * parseFloat(sub.unit_cost)).toFixed(2);
-        document.getElementById('total_cost_' + currentRowIdx).innerText = formatCurrency(newTotal);
+            const displaySpan = document.getElementById('display_name_' + currentRowIdx);
+            displaySpan.innerHTML = `${escapeSubstituteText(sub.name)} <span class="ml-2 rounded-full bg-navy-50 px-2 py-0.5 text-[11px] font-semibold text-navy-700">Swapped</span>`;
 
-        closeSubstituteModal();
-        
-        const row = document.getElementById('row_' + currentRowIdx);
-        const badges = row.querySelectorAll('.bg-red-100, button[onclick^="openSubstituteModal"]');
-        badges.forEach(b => b.style.display = 'none');
+            const priceInput = document.getElementById('input_price_' + currentRowIdx);
+            priceInput.value = sub.unit_cost;
 
-        updateLineTotals();
-    }
+            const qtyInput = document.getElementById('input_qty_' + currentRowIdx);
+            const newTotal = (parseFloat(qtyInput.value) * parseFloat(sub.unit_cost)).toFixed(2);
+            document.getElementById('total_cost_' + currentRowIdx).innerText = formatCurrency(newTotal);
 
-    document.addEventListener('DOMContentLoaded', function () {
-        setupItemCalculationListeners();
-        updateLineTotals();
-    });
-</script>
+            const row = document.getElementById('row_' + currentRowIdx);
+            closeSubstituteModal();
+
+            row.querySelectorAll('[data-stock-badge="out"], button[onclick^="openSubstituteModal"]').forEach(b => b.style.display = 'none');
+
+            updateLineTotals();
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            setupItemCalculationListeners();
+            updateLineTotals();
+        });
+    </script>
+</x-admin-layout>

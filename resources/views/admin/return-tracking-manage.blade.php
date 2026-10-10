@@ -32,7 +32,7 @@
                 'downpayment_received' => 'bg-emerald-100 text-emerald-800 border-emerald-200',
                 'payment_pending' => 'bg-amber-100 text-amber-800 border-amber-200',
                 'completed' => 'bg-green-100 text-green-800 border-green-200',
-                'pending_resolution' => 'bg-purple-100 text-purple-800 border-purple-200',
+                'pending_resolution' => 'bg-orange-100 text-orange-800 border-orange-200',
                 'pending_return' => 'bg-amber-100 text-amber-800 border-amber-200',
                 'cancelled' => 'bg-rose-100 text-rose-800 border-rose-200',
                 default => 'bg-slate-100 text-slate-800 border-slate-200',
@@ -58,7 +58,7 @@
             <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
                 <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
                     <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                        <i class="fa-solid fa-file-invoice text-purple-600"></i>
+                        <i class="fa-solid fa-file-invoice text-brand-700"></i>
                         <span>Booking Information</span>
                     </h2>
                     <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border {{ $statusBadgeClass }}">
@@ -207,7 +207,7 @@
                                                     max="{{ $dispatched }}"
                                                     step="1"
                                                     {{ $isArchivedAudit ? 'disabled' : '' }}
-                                                    class="w-full rounded-lg border border-emerald-300 bg-emerald-50/30 px-2.5 py-1.5 text-sm text-slate-900 font-semibold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 disabled:bg-slate-100 disabled:text-slate-500"
+                                                    class="w-full rounded-lg border border-emerald-300 bg-emerald-50/30 px-2.5 py-1.5 text-sm text-slate-900 font-semibold focus:border-brand-600 focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
                                                 >
                                             </div>
 
@@ -291,7 +291,7 @@
                                                     <i class="fa-solid fa-circle-xmark text-[10px]"></i> Lost
                                                 </span>
                                             @elseif($cond === 'mixed')
-                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200">
                                                     <i class="fa-solid fa-cubes text-[10px]"></i> Mixed Condition
                                                 </span>
                                             @else
@@ -306,8 +306,8 @@
                                                 <span class="font-semibold text-slate-700 block mb-1">Staff Evidence:</span>
                                                 <div class="flex flex-wrap gap-2">
                                                     @foreach($returnItem->evidences as $evidence)
-                                                        <a href="{{ route('secure.evidence.show', $evidence) }}" target="_blank" class="inline-flex items-center gap-1 text-xs border border-purple-200 rounded-lg px-2 py-1 text-purple-700 hover:bg-purple-50 transition" title="View Evidence">
-                                                            <i class="fa-solid fa-image text-purple-600"></i>
+                                                        <a href="{{ route('secure.evidence.show', $evidence) }}" target="_blank" class="inline-flex items-center gap-1 text-xs border border-brand-200 rounded-lg px-2 py-1 text-brand-700 hover:bg-brand-50 transition" title="View Evidence">
+                                                            <i class="fa-solid fa-image text-brand-700"></i>
                                                             <span>View photo</span>
                                                         </a>
                                                     @endforeach
@@ -326,7 +326,7 @@
                                             <select
                                                 name="items[{{ $returnItem->id }}][charge_decision]"
                                                 {{ $isArchivedAudit ? 'disabled' : '' }}
-                                                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500 bg-white"
+                                                class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-600 focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100 disabled:text-slate-500 bg-white"
                                             >
                                                 <option value="pending" {{ old('items.' . $returnItem->id . '.charge_decision', $returnItem->charge_decision) === 'pending' ? 'selected' : '' }}>Pending Decision</option>
                                                 <option value="no_charge" {{ old('items.' . $returnItem->id . '.charge_decision', $returnItem->charge_decision) === 'no_charge' ? 'selected' : '' }}>No Charge (Waived)</option>
@@ -343,7 +343,7 @@
                                                 min="0"
                                                 step="0.01"
                                                 {{ $isArchivedAudit ? 'disabled' : '' }}
-                                                class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500"
+                                                class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold focus:border-brand-600 focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
                                                 placeholder="Charge amount"
                                             >
                                         </div>
@@ -357,7 +357,7 @@
                                             name="items[{{ $returnItem->id }}][notes]"
                                             rows="2"
                                             {{ $isArchivedAudit ? 'disabled' : '' }}
-                                            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500"
+                                            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-brand-600 focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
                                             placeholder="Physical return notes..."
                                         >{{ old('items.' . $returnItem->id . '.notes', $returnItem->notes) }}</textarea>
 
@@ -365,7 +365,7 @@
                                             name="items[{{ $returnItem->id }}][charge_reason]"
                                             rows="1"
                                             {{ $isArchivedAudit ? 'disabled' : '' }}
-                                            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500"
+                                            class="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-brand-600 focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
                                             placeholder="Reason for damage/loss fee..."
                                         >{{ old('items.' . $returnItem->id . '.charge_reason', $returnItem->charge_reason) }}</textarea>
                                     </div>
@@ -389,7 +389,7 @@
                     name="notes"
                     rows="3"
                     {{ $isArchivedAudit ? 'disabled' : '' }}
-                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-100 disabled:text-slate-500"
+                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-700 focus:border-brand-600 focus:ring-1 focus:ring-brand-500 disabled:bg-slate-100 disabled:text-slate-500"
                     placeholder="Enter overall notes about the return inspection and equipment condition..."
                 >{{ old('notes', $return->notes) }}</textarea>
             </div>
@@ -398,7 +398,7 @@
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
                 <div>
                     <span class="text-xs text-slate-500 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shield-halved text-purple-600"></i>
+                        <i class="fa-solid fa-shield-halved text-brand-700"></i>
                         <span>Saving updates the return record and reconciles eligible good stock back into active inventory.</span>
                     </span>
                 </div>
@@ -413,12 +413,12 @@
                         </a>
                     @else
                         @if($return->returnItems->isEmpty())
-                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-800 transition shadow-2xs cursor-pointer">
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 transition shadow-2xs cursor-pointer">
                                 <i class="fa-solid fa-check"></i>
                                 <span>Complete Zero-Hardware Audit</span>
                             </button>
                         @else
-                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-purple-800 transition shadow-2xs cursor-pointer">
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 transition shadow-2xs cursor-pointer">
                                 <i class="fa-solid fa-boxes-packing"></i>
                                 <span>Save &amp; Reconcile Return</span>
                             </button>

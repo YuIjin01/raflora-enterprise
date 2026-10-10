@@ -239,9 +239,9 @@ class AdminPackageFilterAndNotificationTest extends TestCase
 
         // Package Tools (outlined action) and Add Package (green primary action) on toolbar
         $this->assertStringContainsString('packageToolsButton', $packageContent);
-        $this->assertStringContainsString('border-purple-', $packageContent);
+        $this->assertStringContainsString('border-brand-', $packageContent);
         $this->assertStringContainsString('Add Package', $packageContent);
-        $this->assertStringContainsString('bg-emerald-600', $packageContent);
+        $this->assertStringContainsString('bg-brand-700', $packageContent);
         $this->assertStringContainsString(route('admin.packages.create'), $packageContent);
 
         // 2. Gallery Management layout checks

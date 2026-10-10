@@ -18,67 +18,9 @@ use Illuminate\View\View;
 
 class EventController extends Controller
 {
-    public const DEFAULT_CHECKLIST = [
-        'review-event-details' => 'Review event details and venue access',
-        'prepare-confirmed-materials' => 'Prepare confirmed event materials',
-        'confirm-setup-readiness' => 'Confirm setup readiness before the event',
-    ];
+    public const DEFAULT_CHECKLIST = \App\Services\StaffWorkspaceService::DEFAULT_CHECKLIST;
 
-    public function dashboard(Request $request): View
-    {
-        $allAssigned = Booking::query()
-            ->where('staff_id', $request->user()->id)
-            ->with(['client', 'staffChecklistItems', 'bookingItems', 'inventoryTransactions.inventoryItem', 'returns.returnItems', 'payments'])
-            ->orderByRaw('event_date IS NULL, event_date asc')
-            ->orderBy('id')
-            ->get();
-
-        $today = now()->startOfDay();
-
-        $activeEvents = $allAssigned
-            ->filter(fn (Booking $b) => !in_array($b->status, ['cancelled', 'declined', 'completed'], true))
-            ->sort(function (Booking $a, Booking $b) use ($today) {
-                if ($a->event_date === null && $b->event_date === null) {
-                    return $a->id <=> $b->id;
-                }
-                if ($a->event_date === null) {
-                    return 1;
-                }
-                if ($b->event_date === null) {
-                    return -1;
-                }
-
-                $aIsUpcoming = $a->event_date >= $today;
-                $bIsUpcoming = $b->event_date >= $today;
-
-                if ($aIsUpcoming && $bIsUpcoming) {
-                    return $a->event_date <=> $b->event_date ?: $a->id <=> $b->id;
-                }
-                if ($aIsUpcoming && !$bIsUpcoming) {
-                    return -1;
-                }
-                if (!$aIsUpcoming && $bIsUpcoming) {
-                    return 1;
-                }
-
-                return $b->event_date <=> $a->event_date ?: $a->id <=> $b->id;
-            })
-            ->values();
-
-        $completedEvents = $allAssigned
-            ->filter(fn (Booking $b) => $b->status === 'completed')
-            ->sortByDesc(fn (Booking $b) => $b->event_date?->timestamp ?? 0)
-            ->values();
-
-        return view('staff.dashboard', [
-            'assignedEvents' => $activeEvents,
-            'activeEvents' => $activeEvents,
-            'completedEvents' => $completedEvents,
-            'allAssigned' => $allAssigned,
-        ]);
-    }
-
-    public function show(Request $request, Booking $booking): View
+    public function show(Request $request, Booking $booking, \App\Services\StaffWorkspaceService $workspace): View
     {
         $query = Booking::with(['client', 'bookingItems.inventoryItem']);
 
@@ -87,12 +29,17 @@ class EventController extends Controller
         }
 
         $assignedBooking = $query->whereKey($booking->id)->firstOrFail();
-        $this->ensureChecklist($assignedBooking);
+        $workspace->ensureChecklist($assignedBooking);
         $this->ensureReturnRecord($assignedBooking);
         $assignedBooking->load(['staffChecklistItems', 'returns.returnItems.inventoryItem']);
         
         $dispatchedQuantities = $this->dispatchedQuantities($assignedBooking);
         $bookingMessages = \App\Models\BookingMessage::where('booking_id', $assignedBooking->id)->whereIn('visibility', ['shared', 'admin_staff'])->orderBy('created_at', 'asc')->get();
+
+        // The thread is on screen now, so it no longer counts toward this staff member's unread messages.
+        if ($request->user()->role === 'staff') {
+            $workspace->markThreadRead($request->user(), $assignedBooking);
+        }
 
         return view('staff.event-show', [
             'booking' => $assignedBooking,
@@ -356,16 +303,6 @@ class EventController extends Controller
         }
 
         return $booking;
-    }
-
-    private function ensureChecklist(Booking $booking): void
-    {
-        foreach (self::DEFAULT_CHECKLIST as $key => $title) {
-            StaffChecklistItem::firstOrCreate(
-                ['booking_id' => $booking->id, 'key' => $key],
-                ['title' => $title]
-            );
-        }
     }
 
     private function ensureReturnRecord(Booking $booking): ?AssetReturn

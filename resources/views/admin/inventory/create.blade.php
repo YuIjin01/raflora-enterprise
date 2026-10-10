@@ -75,7 +75,7 @@
                             value="{{ old('name') }}"
                             required
                             placeholder="e.g. Pink Rose (Fresh)"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         @error('name') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -112,7 +112,7 @@
                             required
                             list="categoriesList"
                             placeholder="e.g. Fresh Flowers, Decor"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <datalist id="categoriesList">
                             @foreach($inventoryCategories as $cat)
@@ -140,7 +140,7 @@
                             required
                             list="unitsList"
                             placeholder="e.g. Stem, Piece, Bunch, Roll"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <datalist id="unitsList">
                             <option value="stem">stem</option>
@@ -183,7 +183,7 @@
                                     name="item_type"
                                     value="non_perishable"
                                     onchange="handleItemTypeChange('non_perishable')"
-                                    class="text-emerald-600 focus:ring-emerald-500"
+                                    class="text-emerald-600 focus:ring-brand-500"
                                     {{ old('item_type') === 'non_perishable' ? 'checked' : '' }}
                                 >
                                 <div class="min-w-0">
@@ -210,7 +210,7 @@
                             maxlength="500"
                             oninput="document.getElementById('descCharCount').textContent = this.value.length + '/500'"
                             placeholder="Add item characteristics, color shade, dimensions, or handling instructions..."
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >{{ old('description') }}</textarea>
                     </div>
                 </div>
@@ -238,7 +238,7 @@
                             value="{{ old('initial_quantity', 0) }}"
                             required
                             placeholder="0"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <p class="text-[11px] text-slate-400 mt-1">Starting physical stock quantity.</p>
                         @error('initial_quantity') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -258,7 +258,7 @@
                             value="{{ old('min_stock', 5) }}"
                             required
                             placeholder="0"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <p class="text-[11px] text-slate-400 mt-1">Triggers low-stock warning threshold.</p>
                         @error('min_stock') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -278,7 +278,7 @@
                             value="{{ old('unit_cost', 0) }}"
                             required
                             placeholder="0.00"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <p class="text-[11px] text-slate-400 mt-1">Cost per single unit.</p>
                         @error('unit_cost') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -296,7 +296,7 @@
                             value="{{ old('received_date', date('Y-m-d')) }}"
                             required
                             onchange="calculateUsableUntil()"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                         <p class="text-[11px] text-slate-400 mt-1" id="help_received_date">Procurement date for this initial stock batch.</p>
                         @error('received_date') <p class="text-rose-600 text-xs mt-1">{{ $message }}</p> @enderror
@@ -316,13 +316,13 @@
                                 value="{{ old('usable_life_value', 5) }}"
                                 required
                                 oninput="calculateUsableUntil()"
-                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                             >
                             <select
                                 id="create_usable_life_unit"
                                 name="usable_life_unit"
                                 onchange="calculateUsableUntil()"
-                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                                class="w-1/2 px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                             >
                                 <option value="days" {{ old('usable_life_unit', 'days') === 'days' ? 'selected' : '' }}>Days</option>
                                 <option value="weeks" {{ old('usable_life_unit') === 'weeks' ? 'selected' : '' }}>Weeks</option>
@@ -373,7 +373,7 @@
                             name="supplier_name"
                             value="{{ old('supplier_name') }}"
                             placeholder="e.g. Blooming Fields PH"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -387,7 +387,7 @@
                             name="supplier_contact_person"
                             value="{{ old('supplier_contact_person') }}"
                             placeholder="e.g. Ana Reyes"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -401,7 +401,7 @@
                             name="supplier_contact_number"
                             value="{{ old('supplier_contact_number') }}"
                             placeholder="e.g. 0917 123 4567"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -415,7 +415,7 @@
                             name="storage_location"
                             value="{{ old('storage_location') }}"
                             placeholder="e.g. Cold Room Shelf B-2, Warehouse Rack 4"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
                 </div>
@@ -437,7 +437,7 @@
                         <select
                             id="create_status"
                             name="status"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                             <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>● Active — Available for planning</option>
                             <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>○ Inactive — Discontinued / Hidden</option>
@@ -456,7 +456,7 @@
                             name="tags"
                             value="{{ old('tags') }}"
                             placeholder="e.g. Wedding, Bouquet, Premium, Centerpiece"
-                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-2xs transition"
+                            class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                         >
                     </div>
 
@@ -474,7 +474,7 @@
                                 id="substituteSearchInput"
                                 oninput="filterSubstitutes(this.value)"
                                 placeholder="Search items by name or category..."
-                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-emerald-500"
+                                class="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-500"
                             >
                         </div>
 
@@ -490,7 +490,7 @@
                                             name="substitute_ids[]"
                                             value="{{ $subItem->id }}"
                                             {{ in_array($subItem->id, $selectedSubs) ? 'checked' : '' }}
-                                            class="rounded text-emerald-600 focus:ring-emerald-500"
+                                            class="rounded text-emerald-600 focus:ring-brand-500"
                                         >
                                         <span class="font-bold text-slate-800">{{ $subItem->name }}</span>
                                         <span class="text-[10px] text-slate-400 font-mono">({{ $subItem->item_code ?? 'INV-' . $subItem->id }})</span>

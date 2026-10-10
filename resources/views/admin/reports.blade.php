@@ -4,7 +4,7 @@
     <div class="mx-auto max-w-[1600px] space-y-6">
         <div class="flex flex-col gap-3 border-b border-slate-200 pb-5 md:flex-row md:items-end md:justify-between">
             <div>
-                <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">Management report</p>
+                <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-700">Management report</p>
                 <h2 class="serif mt-1 text-2xl font-bold text-slate-900 sm:text-3xl">Business performance</h2>
                 <p class="mt-1 text-sm text-slate-500">A decision-ready view of bookings, revenue pipeline, demand, and stock risk.</p>
             </div>
@@ -15,7 +15,7 @@
         </div>
 
         <section aria-label="Key performance indicators" class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-            <div class="rounded-xl border border-slate-200 border-l-4 border-l-purple-500 bg-white p-4 shadow-sm sm:p-5">
+            <div class="rounded-xl border border-slate-200 border-l-4 border-l-brand-600 bg-white p-4 shadow-sm sm:p-5">
                 <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 sm:text-xs">New bookings</p>
                 <p class="serif mt-2 break-words text-xl font-bold text-slate-900 sm:text-3xl">{{ $bookingsThisMonth }}</p>
                 <p class="mt-2 text-xs text-slate-500">{{ $confirmedThisMonth }} confirmed or active this month</p>
@@ -67,7 +67,7 @@
         </section>
 
         <section class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="mb-4 flex items-center justify-between"><div><h3 class="font-bold text-slate-900">Recent activity</h3><p class="mt-1 text-xs text-slate-500">Latest audited changes across the system.</p></div><a href="{{ route('admin.settings') }}#audit-trail" class="text-xs font-bold text-purple-700 hover:text-purple-900">View account activity <span aria-hidden="true">→</span></a></div>
+            <div class="mb-4 flex items-center justify-between"><div><h3 class="font-bold text-slate-900">Recent activity</h3><p class="mt-1 text-xs text-slate-500">Latest audited changes across the system.</p></div><a href="{{ route('admin.settings') }}#audit-trail" class="text-xs font-bold text-brand-700 hover:text-brand-900">View account activity <span aria-hidden="true">→</span></a></div>
             <div class="overflow-x-auto"><table class="rf-table--stack w-full min-w-[680px] text-left"><thead class="border-y border-slate-100 bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500"><tr><th class="px-3 py-3">Date</th><th class="px-3 py-3">User</th><th class="px-3 py-3">Action</th><th class="px-3 py-3">Details</th></tr></thead><tbody class="divide-y divide-slate-100">@forelse($activities as $activity)<tr class="hover:bg-slate-50"><td class="whitespace-nowrap px-3 py-3 text-xs text-slate-500">{{ $activity['date'] }}</td><td data-label="User" class="px-3 py-3 text-sm font-medium text-slate-700">{{ $activity['user'] }}</td><td data-label="Action" class="px-3 py-3 text-sm text-slate-600">{{ $activity['action'] }}</td><td class="px-3 py-3 text-sm text-slate-600">{{ $activity['details'] }}</td></tr>@empty<tr><td colspan="4" class="px-3 py-8 text-center text-sm text-slate-500">No recent activity found.</td></tr>@endforelse</tbody></table></div>
         </section>
     </div>

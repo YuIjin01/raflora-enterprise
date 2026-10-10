@@ -49,6 +49,8 @@ class ClientNotificationController extends Controller
                 'title' => $notification->title,
                 'booking_event' => $notification->booking?->event_type ?? 'Booking',
                 'timestamp' => $notification->created_at->format('M d, Y • h:i A'),
+                'created_at' => $notification->created_at->toIso8601String(),
+                'time_ago' => $notification->created_at->diffForHumans(),
                 'event_date' => $notification->booking?->event_date ? $notification->booking->event_date->format('M d, Y') : null,
                 'is_read' => (bool) $notification->is_read,
                 'badge' => $badgeLabel,

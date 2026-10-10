@@ -1,7 +1,7 @@
 <x-admin-layout title="Change Admin Email">
     <div class="mx-auto max-w-2xl space-y-6">
         <div class="border-b border-slate-200 pb-5">
-            <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">Account Security</p>
+            <p class="text-xs font-bold uppercase tracking-[0.2em] text-brand-700">Account Security</p>
             <h2 class="serif mt-1 text-3xl font-bold text-slate-900">Change Administrator Email</h2>
             <p class="mt-1 text-sm text-slate-500">
                 Update your active operational email address. Current password and verification OTP are required.
@@ -50,7 +50,7 @@
                             name="current_password"
                             id="current_password"
                             required
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 focus:border-purple-500 focus:ring-purple-500"
+                            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 focus:border-brand-600 focus:ring-brand-500"
                         >
                     </div>
 
@@ -66,7 +66,7 @@
                             required
                             value="{{ old('email') }}"
                             placeholder="newadmin@yourcompany.com"
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 focus:border-purple-500 focus:ring-purple-500"
+                            class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 focus:border-brand-600 focus:ring-brand-500"
                         >
                     </div>
 
@@ -76,7 +76,7 @@
                         </a>
                         <button
                             type="submit"
-                            class="rounded-lg bg-purple-700 px-5 py-2.5 font-semibold text-white hover:bg-purple-800 transition shadow-sm"
+                            class="rounded-lg bg-brand-700 px-5 py-2.5 font-semibold text-white hover:bg-brand-800 transition shadow-sm"
                         >
                             Send Verification Code &rarr;
                         </button>
@@ -84,10 +84,10 @@
                 </form>
             @else
                 {{-- STEP 2: Verify OTP Sent to New Email --}}
-                <div class="mb-6 rounded-lg bg-purple-50 border border-purple-200 p-4 text-sm text-purple-900">
+                <div class="mb-6 rounded-lg bg-brand-50 border border-brand-200 p-4 text-sm text-brand-900">
                     <p>A 6-digit verification code was sent to your proposed new email:</p>
-                    <strong class="block text-base mt-1 text-purple-950">{{ $pendingEmail }}</strong>
-                    <p class="text-xs text-purple-700 mt-2">
+                    <strong class="block text-base mt-1 text-brand-950">{{ $pendingEmail }}</strong>
+                    <p class="text-xs text-brand-700 mt-2">
                         Your account email will only be updated after entering this code.
                     </p>
                 </div>
@@ -108,13 +108,13 @@
                             placeholder="------"
                             required
                             autofocus
-                            class="w-full max-w-xs mx-auto block text-center text-2xl tracking-[0.4em] font-mono py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:border-purple-500 focus:ring-purple-500"
+                            class="w-full max-w-xs mx-auto block text-center text-2xl tracking-[0.4em] font-mono py-2.5 rounded-lg border border-slate-300 text-slate-900 focus:border-brand-600 focus:ring-brand-500"
                         >
                     </div>
 
                     <button
                         type="submit"
-                        class="w-full rounded-lg bg-emerald-700 px-5 py-2.5 font-semibold text-white hover:bg-emerald-800 transition shadow-sm"
+                        class="w-full rounded-lg bg-brand-700 px-5 py-2.5 font-semibold text-white hover:bg-brand-800 transition shadow-sm"
                     >
                         Confirm &amp; Update Email
                     </button>
@@ -125,7 +125,7 @@
                     <button
                         type="submit"
                         id="resend-btn"
-                        class="text-xs text-purple-700 hover:text-purple-900 underline disabled:opacity-50 disabled:no-underline"
+                        class="text-xs text-brand-700 hover:text-brand-900 underline disabled:opacity-50 disabled:no-underline"
                         @if($cooldownSeconds > 0) disabled @endif
                     >
                         Resend Code <span id="cooldown-timer">@if($cooldownSeconds > 0)({{ $cooldownSeconds }}s)@endif</span>

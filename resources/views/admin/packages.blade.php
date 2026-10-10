@@ -7,8 +7,8 @@
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200">
         <!-- Tabs (Strict Navigation Preservation) -->
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <a href="{{ route('admin.packages.index') }}" class="border-purple-600 text-purple-600 whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-2">
-                <i class="fa-solid fa-boxes-packing text-xs text-purple-600"></i>
+            <a href="{{ route('admin.packages.index') }}" class="border-brand-700 text-brand-700 whitespace-nowrap py-3 px-1 border-b-2 font-bold text-sm flex items-center gap-2">
+                <i class="fa-solid fa-boxes-packing text-xs text-brand-700"></i>
                 <span>Active Packages</span>
             </a>
             <a href="{{ route('admin.packages.archived') }}" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2">
@@ -19,11 +19,11 @@
 
         <!-- Top Actions Bar: View Archived & + Add Package -->
         <div class="flex items-center gap-3 shrink-0 pb-3 sm:pb-0">
-            <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700 text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500">
-                <i class="fa-solid fa-box-archive text-purple-600 text-xs"></i>
+            <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 hover:border-brand-300 bg-white hover:bg-brand-50/50 text-gray-700 hover:text-brand-800 text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <i class="fa-solid fa-box-archive text-brand-700 text-xs"></i>
                 <span>View Archived</span>
             </a>
-            <button type="button" onclick="openAddPackageModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer">
+            <button type="button" onclick="openAddPackageModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-semibold text-sm rounded-xl shadow-xs hover:shadow transition focus:outline-none focus:ring-2 focus:ring-brand-500 whitespace-nowrap cursor-pointer">
                 <i class="fa-solid fa-plus text-xs"></i>
                 <span>Add Package</span>
                 <a href="{{ route('admin.packages.create') }}" class="sr-only" aria-hidden="true">Add Package</a>
@@ -40,8 +40,7 @@
             @endphp
             <a
                 href="{{ route('admin.packages.index', array_merge(request()->query(), ['category' => 'all'])) }}"
-                style="{{ $isAllSelected ? 'background-color: #be185d !important; color: #ffffff !important;' : '' }}"
-                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition shadow-2xs {{ $isAllSelected ? 'bg-[#be185d] text-white font-bold shadow-xs' : 'bg-white border border-gray-200 text-gray-700 hover:border-pink-300 hover:bg-pink-50/30' }}"
+                class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition shadow-2xs {{ $isAllSelected ? 'bg-brand-700 text-white font-bold shadow-xs' : 'bg-white border border-gray-200 text-gray-700 hover:border-brand-300 hover:bg-brand-50/30' }}"
             >
                 All Packages ({{ $totalActiveCount ?? $packages->count() }})
             </a>
@@ -52,8 +51,7 @@
                 @endphp
                 <a
                     href="{{ route('admin.packages.index', array_merge(request()->query(), ['category' => $catName])) }}"
-                    style="{{ $isCatSelected ? 'background-color: #be185d !important; color: #ffffff !important;' : '' }}"
-                    class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition shadow-2xs {{ $isCatSelected ? 'bg-[#be185d] text-white font-bold shadow-xs' : 'bg-white border border-gray-200 text-gray-700 hover:border-pink-300 hover:bg-pink-50/30' }}"
+                    class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition shadow-2xs {{ $isCatSelected ? 'bg-brand-700 text-white font-bold shadow-xs' : 'bg-white border border-gray-200 text-gray-700 hover:border-brand-300 hover:bg-brand-50/30' }}"
                 >
                     {{ $catName }} ({{ $catCount }})
                 </a>
@@ -74,22 +72,22 @@
                 onclick="togglePackageFilterPanel()"
                 aria-expanded="{{ $isPackageFilterOpen ? 'true' : 'false' }}"
                 aria-controls="packageFilterPanel"
-                class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ $hasActivePackageFilters ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer {{ $hasActivePackageFilters ? 'border-brand-300 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 hover:border-brand-300 bg-white hover:bg-brand-50/50 text-gray-700 hover:text-brand-800' }}"
             >
-                <i class="fa-solid fa-sliders text-xs {{ $hasActivePackageFilters ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                <i class="fa-solid fa-sliders text-xs {{ $hasActivePackageFilters ? 'text-brand-700' : 'text-gray-500' }}"></i>
                 <span id="packageToggleFiltersText">{{ $isPackageFilterOpen ? 'Hide Filters' : 'Show Filters' }}</span>
                 @if($hasActivePackageFilters)
-                    <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-brand-700 inline-block" title="Filters are active"></span>
                 @endif
                 <i id="packageFiltersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ $isPackageFilterOpen ? 'rotate-180' : '' }}"></i>
             </button>
 
             <!-- Package Tools Dropdown Container -->
             <div class="relative" id="packageToolsContainer">
-                <button type="button" id="packageToolsButton" onclick="togglePackageToolsDropdown()" aria-haspopup="true" aria-expanded="false" aria-controls="packageToolsMenu" class="inline-flex items-center gap-2 px-3.5 py-2 border border-purple-300 hover:border-purple-600 bg-white hover:bg-purple-50/50 text-purple-700 font-semibold text-sm rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
-                    <i class="fa-regular fa-file-lines text-purple-600 text-sm"></i>
+                <button type="button" id="packageToolsButton" onclick="togglePackageToolsDropdown()" aria-haspopup="true" aria-expanded="false" aria-controls="packageToolsMenu" class="inline-flex items-center gap-2 px-3.5 py-2 border border-brand-300 hover:border-brand-800 bg-white hover:bg-brand-50/50 text-brand-700 font-semibold text-sm rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer">
+                    <i class="fa-regular fa-file-lines text-brand-700 text-sm"></i>
                     <span>Package Tools</span>
-                    <i id="packageToolsChevron" class="fa-solid fa-chevron-down text-[10px] text-purple-600 transition-transform duration-200"></i>
+                    <i id="packageToolsChevron" class="fa-solid fa-chevron-down text-[10px] text-brand-700 transition-transform duration-200"></i>
                 </button>
 
                 <!-- Popover Dropdown Menu -->
@@ -99,21 +97,21 @@
                         <div>
                             <p class="text-[11px] font-bold tracking-wider text-gray-400 uppercase mb-2.5">EXPORT</p>
                             <div class="space-y-2">
-                                <a href="{{ route('admin.packages.export.packages') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-purple-50/50 border border-transparent hover:border-purple-100 transition">
-                                    <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100 transition">
+                                <a href="{{ route('admin.packages.export.packages') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-brand-50/50 border border-transparent hover:border-brand-100 transition">
+                                    <div class="w-9 h-9 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center shrink-0 group-hover:bg-brand-100 transition">
                                         <i class="fa-solid fa-file-arrow-down text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Export Packages</p>
+                                        <p class="text-sm font-bold text-gray-900 group-hover:text-brand-800 transition">Export Packages</p>
                                         <p class="text-xs text-gray-500 mt-0.5">Package master CSV</p>
                                     </div>
                                 </a>
-                                <a href="{{ route('admin.packages.export.materials') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-purple-50/50 border border-transparent hover:border-purple-100 transition">
-                                    <div class="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-100 transition">
+                                <a href="{{ route('admin.packages.export.materials') }}" onclick="closePackageToolsDropdown()" class="group flex items-start gap-3 p-2.5 rounded-xl hover:bg-brand-50/50 border border-transparent hover:border-brand-100 transition">
+                                    <div class="w-9 h-9 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center shrink-0 group-hover:bg-brand-100 transition">
                                         <i class="fa-solid fa-boxes-stacked text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Export Materials</p>
+                                        <p class="text-sm font-bold text-gray-900 group-hover:text-brand-800 transition">Export Materials</p>
                                         <p class="text-xs text-gray-500 mt-0.5">Package BOM CSV</p>
                                     </div>
                                 </a>
@@ -124,22 +122,22 @@
                         <div>
                             <p class="text-[11px] font-bold tracking-wider text-gray-400 uppercase mb-2.5">IMPORT</p>
                             <div class="space-y-2">
-                                <button type="button" onclick="closePackageToolsDropdown(); openImportPackagesModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 hover:bg-purple-100/70 transition cursor-pointer">
-                                    <div class="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                <button type="button" onclick="closePackageToolsDropdown(); openImportPackagesModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl bg-brand-50/70 border border-brand-100 hover:bg-brand-100/70 transition cursor-pointer">
+                                    <div class="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
                                         <i class="fa-solid fa-file-arrow-up text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-purple-950">Import Packages</p>
-                                        <p class="text-xs text-purple-700 mt-0.5">Upload package CSV</p>
+                                        <p class="text-sm font-bold text-brand-950">Import Packages</p>
+                                        <p class="text-xs text-brand-700 mt-0.5">Upload package CSV</p>
                                     </div>
                                 </button>
-                                <button type="button" onclick="closePackageToolsDropdown(); openImportMaterialsModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl bg-purple-50/70 border border-purple-100 hover:bg-purple-100/70 transition cursor-pointer">
-                                    <div class="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0">
+                                <button type="button" onclick="closePackageToolsDropdown(); openImportMaterialsModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl bg-brand-50/70 border border-brand-100 hover:bg-brand-100/70 transition cursor-pointer">
+                                    <div class="w-9 h-9 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center shrink-0">
                                         <i class="fa-solid fa-layer-group text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-purple-950">Import Materials</p>
-                                        <p class="text-xs text-purple-700 mt-0.5">Upload BOM CSV</p>
+                                        <p class="text-sm font-bold text-brand-950">Import Materials</p>
+                                        <p class="text-xs text-brand-700 mt-0.5">Upload BOM CSV</p>
                                     </div>
                                 </button>
                                 <button type="button" onclick="closePackageToolsDropdown(); openPackageInstructionsModal();" class="w-full text-left group flex items-start gap-3 p-2.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition cursor-pointer">
@@ -147,7 +145,7 @@
                                         <i class="fa-solid fa-circle-info text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Import Instructions</p>
+                                        <p class="text-sm font-bold text-gray-900 group-hover:text-brand-800 transition">Import Instructions</p>
                                         <p class="text-xs text-gray-500 mt-0.5">View specifications</p>
                                     </div>
                                 </button>
@@ -163,7 +161,7 @@
                                         <i class="fa-regular fa-file-lines text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Package Template</p>
+                                        <p class="text-sm font-bold text-gray-900 group-hover:text-brand-800 transition">Package Template</p>
                                         <p class="text-xs text-gray-500 mt-0.5">Blank packages.csv</p>
                                     </div>
                                 </a>
@@ -172,7 +170,7 @@
                                         <i class="fa-solid fa-table-list text-sm"></i>
                                     </div>
                                     <div class="min-w-0">
-                                        <p class="text-sm font-bold text-gray-900 group-hover:text-purple-700 transition">Materials Template</p>
+                                        <p class="text-sm font-bold text-gray-900 group-hover:text-brand-800 transition">Materials Template</p>
                                         <p class="text-xs text-gray-500 mt-0.5">Blank BOM CSV</p>
                                     </div>
                                 </a>
@@ -188,7 +186,7 @@
                     type="button"
                     id="viewGridBtn"
                     onclick="setViewMode('grid')"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-[#be185d] text-white shadow-2xs"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-brand-700 text-white shadow-2xs"
                     aria-pressed="true"
                     title="Grid View"
                 >
@@ -217,7 +215,7 @@
             <input type="hidden" name="view" id="packageViewModeInput" value="{{ $currentView ?? 'grid' }}">
 
             <!-- Seamless Single-Pill Search Bar -->
-            <div class="bg-white border border-gray-200/90 rounded-2xl shadow-xs p-1.5 pl-4 flex items-center gap-3 transition-all focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-purple-500">
+            <div class="bg-white border border-gray-200/90 rounded-2xl shadow-xs p-1.5 pl-4 flex items-center gap-3 transition-all focus-within:ring-2 focus-within:ring-brand-500 focus-within:border-brand-600">
                 <span class="text-gray-400 shrink-0 flex items-center">
                     <i class="fa-solid fa-magnifying-glass text-sm"></i>
                 </span>
@@ -240,7 +238,7 @@
                     @endif
                     <button
                         type="submit"
-                        class="inline-flex items-center justify-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                        class="inline-flex items-center justify-center gap-2 px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl transition shadow-xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                     >
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         <span>Search</span>
@@ -256,7 +254,7 @@
             >
                 <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3 sm:gap-4">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-                        <i class="fa-solid fa-filter text-purple-600 text-[11px]"></i> Filters & Sort:
+                        <i class="fa-solid fa-filter text-brand-700 text-[11px]"></i> Filters & Sort:
                     </span>
 
                     <!-- Category Filter Dropdown -->
@@ -269,7 +267,7 @@
                             id="packageCategoryFilter"
                             onchange="this.form.submit()"
                             style="padding-left: 2.35rem; padding-right: 2rem;"
-                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer"
                         >
                             <option value="all" {{ ($currentCategory ?? 'all') === 'all' ? 'selected' : '' }}>All Categories</option>
                             @foreach($packageCategories as $cat)
@@ -291,7 +289,7 @@
                             id="packageStatusFilter"
                             onchange="this.form.submit()"
                             style="padding-left: 2.35rem; padding-right: 2rem;"
-                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer"
                         >
                             <option value="active" {{ ($currentStatus ?? 'active') === 'active' ? 'selected' : '' }}>Active Packages</option>
                             <option value="all" {{ ($currentStatus ?? '') === 'all' ? 'selected' : '' }}>All Packages</option>
@@ -312,7 +310,7 @@
                             id="packageSortFilter"
                             onchange="this.form.submit()"
                             style="padding-left: 2.35rem; padding-right: 2rem;"
-                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer"
                         >
                             <option value="latest" {{ ($currentSort ?? 'latest') === 'latest' ? 'selected' : '' }}>Latest First</option>
                             <option value="oldest" {{ ($currentSort ?? '') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
@@ -361,8 +359,8 @@
                                 </div>
                             @endif
                         @else
-                            <div class="w-full h-full bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center text-pink-300 cursor-pointer" onclick="openLightbox('{{ $package->id }}')">
-                                <i class="fa-solid fa-gift text-4xl text-pink-300/80"></i>
+                            <div class="w-full h-full bg-gradient-to-br from-brand-50 to-brand-50 flex items-center justify-center text-brand-300 cursor-pointer" onclick="openLightbox('{{ $package->id }}')">
+                                <i class="fa-solid fa-gift text-4xl text-brand-300/80"></i>
                             </div>
                         @endif
 
@@ -389,7 +387,7 @@
                         <div>
                             <!-- Category Badge -->
                             <div class="flex items-center justify-between gap-2 mb-1.5">
-                                <span class="text-[11px] font-bold tracking-wider uppercase text-[#be185d]">
+                                <span class="text-[11px] font-bold tracking-wider uppercase text-brand-700">
                                     {{ $package->category ?: 'Uncategorized' }}
                                 </span>
                                 <span class="text-[10px] font-mono text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
@@ -398,12 +396,12 @@
                             </div>
 
                             <!-- Package Title -->
-                            <h3 class="font-bold text-gray-900 text-base mb-1 line-clamp-1 group-hover:text-purple-700 transition-colors serif">
+                            <h3 class="font-bold text-gray-900 text-base mb-1 line-clamp-1 group-hover:text-brand-800 transition-colors serif">
                                 {{ $package->title }}
                             </h3>
 
                             <!-- Price -->
-                            <p class="text-xl font-extrabold text-[#be185d] mb-2.5">
+                            <p class="text-xl font-extrabold text-brand-700 mb-2.5">
                                 ₱{{ number_format($package->price, 2) }}
                             </p>
 
@@ -421,12 +419,12 @@
                             <!-- Inclusions & BOM Counts Row -->
                             <div class="flex items-center gap-3 pt-2 pb-3 text-xs text-gray-600 border-t border-gray-100">
                                 <span class="inline-flex items-center gap-1.5 font-medium" title="{{ $inclusionsCount }} client-facing inclusions">
-                                    <i class="fa-solid fa-gift text-purple-500 text-[11px]"></i>
+                                    <i class="fa-solid fa-gift text-brand-700 text-[11px]"></i>
                                     <span>{{ $inclusionsCount }} inclusions</span>
                                 </span>
                                 <span class="text-gray-300">•</span>
                                 <span class="inline-flex items-center gap-1.5 font-medium" title="{{ $bomCount }} physical inventory materials">
-                                    <i class="fa-solid fa-boxes-stacked text-purple-500 text-[11px]"></i>
+                                    <i class="fa-solid fa-boxes-stacked text-brand-700 text-[11px]"></i>
                                     <span>{{ $bomCount }} BOM items</span>
                                 </span>
                             </div>
@@ -438,7 +436,7 @@
                             <button
                                 type="button"
                                 onclick='openViewModal(@json($package))'
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 transition cursor-pointer"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-brand-700 bg-brand-50 hover:bg-brand-100 transition cursor-pointer"
                             >
                                 <i class="fa-regular fa-eye"></i>
                                 <span>View</span>
@@ -540,7 +538,7 @@
                                 $inclusionsCount = is_array($package->included_items) ? count($package->included_items) : (!empty($package->included_items) ? count(explode(',', $package->included_items)) : 0);
                                 $bomCount = $package->inventoryItems->count();
                             @endphp
-                            <tr class="hover:bg-purple-50/30 transition-colors group">
+                            <tr class="hover:bg-brand-50/30 transition-colors group">
                                 <td class="px-5 py-3.5">
                                     <div class="flex items-center gap-3">
                                         <div class="w-11 h-11 rounded-xl bg-gray-100 overflow-hidden shrink-0 border border-gray-200 flex items-center justify-center">
@@ -551,28 +549,28 @@
                                             @endif
                                         </div>
                                         <div class="min-w-0">
-                                            <p class="font-bold text-gray-900 group-hover:text-purple-700 transition truncate max-w-xs">{{ $package->title }}</p>
+                                            <p class="font-bold text-gray-900 group-hover:text-brand-800 transition truncate max-w-xs">{{ $package->title }}</p>
                                             <p class="font-mono text-[11px] text-gray-400 mt-0.5">{{ $package->package_code }}</p>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-pink-50 text-[#be185d] border border-pink-100">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-100">
                                         {{ $package->category ?: 'Uncategorized' }}
                                     </span>
                                 </td>
                                 <td class="px-4 py-3.5 whitespace-nowrap">
-                                    <span class="font-extrabold text-[#be185d]">₱{{ number_format($package->price, 2) }}</span>
+                                    <span class="font-extrabold text-brand-700">₱{{ number_format($package->price, 2) }}</span>
                                 </td>
                                 <td class="px-4 py-3.5 whitespace-nowrap text-xs text-gray-600">
                                     <span class="inline-flex items-center gap-1">
-                                        <i class="fa-solid fa-gift text-purple-400"></i>
+                                        <i class="fa-solid fa-gift text-brand-400"></i>
                                         <span>{{ $inclusionsCount }} items</span>
                                     </span>
                                 </td>
                                 <td class="px-4 py-3.5 whitespace-nowrap text-xs text-gray-600">
                                     <span class="inline-flex items-center gap-1">
-                                        <i class="fa-solid fa-boxes-stacked text-purple-400"></i>
+                                        <i class="fa-solid fa-boxes-stacked text-brand-400"></i>
                                         <span>{{ $bomCount }} items</span>
                                     </span>
                                 </td>
@@ -599,7 +597,7 @@
                                         <button
                                             type="button"
                                             onclick='openViewModal(@json($package))'
-                                            class="w-8 h-8 rounded-lg flex items-center justify-center text-purple-600 hover:bg-purple-50 transition cursor-pointer"
+                                            class="w-8 h-8 rounded-lg flex items-center justify-center text-brand-700 hover:bg-brand-50 transition cursor-pointer"
                                             title="View Package"
                                         >
                                             <i class="fa-regular fa-eye"></i>
@@ -648,19 +646,19 @@
     @else
         <!-- Empty State -->
         <div class="text-center py-16 bg-white rounded-2xl shadow-xs border border-gray-100">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-50 text-purple-600 mb-4">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-50 text-brand-700 mb-4">
                 <i class="fa-solid fa-gift text-2xl"></i>
             </div>
             @if(!empty($currentSearch) || (($currentCategory ?? 'all') !== 'all') || (($currentStatus ?? 'active') !== 'active'))
                 <h3 class="text-lg font-bold text-gray-900">No matching packages found</h3>
                 <p class="mt-1 text-sm text-gray-500 mb-6">Try adjusting your keyword search, category filter, or status filter.</p>
-                <a href="{{ route('admin.packages.index') }}" class="inline-flex items-center px-4 py-2 border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl text-sm font-semibold transition">
+                <a href="{{ route('admin.packages.index') }}" class="inline-flex items-center px-4 py-2 border border-brand-200 text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl text-sm font-semibold transition">
                     Clear Filters
                 </a>
             @else
                 <h3 class="text-lg font-bold text-gray-900">No packages in catalogue</h3>
                 <p class="mt-1 text-sm text-gray-500 mb-6">Get started by creating your first package bundle.</p>
-                <button type="button" onclick="openAddPackageModal()" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition cursor-pointer">
+                <button type="button" onclick="openAddPackageModal()" class="inline-flex items-center px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white rounded-xl text-sm font-semibold transition cursor-pointer">
                     <i class="fa-solid fa-plus mr-2"></i> Add Package
                 </button>
             @endif
@@ -678,7 +676,7 @@
 
             <div class="px-6 sm:px-8 py-5 border-b border-gray-100 shrink-0 pr-16 bg-white">
                 <div class="flex items-center gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-purple-600" id="view_category_top">Package</span>
+                    <span class="text-xs font-bold uppercase tracking-wider text-brand-700" id="view_category_top">Package</span>
                 </div>
                 <h3 id="viewModalTitle" class="text-2xl font-bold text-gray-900 serif">View Package</h3>
             </div>
@@ -701,7 +699,7 @@
                         </div>
                         <div>
                             <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Price</span>
-                            <span id="view_price" class="block text-base font-extrabold text-[#be185d]"></span>
+                            <span id="view_price" class="block text-base font-extrabold text-brand-700"></span>
                         </div>
                         <div class="sm:col-span-2">
                             <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Catalogue Status</span>
@@ -720,7 +718,7 @@
                 <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
                         <h4 class="text-xs font-bold tracking-wider uppercase text-gray-400">Client-Facing Inclusions</h4>
-                        <span id="view_inclusions_count" class="text-xs font-semibold text-purple-600"></span>
+                        <span id="view_inclusions_count" class="text-xs font-semibold text-brand-700"></span>
                     </div>
                     <div id="view_inclusions_container" class="flex flex-wrap gap-2">
                         <!-- Populated by JS -->
@@ -731,7 +729,7 @@
                 <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-2 mb-3">
                         <h4 class="text-xs font-bold tracking-wider uppercase text-gray-400">Inventory Requirements (BOM)</h4>
-                        <span id="view_bom_count" class="text-xs font-semibold text-purple-600"></span>
+                        <span id="view_bom_count" class="text-xs font-semibold text-brand-700"></span>
                     </div>
                     <div id="view_inventory_container" class="space-y-2">
                         <!-- Populated by JS -->
@@ -770,7 +768,7 @@
                 <div class="px-6 sm:px-8 py-6 space-y-6 overflow-y-auto flex-1 bg-gray-50/50">
                     <!-- SECTION A: PACKAGE INFORMATION -->
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
-                        <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2 border-b border-gray-100 pb-2">
                             <i class="fa-solid fa-info-circle"></i> A. Package Information
                         </h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -778,13 +776,13 @@
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Package Name <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" name="title" required placeholder="e.g. Elegant Bloom Package" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="text" name="title" required placeholder="e.g. Elegant Bloom Package" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Category <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" name="category" required list="categories_list" placeholder="e.g. Wedding, Debut" maxlength="50" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="text" name="category" required list="categories_list" placeholder="e.g. Wedding, Debut" maxlength="50" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                                 <datalist id="categories_list">
                                     @foreach($packageCategories as $c)
                                         <option value="{{ $c }}"></option>
@@ -795,11 +793,11 @@
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Package Price (₱) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" step="0.01" min="0" name="price" required placeholder="0.00" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="number" step="0.01" min="0" name="price" required placeholder="0.00" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Description</label>
-                                <textarea name="description" rows="2" placeholder="Brief marketing and styling description for this package..." class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs resize-y"></textarea>
+                                <textarea name="description" rows="2" placeholder="Brief marketing and styling description for this package..." class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs resize-y"></textarea>
                             </div>
                         </div>
                     </div>
@@ -807,15 +805,15 @@
                     <!-- SECTION B: CLIENT-FACING INCLUSIONS -->
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-3">
                         <div class="border-b border-gray-100 pb-2">
-                            <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2">
+                            <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2">
                                 <i class="fa-solid fa-gift"></i> B. Client-Facing Inclusions
                             </h4>
                             <p class="text-xs text-gray-500 mt-0.5">Describe what the client receives as part of this bundle (e.g., Bridal Bouquet, 6 Boutonnieres, Stage Setup).</p>
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <input type="text" id="add_inclusion_input" placeholder="Type inclusion and press Enter or click Add..." class="flex-1 px-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addInclusionChip('add'); }">
-                            <button type="button" onclick="addInclusionChip('add')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">
+                            <input type="text" id="add_inclusion_input" placeholder="Type inclusion and press Enter or click Add..." class="flex-1 px-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addInclusionChip('add'); }">
+                            <button type="button" onclick="addInclusionChip('add')" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition cursor-pointer">
                                 <i class="fa-solid fa-plus text-xs"></i> Add
                             </button>
                         </div>
@@ -831,10 +829,10 @@
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
                         <div class="border-b border-gray-100 pb-2">
                             <div class="flex items-center justify-between">
-                                <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2">
+                                <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2">
                                     <i class="fa-solid fa-boxes-stacked"></i> C. Inventory Requirements (Bill of Materials)
                                 </h4>
-                                <span class="text-xs font-bold text-purple-700" id="add_bom_count_summary">0 items selected</span>
+                                <span class="text-xs font-bold text-brand-700" id="add_bom_count_summary">0 items selected</span>
                             </div>
                             <p class="text-xs text-gray-500 mt-0.5">Physical inventory materials required to prepare this package. Package definition is a template only and does not deduct actual inventory stock.</p>
                         </div>
@@ -845,10 +843,10 @@
                                 <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                                 </span>
-                                <input type="text" id="add_bom_search_input" oninput="filterInventoryCatalog('add')" placeholder="Search inventory materials by name or item code..." class="w-full pl-9 pr-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="text" id="add_bom_search_input" oninput="filterInventoryCatalog('add')" placeholder="Search inventory materials by name or item code..." class="w-full pl-9 pr-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div class="sm:w-1/3">
-                                <select id="add_bom_category_filter" onchange="filterInventoryCatalog('add')" class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <select id="add_bom_category_filter" onchange="filterInventoryCatalog('add')" class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                                     <option value="">All Inventory Categories</option>
                                     @foreach($inventoryCategories as $icat)
                                         <option value="{{ $icat }}">{{ $icat }}</option>
@@ -861,7 +859,7 @@
                         <div class="border border-gray-200 rounded-xl p-2 bg-gray-50 max-h-48 overflow-y-auto space-y-1.5" id="add_bom_catalog_list">
                             @foreach($inventoryItems as $item)
                                 <div
-                                    class="flex items-center justify-between p-2 rounded-lg bg-white border border-gray-100 hover:border-purple-200 hover:bg-purple-50/20 transition text-xs bom-catalog-row"
+                                    class="flex items-center justify-between p-2 rounded-lg bg-white border border-gray-100 hover:border-brand-200 hover:bg-brand-50/20 transition text-xs bom-catalog-row"
                                     data-id="{{ $item->id }}"
                                     data-name="{{ $item->name }}"
                                     data-code="{{ $item->item_code ?? 'N/A' }}"
@@ -878,7 +876,7 @@
                                             {{ $item->category }} • In Stock: <strong class="text-gray-700">{{ (float)$item->current_stock }}</strong> {{ $item->unit }}
                                         </p>
                                     </div>
-                                    <button type="button" onclick="addMaterialToBom('add', {{ $item->id }}, '{{ addslashes($item->name) }}', '{{ $item->item_code ?? 'N/A' }}', '{{ $item->unit }}', {{ (float)$item->current_stock }})" class="shrink-0 px-2.5 py-1 bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white rounded-lg font-bold text-xs transition cursor-pointer">
+                                    <button type="button" onclick="addMaterialToBom('add', {{ $item->id }}, '{{ addslashes($item->name) }}', '{{ $item->item_code ?? 'N/A' }}', '{{ $item->unit }}', {{ (float)$item->current_stock }})" class="shrink-0 px-2.5 py-1 bg-brand-50 hover:bg-brand-800 text-brand-700 hover:text-white rounded-lg font-bold text-xs transition cursor-pointer">
                                         <i class="fa-solid fa-plus text-[10px]"></i> Add
                                     </button>
                                 </div>
@@ -916,13 +914,13 @@
 
                     <!-- SECTION D: PACKAGE IMAGE & STATUS -->
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
-                        <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2 border-b border-gray-100 pb-2">
                             <i class="fa-solid fa-image"></i> D. Package Image & Status
                         </h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Upload Package Image</label>
-                                <input type="file" name="images[]" id="add_image_input" accept="image/png,image/jpeg,image/webp" onchange="previewImageFile(this, 'add_image_preview')" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-gray-200 rounded-xl p-1 bg-gray-50">
+                                <input type="file" name="images[]" id="add_image_input" accept="image/png,image/jpeg,image/webp" onchange="previewImageFile(this, 'add_image_preview')" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 border border-gray-200 rounded-xl p-1 bg-gray-50">
                                 <p class="text-[11px] text-gray-400 mt-1">Single image (PNG, JPG, WEBP up to 2MB).</p>
                                 <div id="add_image_preview" class="mt-2 w-24 h-16 rounded-lg bg-gray-100 border border-gray-200 hidden overflow-hidden">
                                     <img src="" alt="Preview" class="w-full h-full object-cover">
@@ -933,7 +931,7 @@
                                 <div class="mt-2 flex items-center gap-3">
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" name="is_active" value="1" class="sr-only peer" checked>
-                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                         <span class="ml-3 text-xs font-bold text-gray-700">Active (Visible for Public Booking)</span>
                                     </label>
                                 </div>
@@ -946,7 +944,7 @@
                     <button type="button" onclick="closeModal('addPackageModal')" class="px-5 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition cursor-pointer shadow-2xs">
                         Cancel
                     </button>
-                    <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs">
+                    <button type="submit" class="px-5 py-2.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs">
                         Create Package
                     </button>
                 </div>
@@ -974,7 +972,7 @@
                 <div class="px-6 sm:px-8 py-6 space-y-6 overflow-y-auto flex-1 bg-gray-50/50">
                     <!-- SECTION A: PACKAGE INFORMATION -->
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
-                        <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2 border-b border-gray-100 pb-2">
                             <i class="fa-solid fa-info-circle"></i> A. Package Information
                         </h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -982,7 +980,7 @@
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Package Name <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" name="title" id="edit_title" required class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="text" name="title" id="edit_title" required class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Package Code</label>
@@ -992,17 +990,17 @@
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Category <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" name="category" id="edit_category" required list="categories_list" maxlength="50" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="text" name="category" id="edit_category" required list="categories_list" maxlength="50" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
                                     Package Price (₱) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" step="0.01" min="0" name="price" id="edit_price" required class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="number" step="0.01" min="0" name="price" id="edit_price" required class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Description</label>
-                                <textarea name="description" id="edit_description" rows="2" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs resize-y"></textarea>
+                                <textarea name="description" id="edit_description" rows="2" class="w-full px-3.5 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs resize-y"></textarea>
                             </div>
                         </div>
                     </div>
@@ -1010,15 +1008,15 @@
                     <!-- SECTION B: CLIENT-FACING INCLUSIONS -->
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-3">
                         <div class="border-b border-gray-100 pb-2">
-                            <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2">
+                            <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2">
                                 <i class="fa-solid fa-gift"></i> B. Client-Facing Inclusions
                             </h4>
                             <p class="text-xs text-gray-500 mt-0.5">Describe what the client receives as part of this package.</p>
                         </div>
 
                         <div class="flex items-center gap-2">
-                            <input type="text" id="edit_inclusion_input" placeholder="Type inclusion and press Enter or click Add..." class="flex-1 px-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addInclusionChip('edit'); }">
-                            <button type="button" onclick="addInclusionChip('edit')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">
+                            <input type="text" id="edit_inclusion_input" placeholder="Type inclusion and press Enter or click Add..." class="flex-1 px-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addInclusionChip('edit'); }">
+                            <button type="button" onclick="addInclusionChip('edit')" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition cursor-pointer">
                                 <i class="fa-solid fa-plus text-xs"></i> Add
                             </button>
                         </div>
@@ -1034,10 +1032,10 @@
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
                         <div class="border-b border-gray-100 pb-2">
                             <div class="flex items-center justify-between">
-                                <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2">
+                                <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2">
                                     <i class="fa-solid fa-boxes-stacked"></i> C. Inventory Requirements (Bill of Materials)
                                 </h4>
-                                <span class="text-xs font-bold text-purple-700" id="edit_bom_count_summary">0 items selected</span>
+                                <span class="text-xs font-bold text-brand-700" id="edit_bom_count_summary">0 items selected</span>
                             </div>
                             <p class="text-xs text-gray-500 mt-0.5">Physical inventory materials required to prepare this package.</p>
                         </div>
@@ -1048,10 +1046,10 @@
                                 <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-gray-400">
                                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                                 </span>
-                                <input type="text" id="edit_bom_search_input" oninput="filterInventoryCatalog('edit')" placeholder="Search inventory materials by name or item code..." class="w-full pl-9 pr-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <input type="text" id="edit_bom_search_input" oninput="filterInventoryCatalog('edit')" placeholder="Search inventory materials by name or item code..." class="w-full pl-9 pr-3.5 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                             </div>
                             <div class="sm:w-1/3">
-                                <select id="edit_bom_category_filter" onchange="filterInventoryCatalog('edit')" class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs">
+                                <select id="edit_bom_category_filter" onchange="filterInventoryCatalog('edit')" class="w-full px-3 py-2 bg-gray-50/50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs">
                                     <option value="">All Inventory Categories</option>
                                     @foreach($inventoryCategories as $icat)
                                         <option value="{{ $icat }}">{{ $icat }}</option>
@@ -1064,7 +1062,7 @@
                         <div class="border border-gray-200 rounded-xl p-2 bg-gray-50 max-h-48 overflow-y-auto space-y-1.5" id="edit_bom_catalog_list">
                             @foreach($inventoryItems as $item)
                                 <div
-                                    class="flex items-center justify-between p-2 rounded-lg bg-white border border-gray-100 hover:border-purple-200 hover:bg-purple-50/20 transition text-xs bom-catalog-row"
+                                    class="flex items-center justify-between p-2 rounded-lg bg-white border border-gray-100 hover:border-brand-200 hover:bg-brand-50/20 transition text-xs bom-catalog-row"
                                     data-id="{{ $item->id }}"
                                     data-name="{{ $item->name }}"
                                     data-code="{{ $item->item_code ?? 'N/A' }}"
@@ -1081,7 +1079,7 @@
                                             {{ $item->category }} • In Stock: <strong class="text-gray-700">{{ (float)$item->current_stock }}</strong> {{ $item->unit }}
                                         </p>
                                     </div>
-                                    <button type="button" onclick="addMaterialToBom('edit', {{ $item->id }}, '{{ addslashes($item->name) }}', '{{ $item->item_code ?? 'N/A' }}', '{{ $item->unit }}', {{ (float)$item->current_stock }})" class="shrink-0 px-2.5 py-1 bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white rounded-lg font-bold text-xs transition cursor-pointer">
+                                    <button type="button" onclick="addMaterialToBom('edit', {{ $item->id }}, '{{ addslashes($item->name) }}', '{{ $item->item_code ?? 'N/A' }}', '{{ $item->unit }}', {{ (float)$item->current_stock }})" class="shrink-0 px-2.5 py-1 bg-brand-50 hover:bg-brand-800 text-brand-700 hover:text-white rounded-lg font-bold text-xs transition cursor-pointer">
                                         <i class="fa-solid fa-plus text-[10px]"></i> Add
                                     </button>
                                 </div>
@@ -1119,13 +1117,13 @@
 
                     <!-- SECTION D: PACKAGE IMAGE & STATUS -->
                     <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs space-y-4">
-                        <h4 class="text-xs font-bold tracking-wider uppercase text-purple-700 flex items-center gap-2 border-b border-gray-100 pb-2">
+                        <h4 class="text-xs font-bold tracking-wider uppercase text-brand-700 flex items-center gap-2 border-b border-gray-100 pb-2">
                             <i class="fa-solid fa-image"></i> D. Package Image & Status
                         </h4>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Replace Package Image</label>
-                                <input type="file" name="images[]" id="edit_image_input" accept="image/png,image/jpeg,image/webp" onchange="previewImageFile(this, 'edit_image_preview')" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 border border-gray-200 rounded-xl p-1 bg-gray-50">
+                                <input type="file" name="images[]" id="edit_image_input" accept="image/png,image/jpeg,image/webp" onchange="previewImageFile(this, 'edit_image_preview')" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 border border-gray-200 rounded-xl p-1 bg-gray-50">
                                 <p class="text-[11px] text-gray-400 mt-1">Upload a new image to replace or add to the current image.</p>
                                 <div id="edit_image_preview" class="mt-2 w-24 h-16 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden">
                                     <img src="" id="edit_current_img_tag" alt="Current Image" class="w-full h-full object-cover">
@@ -1136,7 +1134,7 @@
                                 <div class="mt-2 flex items-center gap-3">
                                     <label class="relative inline-flex items-center cursor-pointer">
                                         <input type="checkbox" name="is_active" id="edit_is_active" value="1" class="sr-only peer">
-                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
                                         <span class="ml-3 text-xs font-bold text-gray-700">Active (Visible for Public Booking)</span>
                                     </label>
                                 </div>
@@ -1149,7 +1147,7 @@
                     <button type="button" onclick="closeModal('editPackageModal')" class="px-5 py-2.5 border border-gray-300 text-gray-700 text-xs font-bold rounded-xl hover:bg-gray-50 transition cursor-pointer shadow-2xs">
                         Cancel
                     </button>
-                    <button type="submit" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs">
+                    <button type="submit" class="px-5 py-2.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition cursor-pointer shadow-xs">
                         Save Changes
                     </button>
                 </div>
@@ -1239,7 +1237,7 @@
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-7 transform transition-all border border-slate-200">
             <div class="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-700 shrink-0">
                         <i class="fa-solid fa-file-arrow-up text-lg" aria-hidden="true"></i>
                     </div>
                     <div>
@@ -1247,7 +1245,7 @@
                         <p class="text-xs text-gray-500">Upload package master records to create or update packages</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeImportPackagesModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition cursor-pointer" aria-label="Close modal">
+                <button type="button" onclick="closeImportPackagesModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer" aria-label="Close modal">
                     <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
@@ -1259,12 +1257,12 @@
                         Select Packages CSV File <span class="text-red-500">*</span>
                     </label>
                     <input type="file" name="csv_file" id="package_csv_file" accept=".csv,text/csv" required
-                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition">
+                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition">
                 </div>
 
                 <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
                     <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        <i class="fa-solid fa-circle-info text-purple-600" aria-hidden="true"></i>
+                        <i class="fa-solid fa-circle-info text-brand-700" aria-hidden="true"></i>
                         <span>Expected Columns</span>
                     </div>
                     <p class="text-xs font-mono text-slate-600 bg-white p-2 rounded border border-slate-200 break-all select-all">
@@ -1279,7 +1277,7 @@
 
                 <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
                     <span>Need the template?</span>
-                    <a href="{{ route('admin.packages.template.packages') }}" class="text-purple-600 hover:text-purple-700 font-semibold inline-flex items-center gap-1">
+                    <a href="{{ route('admin.packages.template.packages') }}" class="text-brand-700 hover:text-brand-800 font-semibold inline-flex items-center gap-1">
                         <i class="fa-solid fa-download" aria-hidden="true"></i> Download Package Template
                     </a>
                 </div>
@@ -1288,7 +1286,7 @@
                     <button type="button" onclick="closeImportPackagesModal()" class="px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition inline-flex items-center gap-2 cursor-pointer">
+                    <button type="submit" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition inline-flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-upload" aria-hidden="true"></i> Upload Packages
                     </button>
                 </div>
@@ -1302,7 +1300,7 @@
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 sm:p-7 transform transition-all border border-slate-200">
             <div class="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-700 shrink-0">
                         <i class="fa-solid fa-layer-group text-lg" aria-hidden="true"></i>
                     </div>
                     <div>
@@ -1310,7 +1308,7 @@
                         <p class="text-xs text-gray-500">Map packages to existing Inventory Management items</p>
                     </div>
                 </div>
-                <button type="button" onclick="closeImportMaterialsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition cursor-pointer" aria-label="Close modal">
+                <button type="button" onclick="closeImportMaterialsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer" aria-label="Close modal">
                     <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
@@ -1322,12 +1320,12 @@
                         Select Materials CSV File <span class="text-red-500">*</span>
                     </label>
                     <input type="file" name="csv_file" id="materials_csv_file" accept=".csv,text/csv" required
-                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition">
+                           class="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 file:cursor-pointer border border-gray-300 rounded-lg p-1.5 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition">
                 </div>
 
                 <div class="rounded-xl bg-slate-50 border border-slate-200 p-4 space-y-2">
                     <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
-                        <i class="fa-solid fa-circle-info text-purple-600" aria-hidden="true"></i>
+                        <i class="fa-solid fa-circle-info text-brand-700" aria-hidden="true"></i>
                         <span>Expected Columns</span>
                     </div>
                     <p class="text-xs font-mono text-slate-600 bg-white p-2 rounded border border-slate-200 break-all select-all">
@@ -1342,7 +1340,7 @@
 
                 <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
                     <span>Need the template?</span>
-                    <a href="{{ route('admin.packages.template.materials') }}" class="text-purple-600 hover:text-purple-700 font-semibold inline-flex items-center gap-1">
+                    <a href="{{ route('admin.packages.template.materials') }}" class="text-brand-700 hover:text-brand-800 font-semibold inline-flex items-center gap-1">
                         <i class="fa-solid fa-download" aria-hidden="true"></i> Download Materials Template
                     </a>
                 </div>
@@ -1351,7 +1349,7 @@
                     <button type="button" onclick="closeImportMaterialsModal()" class="px-4 py-2 border border-gray-300 text-sm font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 transition cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" class="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 transition inline-flex items-center gap-2 cursor-pointer">
+                    <button type="submit" class="px-5 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition inline-flex items-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-upload" aria-hidden="true"></i> Upload Materials
                     </button>
                 </div>
@@ -1365,7 +1363,7 @@
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl p-6 sm:p-7 transform transition-all border border-slate-200">
             <div class="flex items-center justify-between pb-4 border-b border-gray-100">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+                    <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-700 shrink-0">
                         <i class="fa-solid fa-circle-info text-lg" aria-hidden="true"></i>
                     </div>
                     <div>
@@ -1373,18 +1371,18 @@
                         <p class="text-xs text-gray-500">Master package details and Bill of Materials (BOM) guidelines</p>
                     </div>
                 </div>
-                <button type="button" onclick="closePackageInstructionsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition cursor-pointer" aria-label="Close modal">
+                <button type="button" onclick="closePackageInstructionsModal()" class="rounded-lg p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-brand-500 transition cursor-pointer" aria-label="Close modal">
                     <i class="fa-solid fa-xmark text-lg" aria-hidden="true"></i>
                 </button>
             </div>
 
             <div class="mt-5 space-y-4 text-sm text-gray-600 max-h-[70vh] overflow-y-auto pr-1">
                 <div>
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-700 mb-1.5 flex items-center gap-1.5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-brand-700 mb-1.5 flex items-center gap-1.5">
                         <i class="fa-solid fa-gift"></i> 1. Package Master CSV (packages.csv)
                     </h4>
                     <p class="text-xs text-gray-500 mb-2">Defines package identity, pricing, categories, and client-facing highlights.</p>
-                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-mono text-xs text-purple-900 break-all select-all font-semibold mb-2">
+                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-mono text-xs text-brand-900 break-all select-all font-semibold mb-2">
                         package_code,package_name,category,description,price,is_active,included_items
                     </div>
                     <ul class="text-xs text-gray-600 space-y-1 list-disc pl-4">
@@ -1398,11 +1396,11 @@
                 </div>
 
                 <div class="pt-3 border-t border-gray-100">
-                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-700 mb-1.5 flex items-center gap-1.5">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-brand-700 mb-1.5 flex items-center gap-1.5">
                         <i class="fa-solid fa-layer-group"></i> 2. Package Materials CSV (package_materials.csv)
                     </h4>
                     <p class="text-xs text-gray-500 mb-2">Links packages to physical Inventory Management items (Bill of Materials).</p>
-                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-mono text-xs text-purple-900 break-all select-all font-semibold mb-2">
+                    <div class="p-2.5 bg-gray-50 rounded-xl border border-gray-200 font-mono text-xs text-brand-900 break-all select-all font-semibold mb-2">
                         package_code,item_code,quantity
                     </div>
                     <ul class="text-xs text-gray-600 space-y-1 list-disc pl-4">
@@ -1413,9 +1411,9 @@
                     </ul>
                 </div>
 
-                <div class="p-3.5 bg-purple-50/60 rounded-xl border border-purple-100 text-xs text-gray-700 space-y-1.5">
-                    <p class="font-bold text-purple-900 flex items-center gap-1.5">
-                        <i class="fa-solid fa-shield-halved text-purple-600"></i> Inventory Safety Notice
+                <div class="p-3.5 bg-brand-50/60 rounded-xl border border-brand-100 text-xs text-gray-700 space-y-1.5">
+                    <p class="font-bold text-brand-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-brand-700"></i> Inventory Safety Notice
                     </p>
                     <p class="text-gray-600">
                         Package master records and BOM mappings are <strong>definition data</strong> only. Creating or importing packages never reduces <code>current_stock</code>, never creates reservations, and never alters client bookings or payments.
@@ -1425,10 +1423,10 @@
 
             <div class="mt-6 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-100">
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('admin.packages.template.packages') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition">
+                    <a href="{{ route('admin.packages.template.packages') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-xl transition">
                         <i class="fa-solid fa-download"></i> Package Template
                     </a>
-                    <a href="{{ route('admin.packages.template.materials') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition">
+                    <a href="{{ route('admin.packages.template.materials') }}" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-xl transition">
                         <i class="fa-solid fa-download"></i> Materials Template
                     </a>
                 </div>
@@ -1472,7 +1470,7 @@
                 if (gridView) gridView.style.display = 'none';
                 if (tableView) tableView.style.display = 'block';
                 if (tableBtn) {
-                    tableBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-[#be185d] text-white shadow-2xs';
+                    tableBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-brand-700 text-white shadow-2xs';
                     tableBtn.setAttribute('aria-pressed', 'true');
                 }
                 if (gridBtn) {
@@ -1485,7 +1483,7 @@
                 if (gridView) gridView.style.display = 'grid';
                 if (tableView) tableView.style.display = 'none';
                 if (gridBtn) {
-                    gridBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-[#be185d] text-white shadow-2xs';
+                    gridBtn.className = 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer bg-brand-700 text-white shadow-2xs';
                     gridBtn.setAttribute('aria-pressed', 'true');
                 }
                 if (tableBtn) {
@@ -1634,7 +1632,7 @@
             if (inclusions.length > 0) {
                 inclusions.forEach(item => {
                     const tag = document.createElement('span');
-                    tag.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-purple-50 text-purple-700 text-xs font-semibold rounded-lg border border-purple-100';
+                    tag.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-brand-50 text-brand-700 text-xs font-semibold rounded-lg border border-brand-100';
                     tag.innerHTML = `<i class="fa-solid fa-check text-[10px]"></i> ${item}`;
                     inclusionsContainer.appendChild(tag);
                 });
@@ -1668,7 +1666,7 @@
                             </div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xs font-extrabold text-purple-700">
+                            <div class="text-xs font-extrabold text-brand-700">
                                 ${parseFloat(item.pivot.quantity)} <span class="text-gray-500 font-normal">${item.unit}</span>
                             </div>
                             <span class="text-[10px] text-gray-400 uppercase tracking-wider">Required</span>
@@ -1731,10 +1729,10 @@
             container.innerHTML = '';
             inclusionState[formPrefix].forEach((item, index) => {
                 const chip = document.createElement('span');
-                chip.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-purple-200 text-purple-900 rounded-xl text-xs font-semibold shadow-2xs';
+                chip.className = 'inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-brand-200 text-brand-900 rounded-xl text-xs font-semibold shadow-2xs';
                 chip.innerHTML = `
                     <span>${item}</span>
-                    <button type="button" onclick="removeInclusionChip('${formPrefix}', ${index})" class="text-purple-400 hover:text-red-500 transition cursor-pointer" aria-label="Remove inclusion">
+                    <button type="button" onclick="removeInclusionChip('${formPrefix}', ${index})" class="text-brand-400 hover:text-red-500 transition cursor-pointer" aria-label="Remove inclusion">
                         <i class="fa-solid fa-xmark text-xs"></i>
                     </button>
                 `;
@@ -1818,7 +1816,7 @@
             tbody.innerHTML = '';
             items.forEach(item => {
                 const tr = document.createElement('tr');
-                tr.className = 'hover:bg-purple-50/20 transition-colors';
+                tr.className = 'hover:bg-brand-50/20 transition-colors';
                 tr.innerHTML = `
                     <td class="px-3 py-2.5">
                         <span class="font-bold text-gray-800">${item.name}</span>
@@ -1839,7 +1837,7 @@
                                 step="0.01"
                                 required
                                 oninput="updateBomItemQty('${formPrefix}', ${item.id}, this.value)"
-                                class="w-20 px-2.5 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-bold text-purple-700 bg-white"
+                                class="w-20 px-2.5 py-1 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-600 font-bold text-brand-700 bg-white"
                             >
                             <span class="text-xs text-gray-500">${item.unit}</span>
                         </div>
@@ -1964,7 +1962,7 @@
             } else if (actionType === 'restore') {
                 iconWrapper.className = 'w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0';
                 icon.className = 'fa-solid fa-rotate-left text-base';
-                submitBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-xs cursor-pointer';
+                submitBtn.className = 'px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-700 hover:bg-brand-800 transition shadow-xs cursor-pointer';
             } else {
                 // archive
                 iconWrapper.className = 'w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shrink-0';

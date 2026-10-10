@@ -139,7 +139,21 @@ Route::middleware('auth')->group(function () {
 // Staff Routes: protected by auth, staff role, and email verification (S-01E-3).
 // Unverified staff are redirected to the email verification gate.
 Route::prefix('staff')->middleware(['auth', 'staff', 'verified'])->group(function () {
-    Route::get('/dashboard', [\App\Http\Controllers\Staff\EventController::class, 'dashboard'])->name('staff.dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Staff\WorkspaceController::class, 'dashboard'])->name('staff.dashboard');
+    Route::get('/tasks', [\App\Http\Controllers\Staff\WorkspaceController::class, 'tasks'])->name('staff.tasks');
+    Route::get('/assignments', [\App\Http\Controllers\Staff\WorkspaceController::class, 'assignments'])->name('staff.assignments');
+    Route::get('/work-orders', [\App\Http\Controllers\Staff\WorkspaceController::class, 'workOrders'])->name('staff.work-orders');
+    Route::get('/dispatch', [\App\Http\Controllers\Staff\WorkspaceController::class, 'dispatchBoard'])->name('staff.dispatch');
+    Route::get('/returns', [\App\Http\Controllers\Staff\WorkspaceController::class, 'returns'])->name('staff.returns');
+    Route::get('/checklist', [\App\Http\Controllers\Staff\WorkspaceController::class, 'checklist'])->name('staff.checklist');
+    Route::get('/messages', [\App\Http\Controllers\Staff\WorkspaceController::class, 'messages'])->name('staff.messages');
+    Route::get('/activity', [\App\Http\Controllers\Staff\WorkspaceController::class, 'activity'])->name('staff.activity');
+    Route::get('/calendar', [\App\Http\Controllers\Staff\WorkspaceController::class, 'calendar'])->name('staff.calendar');
+    Route::get('/guide', [\App\Http\Controllers\Staff\WorkspaceController::class, 'guide'])->name('staff.guide');
+    Route::get('/search', [\App\Http\Controllers\Staff\WorkspaceController::class, 'search'])->name('staff.search');
+    Route::get('/requests', [\App\Http\Controllers\Staff\WorkspaceController::class, 'requests'])->name('staff.requests');
+    Route::post('/requests/inventory', [\App\Http\Controllers\Staff\WorkspaceController::class, 'storeInventoryRequest'])->middleware('throttle:10,1')->name('staff.requests.inventory');
+    Route::post('/requests/issue', [\App\Http\Controllers\Staff\WorkspaceController::class, 'storeIssue'])->middleware('throttle:10,1')->name('staff.requests.issue');
     Route::get('/events/{booking}', [\App\Http\Controllers\Staff\EventController::class, 'show'])->name('staff.events.show');
     Route::put('/events/{booking}/checklist/{checklist}', [\App\Http\Controllers\Staff\EventController::class, 'updateChecklist'])->name('staff.events.checklist.update');
     Route::post('/events/{booking}/dispatch', [\App\Http\Controllers\Staff\EventController::class, 'dispatchItems'])->name('staff.events.dispatch');

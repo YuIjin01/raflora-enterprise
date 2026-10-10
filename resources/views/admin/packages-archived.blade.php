@@ -17,7 +17,7 @@
             <a href="{{ route('admin.packages.index') }}" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Active Packages
             </a>
-            <a href="{{ route('admin.packages.archived') }}" class="border-purple-500 text-purple-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            <a href="{{ route('admin.packages.archived') }}" class="border-brand-600 text-brand-700 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Archived Packages
             </a>
         </nav>
@@ -42,7 +42,7 @@
                             id="archivedPackageSearchInput"
                             value="{{ $currentSearch ?? request('search') }}"
                             placeholder="Search package name, category, or keyword..."
-                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                         >
                     </div>
 
@@ -58,12 +58,12 @@
                         onclick="toggleArchivedPackageFilterPanel()"
                         aria-expanded="{{ $isArchivedFilterOpen ? 'true' : 'false' }}"
                         aria-controls="archivedPackageFilterPanel"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ $hasActiveArchivedFilters ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer {{ $hasActiveArchivedFilters ? 'border-brand-300 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 hover:border-brand-300 bg-white hover:bg-brand-50/50 text-gray-700 hover:text-brand-800' }}"
                     >
-                        <i class="fa-solid fa-sliders text-xs {{ $hasActiveArchivedFilters ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                        <i class="fa-solid fa-sliders text-xs {{ $hasActiveArchivedFilters ? 'text-brand-700' : 'text-gray-500' }}"></i>
                         <span id="archivedPackageToggleFiltersText">{{ $isArchivedFilterOpen ? 'Hide Filters' : 'Show Filters' }}</span>
                         @if($hasActiveArchivedFilters)
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-700 inline-block" title="Filters are active"></span>
                         @endif
                         <i id="archivedPackageFiltersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ $isArchivedFilterOpen ? 'rotate-180' : '' }}"></i>
                     </button>
@@ -71,7 +71,7 @@
                     <!-- Search Submit Button -->
                     <button
                         type="submit"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                     >
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         <span>Search</span>
@@ -96,7 +96,7 @@
             >
                 <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3 sm:gap-4">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-                        <i class="fa-solid fa-filter text-purple-600 text-[11px]"></i> Filters & Sort:
+                        <i class="fa-solid fa-filter text-brand-700 text-[11px]"></i> Filters & Sort:
                     </span>
 
                     <!-- Category Filter Dropdown -->
@@ -109,7 +109,7 @@
                             id="archivedPackageCategoryFilter"
                             onchange="this.form.submit()"
                             style="padding-left: 2.35rem; padding-right: 2rem;"
-                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer"
                         >
                             <option value="all" {{ ($currentCategory ?? 'all') === 'all' ? 'selected' : '' }}>All Categories</option>
                             @foreach($packageCategories as $cat)
@@ -131,7 +131,7 @@
                             id="archivedPackageSortFilter"
                             onchange="this.form.submit()"
                             style="padding-left: 2.35rem; padding-right: 2rem;"
-                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer"
+                            class="w-full py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer"
                         >
                             <option value="latest" {{ ($currentSort ?? 'latest') === 'latest' ? 'selected' : '' }}>Latest First</option>
                             <option value="oldest" {{ ($currentSort ?? '') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
@@ -162,7 +162,7 @@
     @if($packages->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 relative">
             @foreach($packages as $package)
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 group hover:shadow-xl hover:shadow-purple-900/5 transition-all duration-300 overflow-hidden flex flex-col relative opacity-75 hover:opacity-100">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 group hover:shadow-xl hover:shadow-brand-900/5 transition-all duration-300 overflow-hidden flex flex-col relative opacity-75 hover:opacity-100">
                     @php
                         $coverImage = $package->images->first() ? asset('storage/' . $package->images->first()->image_path) : '';
                         $imageCount = $package->images->count();
@@ -174,7 +174,7 @@
                                 <i class="fa-solid fa-camera"></i> {{ $imageCount }}
                             </div>
                         @else
-                            <div class="w-full h-full bg-purple-50 flex items-center justify-center text-purple-300 group-hover:scale-110 transition-transform duration-700 ease-in-out cursor-pointer">
+                            <div class="w-full h-full bg-brand-50 flex items-center justify-center text-brand-300 group-hover:scale-110 transition-transform duration-700 ease-in-out cursor-pointer">
                                 <i class="fa-solid fa-gift text-5xl"></i>
                             </div>
                         @endif
@@ -185,10 +185,10 @@
                     <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                         <div class="text-center">
                             @if($package->category)
-                                <div class="mb-1"><span class="text-[10px] font-bold tracking-widest uppercase text-purple-600">{{ $package->category }}</span></div>
+                                <div class="mb-1"><span class="text-[10px] font-bold tracking-widest uppercase text-brand-700">{{ $package->category }}</span></div>
                             @endif
-                            <h3 class="font-bold text-[#1e293b] text-[15px] sm:text-base mb-1 line-clamp-1 group-hover:text-purple-700 transition-colors serif">{{ $package->title }}</h3>
-                            <p class="text-lg sm:text-xl font-extrabold text-purple-700 mb-4">₱{{ number_format($package->price, 2) }}</p>
+                            <h3 class="font-bold text-[#1e293b] text-[15px] sm:text-base mb-1 line-clamp-1 group-hover:text-brand-800 transition-colors serif">{{ $package->title }}</h3>
+                            <p class="text-lg sm:text-xl font-extrabold text-brand-700 mb-4">₱{{ number_format($package->price, 2) }}</p>
                             
                             @if($package->description)
                                 <p class="text-xs text-slate-500 mb-3 line-clamp-2">{{ $package->description }}</p>
@@ -197,12 +197,12 @@
                         
                         <!-- Admin Actions -->
                         <div class="flex items-center justify-between pt-3 border-t border-slate-100">
-                            <button onclick='openViewModal(@json($package))' class="text-sm font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1.5 transition-colors" type="button">
+                            <button onclick='openViewModal(@json($package))' class="text-sm font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1.5 transition-colors" type="button">
                                 <i class="fa-regular fa-eye"></i> View
                             </button>
                             <form action="{{ route('admin.packages.restore', $package) }}" method="POST" id="restore-form-{{ $package->id }}" class="inline-block m-0">
                                 @csrf
-                                <button type="button" onclick="openConfirmModal('restore-form-{{ $package->id }}', 'Restore Package?', 'This package will become available for new bookings again.', 'Restore Package', 'restore', this)" class="text-sm font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1.5 transition-colors">
+                                <button type="button" onclick="openConfirmModal('restore-form-{{ $package->id }}', 'Restore Package?', 'This package will become available for new bookings again.', 'Restore Package', 'restore', this)" class="text-sm font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1.5 transition-colors">
                                     <i class="fa-solid fa-rotate-left"></i> Restore
                                 </button>
                             </form>
@@ -223,7 +223,7 @@
             @if(!empty($currentSearch) || (($currentCategory ?? 'all') !== 'all'))
                 <h3 class="text-lg font-medium text-slate-900">No matching archived packages found</h3>
                 <p class="mt-1 text-sm text-slate-500 mb-6">Try adjusting your keyword search or category filter.</p>
-                <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center px-4 py-2 border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-xl text-sm font-semibold transition">
+                <a href="{{ route('admin.packages.archived') }}" class="inline-flex items-center px-4 py-2 border border-brand-200 text-brand-700 bg-brand-50 hover:bg-brand-100 rounded-xl text-sm font-semibold transition">
                     Clear Filters
                 </a>
             @else
@@ -263,7 +263,7 @@
                         </div>
                         <div>
                             <span class="block text-xs font-medium text-slate-500 mb-1">Price</span>
-                            <span id="view_price" class="block text-sm font-semibold text-purple-700"></span>
+                            <span id="view_price" class="block text-sm font-semibold text-brand-700"></span>
                         </div>
                         <div class="col-span-2">
                             <span class="block text-xs font-medium text-slate-500 mb-1">Status</span>
@@ -402,7 +402,7 @@
                                     </div>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-[13px] font-bold text-purple-700">
+                                    <div class="text-[13px] font-bold text-brand-700">
                                         ${parseFloat(item.pivot.quantity)} <span class="text-gray-500 font-normal">${item.unit}</span>
                                     </div>
                                     <span class="text-[10px] text-gray-400 uppercase tracking-wider">Required</span>

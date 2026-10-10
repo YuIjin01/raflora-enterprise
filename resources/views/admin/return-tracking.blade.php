@@ -25,7 +25,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Card 1: Total Returns -->
             <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex items-center gap-4">
-                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl shrink-0">
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center text-xl shrink-0">
                     <i class="fa-solid fa-boxes-stacked"></i>
                 </div>
                 <div class="min-w-0">
@@ -88,7 +88,7 @@
                                 name="search"
                                 value="{{ $currentSearch ?? '' }}"
                                 placeholder="Search return ID, booking, client, or event..."
-                                class="w-full pl-9 pr-3.5 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                                class="w-full pl-9 pr-3.5 py-2.5 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                         </div>
 
@@ -99,12 +99,12 @@
                             onclick="toggleFilterPanel()"
                             aria-expanded="{{ !empty($hasActiveFilters) ? 'true' : 'false' }}"
                             aria-controls="returnFilterPanel"
-                            class="inline-flex items-center gap-1.5 px-3.5 py-2.5 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ !empty($hasActiveFilters) ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2.5 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer {{ !empty($hasActiveFilters) ? 'border-brand-300 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 hover:border-brand-300 bg-white hover:bg-brand-50/50 text-gray-700 hover:text-brand-800' }}"
                         >
-                            <i class="fa-solid fa-sliders text-xs {{ !empty($hasActiveFilters) ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                            <i class="fa-solid fa-sliders text-xs {{ !empty($hasActiveFilters) ? 'text-brand-700' : 'text-gray-500' }}"></i>
                             <span id="toggleFiltersText">{{ !empty($hasActiveFilters) ? 'Hide Filters' : 'Show Filters' }}</span>
                             @if(!empty($hasActiveFilters))
-                                <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-700 inline-block" title="Filters are active"></span>
                             @endif
                             <i id="filtersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ !empty($hasActiveFilters) ? 'rotate-180' : '' }}"></i>
                         </button>
@@ -112,7 +112,7 @@
                         <!-- Search Submit Button -->
                         <button
                             type="submit"
-                            class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                            class="inline-flex items-center gap-1.5 px-4 py-2.5 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                         >
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                             <span>Search</span>
@@ -136,7 +136,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Status</label>
                             <div class="relative">
-                                <select name="status" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="status" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="all" {{ ($currentStatus ?? 'all') === 'all' ? 'selected' : '' }}>All Statuses</option>
                                     <option value="Pending" {{ ($currentStatus ?? '') === 'Pending' ? 'selected' : '' }}>Pending</option>
                                     <option value="Partially Returned" {{ ($currentStatus ?? '') === 'Partially Returned' ? 'selected' : '' }}>Partially Returned</option>
@@ -152,7 +152,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Assigned Staff</label>
                             <div class="relative">
-                                <select name="staff" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="staff" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="all" {{ ($currentStaff ?? 'all') === 'all' ? 'selected' : '' }}>All Staff</option>
                                     <option value="unassigned" {{ ($currentStaff ?? '') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
                                     @foreach($eligibleStaff as $staff)
@@ -169,7 +169,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Inspector</label>
                             <div class="relative">
-                                <select name="inspector" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="inspector" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="all" {{ ($currentInspector ?? 'all') === 'all' ? 'selected' : '' }}>All Inspectors</option>
                                     <option value="unassigned" {{ ($currentInspector ?? '') === 'unassigned' ? 'selected' : '' }}>Unassigned</option>
                                     @foreach($eligibleInspectors as $insp)
@@ -186,7 +186,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Approval</label>
                             <div class="relative">
-                                <select name="approval" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="approval" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="all" {{ ($currentApproval ?? 'all') === 'all' ? 'selected' : '' }}>All Approvals</option>
                                     <option value="not_required" {{ ($currentApproval ?? '') === 'not_required' ? 'selected' : '' }}>Not Required</option>
                                     <option value="pending" {{ ($currentApproval ?? '') === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -208,7 +208,7 @@
                                     name="event_date"
                                     value="{{ $currentEventDate ?? '' }}"
                                     onchange="this.form.submit()"
-                                    class="w-full py-1.5 px-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition"
+                                    class="w-full py-1.5 px-2.5 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition"
                                 >
                             </div>
                         </div>
@@ -217,7 +217,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Sort</label>
                             <div class="relative">
-                                <select name="sort" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="sort" onchange="this.form.submit()" class="w-full py-2 pl-2.5 pr-7 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="default" {{ ($currentSort ?? 'default') === 'default' ? 'selected' : '' }}>Status Priority</option>
                                     <option value="latest" {{ ($currentSort ?? '') === 'latest' ? 'selected' : '' }}>Latest Return</option>
                                     <option value="oldest" {{ ($currentSort ?? '') === 'oldest' ? 'selected' : '' }}>Oldest Return</option>
@@ -235,7 +235,7 @@
                     @if(!empty($hasActiveFilters))
                         <div class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
                             <span>Active filters applied</span>
-                            <a href="{{ route('admin.return-tracking') }}" class="font-semibold text-purple-600 hover:text-purple-700">
+                            <a href="{{ route('admin.return-tracking') }}" class="font-semibold text-brand-700 hover:text-brand-800">
                                 Reset All Filters
                             </a>
                         </div>
@@ -284,7 +284,7 @@
                                     <div class="font-bold text-slate-900 truncate max-w-[170px]" title="{{ $return->booking?->client?->full_name ?? $return->booking?->guest_name ?? 'N/A' }}">
                                         {{ $return->booking?->client?->full_name ?? $return->booking?->guest_name ?? 'N/A' }}
                                     </div>
-                                    <div class="text-[11px] text-purple-700 font-semibold mt-0.5">
+                                    <div class="text-[11px] text-brand-700 font-semibold mt-0.5">
                                         Booking #{{ $return->booking_id }}
                                     </div>
                                 </td>
@@ -339,7 +339,7 @@
                                 <td class="px-4 py-3.5 whitespace-nowrap">
                                     @if($inspectorUser)
                                         <div class="flex items-center gap-1.5">
-                                            <div class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-[10px] shrink-0">
+                                            <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-[10px] shrink-0">
                                                 {{ $inspectorInitials }}
                                             </div>
                                             <span class="font-medium text-slate-800 text-xs truncate max-w-[110px]" title="{{ $inspectorUser->name }}">
@@ -378,10 +378,10 @@
                                     <button
                                         type="button"
                                         onclick="openReturnDrawer({{ $return->id }})"
-                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-800 border border-purple-200 text-xs font-bold rounded-xl transition shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 hover:text-brand-800 border border-brand-200 text-xs font-bold rounded-xl transition shadow-2xs cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                                         aria-label="View return details for {{ $return->reference }}"
                                     >
-                                        <i class="fa-solid fa-eye text-purple-600 text-xs"></i>
+                                        <i class="fa-solid fa-eye text-brand-700 text-xs"></i>
                                         <span>View</span>
                                         <span class="sr-only">Review Return</span>
                                     </button>
@@ -395,7 +395,7 @@
                                     <div class="bg-white border-b border-slate-200 p-5 shrink-0">
                                         <div class="flex items-start justify-between gap-3">
                                             <div class="flex items-start gap-3">
-                                                <div class="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 border border-purple-100 flex items-center justify-center text-lg shrink-0 mt-0.5">
+                                                <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 border border-brand-100 flex items-center justify-center text-lg shrink-0 mt-0.5">
                                                     <i class="fa-solid fa-boxes-stacked"></i>
                                                 </div>
                                                 <div>
@@ -438,7 +438,7 @@
                                                 type="button"
                                                 onclick="switchReturnTab('{{ $return->id }}', 'overview')"
                                                 id="tab-btn-{{ $return->id }}-overview"
-                                                class="tab-btn px-3.5 py-2.5 border-b-2 border-purple-600 text-purple-700 transition cursor-pointer"
+                                                class="tab-btn px-3.5 py-2.5 border-b-2 border-brand-700 text-brand-700 transition cursor-pointer"
                                             >
                                                 Overview
                                             </button>
@@ -477,7 +477,7 @@
                                             <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
                                                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                                                     <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Booking & Client</span>
-                                                    <a href="{{ route('admin.bookings') }}" class="text-xs font-semibold text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                                                    <a href="{{ route('admin.bookings') }}" class="text-xs font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1">
                                                         <span>Booking #{{ $return->booking_id }}</span>
                                                         <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
                                                     </a>
@@ -512,7 +512,7 @@
                                             <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs">
                                                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                                                     <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Return Information</span>
-                                                    <span class="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded">{{ $return->reference }}</span>
+                                                    <span class="text-xs font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">{{ $return->reference }}</span>
                                                 </div>
                                                 <div class="mt-3 space-y-2.5 text-xs">
                                                     <div class="flex items-center justify-between">
@@ -547,7 +547,7 @@
                                         <div id="tab-content-{{ $return->id }}-items" class="tab-pane hidden space-y-3">
                                             <div class="flex items-center justify-between pb-1">
                                                 <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Non-Perishable Materials ({{ $return->returnItems->count() }})</h4>
-                                                <a href="{{ route('admin.return-tracking.manage', $return->booking_id) }}" class="text-xs font-semibold text-purple-600 hover:text-purple-700">
+                                                <a href="{{ route('admin.return-tracking.manage', $return->booking_id) }}" class="text-xs font-semibold text-brand-700 hover:text-brand-800">
                                                     Audit Workspace <i class="fa-solid fa-arrow-right text-[10px]"></i>
                                                 </a>
                                             </div>
@@ -572,7 +572,7 @@
                                                                 Lost
                                                             </span>
                                                         @elseif($item->condition === 'mixed')
-                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200">
+                                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-brand-50 text-brand-700 border border-brand-200">
                                                                 Mixed condition
                                                             </span>
                                                         @else
@@ -656,7 +656,7 @@
                                                 <!-- Inspector -->
                                                 <div class="flex items-center justify-between py-1.5 border-t border-slate-100">
                                                     <div class="flex items-center gap-3">
-                                                        <div class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                                        <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 flex items-center justify-center font-bold text-xs shrink-0">
                                                             {{ $inspectorInitials }}
                                                         </div>
                                                         <div>
@@ -687,7 +687,7 @@
                                             <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-2xs space-y-3">
                                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                                     <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Update Assignments</h4>
-                                                    <span class="text-[10px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded">Admin Controls</span>
+                                                    <span class="text-[10px] font-semibold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Admin Controls</span>
                                                 </div>
 
                                                 <form method="POST" action="{{ route('admin.return-tracking.assign', $return) }}" class="space-y-3">
@@ -696,7 +696,7 @@
 
                                                     <div>
                                                         <label class="block text-xs font-semibold text-slate-700 mb-1">Assigned Staff</label>
-                                                        <select name="assigned_staff_id" class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500">
+                                                        <select name="assigned_staff_id" class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500">
                                                             <option value="">— Unassigned —</option>
                                                             @foreach($eligibleStaff as $stf)
                                                                 <option value="{{ $stf->id }}" {{ (int) $return->assigned_staff_id === (int) $stf->id ? 'selected' : '' }}>
@@ -708,7 +708,7 @@
 
                                                     <div>
                                                         <label class="block text-xs font-semibold text-slate-700 mb-1">Assigned Inspector</label>
-                                                        <select name="inspector_id" class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500">
+                                                        <select name="inspector_id" class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500">
                                                             <option value="">— Unassigned —</option>
                                                             @foreach($eligibleInspectors as $insp)
                                                                 <option value="{{ $insp->id }}" {{ (int) $return->inspected_by === (int) $insp->id ? 'selected' : '' }}>
@@ -720,7 +720,7 @@
 
                                                     <button
                                                         type="submit"
-                                                        class="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition shadow-2xs"
+                                                        class="w-full py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition shadow-2xs"
                                                     >
                                                         Save Assignments
                                                     </button>
@@ -756,7 +756,7 @@
 
                                                         <div>
                                                             <label class="block text-xs font-semibold text-slate-700 mb-1">Decision</label>
-                                                            <select name="decision" class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500">
+                                                            <select name="decision" class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500">
                                                                 <option value="approved">Approve Damage/Loss Decision & Charge</option>
                                                                 <option value="rejected">Reject Decision (Request Re-inspection)</option>
                                                             </select>
@@ -768,13 +768,13 @@
                                                                 type="text"
                                                                 name="reason"
                                                                 placeholder="Optional authorization notes..."
-                                                                class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500"
+                                                                class="w-full text-xs py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-brand-500"
                                                             >
                                                         </div>
 
                                                         <button
                                                             type="submit"
-                                                            class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition shadow-2xs"
+                                                            class="w-full py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition shadow-2xs"
                                                         >
                                                             Submit Authorization Decision
                                                         </button>
@@ -814,7 +814,7 @@
                                                         };
                                                     @endphp
                                                     <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-2xs flex items-start gap-3">
-                                                        <div class="w-8 h-8 rounded-full bg-purple-50 text-purple-700 border border-purple-100 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
+                                                        <div class="w-8 h-8 rounded-full bg-brand-50 text-brand-700 border border-brand-100 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
                                                             {{ $logInitials }}
                                                         </div>
                                                         <div class="min-w-0 flex-1">
@@ -822,7 +822,7 @@
                                                                 <span class="text-xs font-bold text-slate-900">{{ $logUser?->name ?? 'System' }}</span>
                                                                 <span class="text-[10px] text-slate-400 whitespace-nowrap">{{ $log->created_at->format('d M Y · g:i A') }}</span>
                                                             </div>
-                                                            <p class="text-xs font-semibold text-purple-700 mt-0.5">{{ $actionTitle }}</p>
+                                                            <p class="text-xs font-semibold text-brand-700 mt-0.5">{{ $actionTitle }}</p>
                                                             <p class="text-xs text-slate-600 mt-1 leading-relaxed">{{ $log->details }}</p>
                                                         </div>
                                                     </div>
@@ -847,7 +847,7 @@
                                         </button>
                                         <a
                                             href="{{ route('admin.return-tracking.manage', $return->booking_id) }}"
-                                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl transition shadow-2xs"
+                                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-xs font-bold rounded-xl transition shadow-2xs"
                                         >
                                             <span>Open Return Audit →</span>
                                             <span class="sr-only">Full Return Workspace Review Return</span>
@@ -860,13 +860,13 @@
                                 <td colspan="8" class="px-6 py-14 text-center">
                                     @if(!empty($currentSearch) || !empty($hasActiveFilters))
                                         <div class="max-w-md mx-auto text-slate-500">
-                                            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+                                            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-3">
                                                 <i class="fa-solid fa-magnifying-glass text-xl"></i>
                                             </div>
                                             <p class="text-sm font-semibold text-slate-800">No matching returns found</p>
                                             <p class="text-xs text-slate-500 mt-1">No returns matched your current search query or active filter criteria.</p>
                                             <div class="mt-4">
-                                                <a href="{{ route('admin.return-tracking') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
+                                                <a href="{{ route('admin.return-tracking') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
                                                     <i class="fa-solid fa-rotate-left text-xs"></i>
                                                     <span>Clear Filters</span>
                                                 </a>
@@ -998,14 +998,14 @@
 
             const tabBtns = content.querySelectorAll('.tab-btn');
             tabBtns.forEach(btn => {
-                btn.classList.remove('border-purple-600', 'text-purple-700');
+                btn.classList.remove('border-brand-700', 'text-brand-700');
                 btn.classList.add('border-transparent', 'text-slate-500');
             });
 
             const activeBtn = content.querySelector('#tab-btn-' + returnId + '-' + tabName);
             if (activeBtn) {
                 activeBtn.classList.remove('border-transparent', 'text-slate-500');
-                activeBtn.classList.add('border-purple-600', 'text-purple-700');
+                activeBtn.classList.add('border-brand-700', 'text-brand-700');
             }
         }
 

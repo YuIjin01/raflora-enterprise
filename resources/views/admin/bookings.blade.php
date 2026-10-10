@@ -1,170 +1,48 @@
-<x-admin-layout title="Bookings Management">
+<x-admin-layout title="Bookings Management" description="Manage booking approvals, payment verification, and quotation follow-ups from this unified screen.">
+    @php
+        $pipelineStages = [
+            ['key' => 'all', 'step' => null, 'label' => 'All Bookings', 'hint' => 'All bookings', 'icon' => 'fa-solid fa-list-ul'],
+            ['key' => 'request', 'step' => 1, 'label' => 'Awaiting Claim', 'hint' => 'Unclaimed guest requests'],
+            ['key' => 'review', 'step' => 2, 'label' => 'Review', 'hint' => 'Review & materials'],
+            ['key' => 'quotation', 'step' => 3, 'label' => 'Quotation', 'hint' => 'Quote preparation'],
+            ['key' => 'approval', 'step' => 4, 'label' => 'Approval', 'hint' => 'Awaiting approval'],
+            ['key' => 'payment', 'step' => 5, 'label' => 'Payment', 'hint' => 'Payment verification'],
+            ['key' => 'confirmed', 'step' => 6, 'label' => 'Confirmed', 'hint' => 'Confirmed bookings'],
+            ['key' => 'cancelled', 'step' => 7, 'label' => 'Cancelled', 'hint' => 'Cancelled bookings'],
+        ];
+    @endphp
+
     <!-- Primary Booking Workflow Navigation -->
-    <div class="mb-6 w-full overflow-x-auto pb-2 scrollbar-hide">
-        <div class="flex items-center gap-1 md:gap-2 min-w-max px-1">
-            
-            {{-- Workflow Stage: All Bookings --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'all']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'all' ? 'border-purple-300 bg-purple-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-purple-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-start w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold">
-                        <i class="fa-solid fa-list-ul"></i>
-                    </div>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">All Bookings</div>
-                    <div class="text-[10px] text-slate-500 font-medium">All bookings</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'all' ? 'bg-purple-100 text-purple-800' : 'bg-purple-50 text-purple-600 group-hover:bg-purple-100 group-hover:text-purple-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['all'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Booking Request --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'request']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'request' ? 'border-blue-300 bg-blue-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
-                        1
-                    </div>
-                    <i class="fa-regular fa-file-lines text-blue-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Awaiting Claim</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Unclaimed guest requests</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'request' ? 'bg-blue-100 text-blue-800' : 'bg-blue-50 text-blue-600 group-hover:bg-blue-100 group-hover:text-blue-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['request'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Review --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'review']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'review' ? 'border-sky-300 bg-sky-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-sky-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-xs font-bold">
-                        2
-                    </div>
-                    <i class="fa-solid fa-magnifying-glass text-sky-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Review</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Review &amp; materials</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'review' ? 'bg-sky-100 text-sky-800' : 'bg-sky-50 text-sky-600 group-hover:bg-sky-100 group-hover:text-sky-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['review'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Quotation --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'quotation']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'quotation' ? 'border-amber-300 bg-amber-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">
-                        3
-                    </div>
-                    <i class="fa-solid fa-file-invoice-dollar text-amber-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Quotation</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Quote preparation</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'quotation' ? 'bg-amber-100 text-amber-800' : 'bg-amber-50 text-amber-600 group-hover:bg-amber-100 group-hover:text-amber-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['quotation'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Approval --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'approval']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'approval' ? 'border-rose-300 bg-rose-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-rose-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center text-xs font-bold">
-                        4
-                    </div>
-                    <i class="fa-solid fa-user-check text-rose-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Approval</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Awaiting approval</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'approval' ? 'bg-rose-100 text-rose-800' : 'bg-rose-50 text-rose-600 group-hover:bg-rose-100 group-hover:text-rose-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['approval'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Payment --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'payment']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'payment' ? 'border-indigo-300 bg-indigo-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-indigo-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
-                        5
-                    </div>
-                    <i class="fa-regular fa-credit-card text-indigo-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Payment</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Payment verification</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'payment' ? 'bg-indigo-100 text-indigo-800' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-100 group-hover:text-indigo-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['payment'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Confirmed --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'confirmed']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'confirmed' ? 'border-emerald-300 bg-emerald-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-emerald-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">
-                        6
-                    </div>
-                    <i class="fa-regular fa-circle-check text-emerald-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Confirmed</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Confirmed bookings</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100 group-hover:text-emerald-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['confirmed'] }}
-                </div>
-            </a>
-            
-            <div class="text-slate-300 px-0.5"><i class="fa-solid fa-arrow-right text-[10px]"></i></div>
-
-            {{-- Workflow Stage: Cancelled --}}
-            <a href="{{ route('admin.bookings', ['stage' => 'cancelled']) }}" 
-               class="flex flex-col p-3 rounded-xl border-2 {{ $activeStage === 'cancelled' ? 'border-red-300 bg-red-50/50 shadow-sm' : 'border-slate-100 bg-white hover:border-red-200 hover:shadow-sm' }} min-w-[130px] md:min-w-[140px] transition-all group">
-                <div class="flex justify-between items-center w-full mb-1">
-                    <div class="w-7 h-7 rounded-full bg-red-100 text-red-700 flex items-center justify-center text-xs font-bold">
-                        7
-                    </div>
-                    <i class="fa-solid fa-ban text-red-400 text-lg"></i>
-                </div>
-                <div class="text-center mt-1 mb-2">
-                    <div class="text-sm font-bold text-slate-800 leading-tight">Cancelled</div>
-                    <div class="text-[10px] text-slate-500 font-medium">Cancelled bookings</div>
-                </div>
-                <div class="w-full py-0.5 rounded-lg {{ $activeStage === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-red-50 text-red-600 group-hover:bg-red-100 group-hover:text-red-700' }} text-base font-bold text-center transition-colors">
-                    {{ $stageCounts['cancelled'] }}
-                </div>
-            </a>
-
-        </div>
-    </div>
+    <nav class="mb-5" aria-label="Booking workflow stages">
+        <ol class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2">
+            @foreach($pipelineStages as $stage)
+                @php $isActiveStage = $activeStage === $stage['key']; @endphp
+                <li class="min-w-0">
+                    <a
+                        href="{{ route('admin.bookings', ['stage' => $stage['key']]) }}"
+                        @if($isActiveStage) aria-current="page" @endif
+                        class="group flex h-full flex-col rounded-xl border px-3 py-2.5 transition {{ $isActiveStage ? 'border-brand-300 bg-brand-50 ring-1 ring-brand-200' : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50/60' }}"
+                    >
+                        <span class="flex items-center justify-between gap-2">
+                            <span class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 {{ $isActiveStage ? 'bg-brand-700 text-white' : 'bg-slate-100 text-slate-600' }}" aria-hidden="true">
+                                @if($stage['step'])
+                                    {{ $stage['step'] }}
+                                @else
+                                    <i class="{{ $stage['icon'] }} text-[10px]"></i>
+                                @endif
+                            </span>
+                            <span class="text-lg font-semibold tabular-nums leading-none {{ $isActiveStage ? 'text-brand-800' : 'text-slate-900' }}">{{ $stageCounts[$stage['key']] }}</span>
+                        </span>
+                        <span class="mt-2 block text-[13px] font-semibold leading-tight {{ $isActiveStage ? 'text-brand-900' : 'text-slate-800' }}">{{ $stage['label'] }}</span>
+                        <span class="block text-[11px] text-slate-500 leading-snug">{{ $stage['hint'] }}</span>
+                    </a>
+                </li>
+            @endforeach
+        </ol>
+    </nav>
 
     <!-- Filter Controls: Status filter dropdown, Sort & Search -->
-    <form id="filterForm" method="GET" action="{{ route('admin.bookings') }}" class="mb-4 bg-white px-4 py-3 rounded-2xl shadow-sm border border-slate-200">
+    <form id="filterForm" method="GET" action="{{ route('admin.bookings') }}" class="mb-4 bg-white px-4 py-3 rounded-xl border border-slate-200">
         <input type="hidden" name="stage" value="{{ $activeStage }}">
         <div class="flex flex-wrap items-center gap-2 md:gap-3">
             {{-- Search (Full width on mobile, auto on desktop) --}}
@@ -175,14 +53,14 @@
                 <input type="text" id="bookingSearchInput" name="search" value="{{ $searchTerm }}"
                     placeholder="Search client, event, ID..."
                     autocomplete="off"
-                    class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
+                    class="block w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-sm bg-slate-50 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-brand-500 focus:border-brand-600 transition">
             </div>
 
             {{-- Status Filter (Half width on mobile) --}}
             <div class="w-[calc(50%-4px)] md:w-auto md:min-w-[200px]">
                 <label for="status" class="sr-only">Status</label>
                 <select id="status" name="status" onchange="document.getElementById('filterForm').submit()"
-                    class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
+                    class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-600 transition">
                     <option value="all" {{ $statusFilter === 'all' ? 'selected' : '' }}>All Statuses</option>
                     <option value="approved" {{ $statusFilter === 'approved' ? 'selected' : '' }}>Awaiting Admin Approval</option>
                     <option value="pending" {{ $statusFilter === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -207,7 +85,7 @@
             <div class="w-[calc(50%-4px)] md:w-auto md:min-w-[160px]">
                 <label for="event_type" class="sr-only">Event Type</label>
                 <select id="event_type" name="event_type" onchange="document.getElementById('filterForm').submit()"
-                    class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
+                    class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-600 transition">
                     <option value="all" {{ ($eventTypeFilter ?? 'all') === 'all' ? 'selected' : '' }}>All Event Types</option>
                     @foreach($availableEventTypes as $type)
                         <option value="{{ $type }}" {{ ($eventTypeFilter ?? '') === $type ? 'selected' : '' }}>{{ ucfirst($type) }}</option>
@@ -223,7 +101,7 @@
                         <i class="fa-regular fa-calendar text-slate-400"></i>
                     </div>
                     <input type="text" id="event_date_range" placeholder="Select Date Range..."
-                        class="block w-full md:w-64 pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition cursor-pointer">
+                        class="block w-full md:w-64 pl-9 pr-8 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-600 transition cursor-pointer">
                     
                     @if($eventDateFrom || $eventDateTo)
                         <button type="button" onclick="clearDateRange()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition">
@@ -239,7 +117,7 @@
             <div class="flex-1 md:flex-none md:w-auto md:min-w-[160px]">
                 <label for="sort" class="sr-only">Sort by</label>
                 <select id="sort" name="sort" onchange="document.getElementById('filterForm').submit()"
-                    class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500 transition">
+                    class="block w-full px-3 py-2 text-sm border border-slate-200 rounded-xl bg-slate-50 focus:outline-none focus:ring-1 focus:ring-brand-500 focus:border-brand-600 transition">
                     <option value="newest" {{ ($sort ?? 'newest') === 'newest' ? 'selected' : '' }}>Newest First</option>
                     <option value="oldest" {{ ($sort ?? 'newest') === 'oldest' ? 'selected' : '' }}>Oldest First</option>
                     <option value="event_date_asc" {{ ($sort ?? 'newest') === 'event_date_asc' ? 'selected' : '' }}>Event Date (Nearest)</option>
@@ -257,24 +135,20 @@
         </div>
     </form>
 
-    <div class="mb-4 rounded-lg border border-purple-100 bg-purple-50 px-4 py-3 text-sm text-purple-800">
-        Manage booking approvals, payment verification, and quotation follow-ups from this unified screen.
-    </div>
-
     <!-- Bookings Table: Lists all bookings for admin review -->
-    <section class="rf-panel overflow-hidden" aria-labelledby="bookings-queue-heading">
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-200 p-5">
-            <div>
-                <h1 id="bookings-queue-heading" class="page-title text-3xl">Bookings queue</h1>
-                <p class="section-subtitle mt-2">Review client requests, quotations, payment states, and operational follow-up from one queue.</p>
+    <section class="rf-admin-card overflow-hidden" aria-labelledby="bookings-queue-heading">
+        <div class="rf-admin-card__header">
+            <div class="min-w-0">
+                <h2 id="bookings-queue-heading" class="rf-admin-card__title">Bookings queue</h2>
+                <p class="text-xs text-slate-500 mt-0.5">Review client requests, quotations, payment states, and operational follow-up from one queue.</p>
             </div>
-            <div class="mt-2 sm:mt-0 text-xs font-medium text-slate-500">
+            <div class="text-xs font-medium text-slate-500 whitespace-nowrap tabular-nums">
                 Showing {{ $bookings->total() }} {{ \Illuminate\Support\Str::plural('booking', $bookings->total()) }}
             </div>
         </div>
         <div class="overflow-x-auto">
-            <div class="w-full md:min-w-[1040px]"><table class="rf-table rf-table--stack">
-                <thead class="bg-purple-50">
+            <div class="w-full md:min-w-[1040px]"><table class="rf-table rf-table--stack !border-0 !rounded-none">
+                <thead>
                     <tr>
                         <th scope="col" class="min-w-[150px]">CLIENT &amp; EVENT</th>
                         <th scope="col" class="min-w-[150px]">EVENT DETAILS</th>
@@ -284,7 +158,7 @@
                         <th scope="col" class="min-w-[140px]">ACTIONS</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-purple-100">
+                <tbody class="divide-y divide-slate-100">
                     @forelse($bookings as $booking)
                         @if($booking instanceof \App\Models\TemporaryGuestBooking)
                             <tr>
@@ -300,14 +174,14 @@
                                     <span class="text-xs text-slate-500 italic">No quote yet</span>
                                 </td>
                                 <td class="px-4 py-4">
-                                    <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-100 mb-1">
-                                        <div class="w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center text-[9px] font-bold">{{ \App\Services\BookingWorkflowService::stageNumber('awaiting_claim') }}</div>
+                                    <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-slate-50 text-slate-700 border border-slate-200 mb-1">
+                                        <div class="w-4 h-4 rounded-full bg-slate-200 flex items-center justify-center text-[9px] font-bold">{{ \App\Services\BookingWorkflowService::stageNumber('awaiting_claim') }}</div>
                                         <span class="text-xs font-semibold">Awaiting Claim</span>
                                     </div>
                                     <div class="text-[11px] font-medium text-slate-500">{{ $booking->isExpired() ? 'Guest request expired unclaimed' : 'Guest Workflow · Request Submitted' }}</div>
                                 </td>
                                 <td class="px-4 py-4">
-                                    <div class="flex items-center gap-1.5 text-xs text-blue-600 font-semibold">
+                                    <div class="flex items-center gap-1.5 text-xs text-slate-500 font-semibold">
                                         <i class="fa-solid fa-hand-pointer"></i>
                                         <span>Guest Must Claim</span>
                                     </div>
@@ -360,10 +234,10 @@
                                 @php
                                     $hasReturnAudit = $booking->returns->isNotEmpty();
                                     
-                                    $stageNum = 2; $stageName = 'Review'; $stageColor = 'sky';
+                                    $stageNum = 2; $stageName = 'Review'; $stageColor = 'navy';
                                     if (in_array($booking->status, ['quotation_sent'])) { $stageNum = 3; $stageName = 'Quotation'; $stageColor = 'amber'; }
-                                    elseif (in_array($booking->status, ['approved', 'admin_approved'])) { $stageNum = 4; $stageName = 'Approval'; $stageColor = 'rose'; }
-                                    elseif (in_array($booking->status, ['payment_submitted', 'payment_pending'])) { $stageNum = 5; $stageName = 'Payment'; $stageColor = 'indigo'; }
+                                    elseif (in_array($booking->status, ['approved', 'admin_approved'])) { $stageNum = 4; $stageName = 'Approval'; $stageColor = 'amber'; }
+                                    elseif (in_array($booking->status, ['payment_submitted', 'payment_pending'])) { $stageNum = 5; $stageName = 'Payment'; $stageColor = 'amber'; }
                                     elseif (in_array($booking->status, ['downpayment_received', 'fully_paid', 'confirmed', 'event_in_progress', 'event_completed', 'pending_return', 'pending_resolution', 'completed'])) { $stageNum = 6; $stageName = 'Confirmed'; $stageColor = 'emerald'; }
                                     elseif ($booking->status === 'cancelled') { $stageNum = 7; $stageName = 'Cancelled'; $stageColor = 'red'; }
                                     elseif ($booking->status === 'declined') { $stageNum = 0; $stageName = 'Declined'; $stageColor = 'slate'; }
@@ -376,10 +250,10 @@
                                     };
 
                                     $stageClasses = [
-                                        2 => ['bg' => 'bg-sky-50', 'text' => 'text-sky-700', 'border' => 'border-sky-100', 'circleBg' => 'bg-sky-100'],
+                                        2 => ['bg' => 'bg-navy-50', 'text' => 'text-navy-700', 'border' => 'border-navy-100', 'circleBg' => 'bg-navy-100'],
                                         3 => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'border' => 'border-amber-100', 'circleBg' => 'bg-amber-100'],
-                                        4 => ['bg' => 'bg-rose-50', 'text' => 'text-rose-700', 'border' => 'border-rose-100', 'circleBg' => 'bg-rose-100'],
-                                        5 => ['bg' => 'bg-indigo-50', 'text' => 'text-indigo-700', 'border' => 'border-indigo-100', 'circleBg' => 'bg-indigo-100'],
+                                        4 => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'border' => 'border-amber-100', 'circleBg' => 'bg-amber-100'],
+                                        5 => ['bg' => 'bg-amber-50', 'text' => 'text-amber-700', 'border' => 'border-amber-100', 'circleBg' => 'bg-amber-100'],
                                         6 => ['bg' => 'bg-emerald-50', 'text' => 'text-emerald-700', 'border' => 'border-emerald-100', 'circleBg' => 'bg-emerald-100'],
                                         7 => ['bg' => 'bg-red-50', 'text' => 'text-red-700', 'border' => 'border-red-100', 'circleBg' => 'bg-red-100'],
                                         0 => ['bg' => 'bg-slate-50', 'text' => 'text-slate-700', 'border' => 'border-slate-200', 'circleBg' => 'bg-slate-200'],
@@ -392,7 +266,7 @@
                                         $stageNum = $rowWorkflow['current_number'];
                                         $stageName = $rowWorkflow['current_label'];
                                         $sClass = match ($rowWorkflow['current_phase']) {
-                                            'guest' => ['bg' => 'bg-blue-50', 'text' => 'text-blue-700', 'border' => 'border-blue-100', 'circleBg' => 'bg-blue-100'],
+                                            'guest' => ['bg' => 'bg-slate-50', 'text' => 'text-slate-700', 'border' => 'border-slate-200', 'circleBg' => 'bg-slate-200'],
                                             'staff' => $stageClasses[6],
                                             default => $stageClasses[$stageNum >= 8 ? 6 : ($stageNum >= 5 ? 3 : 2)],
                                         };
@@ -421,39 +295,39 @@
 
                                     if ($booking->status === 'approved') {
                                         $nextActionText = 'Final Approve';
-                                        $nextActionClass = 'text-rose-600 font-semibold';
+                                        $nextActionClass = 'text-brand-700 font-semibold';
                                         $nextActionIcon = 'fa-check-double';
                                     } elseif (in_array($booking->status, ['payment_submitted', 'pending_resolution'], true) && $latestPayment && $latestPayment->status === 'pending') {
                                         $nextActionText = 'Verify Payment';
-                                        $nextActionClass = 'text-indigo-600 font-semibold';
+                                        $nextActionClass = 'text-brand-700 font-semibold';
                                         $nextActionIcon = 'fa-receipt';
                                     } elseif ($showMarkInProgress) {
                                         $nextActionText = 'Mark In Progress';
-                                        $nextActionClass = 'text-emerald-600 font-semibold';
+                                        $nextActionClass = 'text-brand-700 font-semibold';
                                         $nextActionIcon = 'fa-play';
                                     } elseif ($showMarkEventCompleted) {
                                         $nextActionText = 'Mark Completed';
-                                        $nextActionClass = 'text-emerald-600 font-semibold';
+                                        $nextActionClass = 'text-brand-700 font-semibold';
                                         $nextActionIcon = 'fa-flag-checkered';
                                     } elseif ($booking->status === 'event_completed' || in_array($booking->status, ['pending_return', 'pending_resolution'], true)) {
                                         if (!$hasCompletedReturn) {
                                             $nextActionText = 'Manage Return';
-                                            $nextActionClass = 'text-purple-600 font-semibold';
+                                            $nextActionClass = 'text-brand-700 font-semibold';
                                             $nextActionIcon = 'fa-box-open';
                                         } elseif ($remaining > 0) {
                                             $nextActionText = 'Log Final Payment';
-                                            $nextActionClass = 'text-indigo-600 font-semibold';
+                                            $nextActionClass = 'text-brand-700 font-semibold';
                                             $nextActionIcon = 'fa-money-bill';
                                         } else {
                                             $nextActionText = 'None';
                                         }
                                     } elseif ($hasCancellationRecovery && !$hasCompletedReturn) {
                                         $nextActionText = 'Manage Return';
-                                        $nextActionClass = 'text-purple-600 font-semibold';
+                                        $nextActionClass = 'text-brand-700 font-semibold';
                                         $nextActionIcon = 'fa-box-open';
                                     } elseif (in_array($booking->status, ['pending', 'change_requested'])) {
                                         $nextActionText = 'Review / Edit Quote';
-                                        $nextActionClass = 'text-sky-600 font-semibold';
+                                        $nextActionClass = 'text-brand-700 font-semibold';
                                         $nextActionIcon = 'fa-file-invoice';
                                     } elseif ($booking->status === 'cancellation_requested') {
                                         $nextActionText = 'Review Cancel';
@@ -461,11 +335,11 @@
                                         $nextActionIcon = 'fa-ban';
                                     } elseif ($booking->status === 'quotation_sent') {
                                         $nextActionText = 'Wait for Client';
-                                        $nextActionClass = 'text-amber-600 font-medium';
+                                        $nextActionClass = 'text-slate-500 font-medium';
                                         $nextActionIcon = 'fa-hourglass-half';
                                     } elseif (in_array($booking->status, ['admin_approved', 'payment_pending'])) {
                                         $nextActionText = 'Wait for Payment';
-                                        $nextActionClass = 'text-indigo-600 font-medium';
+                                        $nextActionClass = 'text-slate-500 font-medium';
                                         $nextActionIcon = 'fa-hourglass-half';
                                     } elseif ($booking->status === 'completed' || $booking->status === 'cancelled') {
                                         $nextActionText = 'None';
@@ -515,7 +389,7 @@
                                             <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
                                             <input type="hidden" name="venue" value="{{ $booking->venue }}">
                                             <input type="hidden" name="status" value="{{ $booking->status }}">
-                                            <button type="submit" name="action" value="mark_event_in_progress" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm text-xs inline-block text-center cursor-pointer mt-2 w-full">
+                                            <button type="submit" name="action" value="mark_event_in_progress" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-semibold rounded-lg shadow-sm text-xs inline-block text-center cursor-pointer mt-2 w-full">
                                                 Mark Event In Progress
                                             </button>
                                         </form>
@@ -529,7 +403,7 @@
                                             <input type="hidden" name="event_date" value="{{ optional($booking->event_date)->format('Y-m-d') }}">
                                             <input type="hidden" name="venue" value="{{ $booking->venue }}">
                                             <input type="hidden" name="status" value="{{ $booking->status }}">
-                                            <button type="submit" name="action" value="mark_event_completed" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm text-xs inline-block text-center cursor-pointer mt-2 w-full">
+                                            <button type="submit" name="action" value="mark_event_completed" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-semibold rounded-lg shadow-sm text-xs inline-block text-center cursor-pointer mt-2 w-full">
                                                 Mark Event Completed
                                             </button>
                                         </form>
@@ -549,7 +423,7 @@
 
                                     @if($booking->status === 'event_completed')
                                         @if(!$hasCompletedReturn)
-                                            <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="px-3 py-1.5 bg-purple-50 text-purple-700 font-medium rounded-md border border-purple-200 hover:bg-purple-100 inline-block text-center text-xs">
+                                            <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="px-3 py-1.5 bg-brand-50 text-brand-700 font-medium rounded-md border border-brand-200 hover:bg-brand-100 inline-block text-center text-xs">
                                                 Manage Return Audit
                                             </a>
                                         @else
@@ -573,7 +447,7 @@
 
                                     @if(in_array($booking->status, ['pending_return', 'pending_resolution'], true))
                                         @if(!$hasCompletedReturn)
-                                            <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="px-3 py-1.5 bg-purple-50 text-purple-700 font-medium rounded-md border border-purple-200 hover:bg-purple-100 inline-block text-center text-xs">
+                                            <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="px-3 py-1.5 bg-brand-50 text-brand-700 font-medium rounded-md border border-brand-200 hover:bg-brand-100 inline-block text-center text-xs">
                                                 Manage Return Audit
                                             </a>
                                         @else
@@ -588,7 +462,7 @@
 
                                     @if($hasCancellationRecovery)
                                         @if(!$hasCompletedReturn)
-                                            <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="px-3 py-1.5 bg-purple-50 text-purple-700 font-medium rounded-md border border-purple-200 hover:bg-purple-100 inline-block text-center text-xs">
+                                            <a href="{{ route('admin.return-tracking.manage', ['booking' => $booking->id]) }}" class="px-3 py-1.5 bg-brand-50 text-brand-700 font-medium rounded-md border border-brand-200 hover:bg-brand-100 inline-block text-center text-xs">
                                                 Manage Return Audit
                                             </a>
                                         @else
@@ -605,7 +479,7 @@
                                         $canLogFinalPayment = in_array($booking->status, ['event_in_progress', 'event_completed', 'pending_return', 'pending_resolution'], true) && ($remaining > 0);
                                     @endphp
                                     @if($canLogFinalPayment)
-                                        <button type="button" onclick="openBookingModal('booking-final-payment-modal-{{ $booking->id }}')" class="px-4 py-2 bg-purple-700 hover:bg-purple-800 text-white font-semibold rounded-lg shadow-sm text-xs inline-block text-center cursor-pointer mt-2 w-full">
+                                        <button type="button" onclick="openBookingModal('booking-final-payment-modal-{{ $booking->id }}')" class="px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white font-semibold rounded-lg shadow-sm text-xs inline-block text-center cursor-pointer mt-2 w-full">
                                             Log Final Payment
                                         </button>
                                         <div id="booking-final-payment-modal-{{ $booking->id }}" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/70 p-4">
@@ -644,7 +518,7 @@
                                                         </div>
 
                                                         <div>
-                                                            <button type="submit" class="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+                                                            <button type="submit" class="w-full rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 transition">
                                                                 Confirm Final Payment
                                                             </button>
                                                         </div>
@@ -704,13 +578,13 @@
                                             </div>
                                         </div>
 
-                                        <div class="rounded-xl border border-purple-200 bg-purple-50 p-4">
+                                        <div class="rounded-xl border border-brand-200 bg-brand-50 p-4">
                                             <div class="flex items-center justify-between gap-4">
                                                 <div>
-                                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-purple-500">{{ $hasDamageCharges ? 'Total Obligation' : 'Total Quote' }}</p>
-                                                    <p class="mt-2 text-2xl font-bold text-purple-700">₱{{ number_format($totalObligation, 2) }}</p>
+                                                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-brand-700">{{ $hasDamageCharges ? 'Total Obligation' : 'Total Quote' }}</p>
+                                                    <p class="mt-2 text-2xl font-bold text-brand-700">₱{{ number_format($totalObligation, 2) }}</p>
                                                 </div>
-                                                <div class="rounded-full bg-white px-3 py-1 text-sm font-semibold text-purple-700 shadow-sm">
+                                                <div class="rounded-full bg-white px-3 py-1 text-sm font-semibold text-brand-700 shadow-sm">
                                                     {{ str_replace('_', ' ', ucfirst($booking->status)) }}
                                                 </div>
                                             </div>
@@ -725,7 +599,7 @@
                                                 <p><span class="font-semibold">Method:</span> {{ strtoupper(str_replace('_', ' ', $latestPayment->payment_method ?? $latestPayment->payment_type ?? 'N/A')) }}</p>
                                                 <p><span class="font-semibold">Reference:</span> {{ $latestPayment->reference_number }}</p>
                                                 @if(!empty($latestPayment->receipt_image))
-                                                    <a href="{{ asset('storage/' . $latestPayment->receipt_image) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-semibold text-purple-700 hover:text-purple-900">
+                                                    <a href="{{ asset('storage/' . $latestPayment->receipt_image) }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-sm font-semibold text-brand-700 hover:text-brand-900">
                                                         <i class="fa-solid fa-image mr-1"></i>View Receipt
                                                     </a>
                                                 @endif
@@ -741,7 +615,7 @@
                                                         <input type="number" step="0.01" name="amount_received" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value="{{ number_format($defaultAmount, 2, '.', '') }}">
                                                     </div>
                                                     <div class="flex gap-2">
-                                                        <button type="submit" class="flex-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition">
+                                                        <button type="submit" class="flex-1 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 transition">
                                                             Verify &amp; Lock Booking
                                                         </button>
                                                         <button type="button" onclick="document.getElementById('reject-payment-form-{{ $latestPayment->id }}').submit();" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition">
@@ -775,7 +649,7 @@
                                 @elseif($statusFilter !== 'all' || !empty($searchTerm))
                                     No bookings found matching your search and filter criteria.
                                     <div class="mt-2">
-                                        <a href="{{ route('admin.bookings') }}" class="text-sm font-semibold text-purple-600 hover:text-purple-800 underline">Clear filters</a>
+                                        <a href="{{ route('admin.bookings') }}" class="text-sm font-semibold text-brand-700 hover:text-brand-800 underline">Clear filters</a>
                                     </div>
                                 @else
                                     No bookings available.

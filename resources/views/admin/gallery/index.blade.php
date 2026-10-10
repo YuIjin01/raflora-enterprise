@@ -13,7 +13,7 @@
     <!-- Tabs -->
     <div class="mb-6 border-b border-gray-200">
         <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <a href="{{ route('admin.gallery') }}" class="border-purple-500 text-purple-600 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+            <a href="{{ route('admin.gallery') }}" class="border-brand-600 text-brand-700 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
                 Active Galleries
             </a>
         </nav>
@@ -37,7 +37,7 @@
                             name="search"
                             value="{{ request('search') }}"
                             placeholder="Search event type, theme, or keyword..."
-                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                            class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                         >
                     </div>
 
@@ -53,12 +53,12 @@
                         onclick="toggleGalleryFilterPanel()"
                         aria-expanded="{{ $isGalleryFilterOpen ? 'true' : 'false' }}"
                         aria-controls="galleryFilterPanel"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ $hasActiveGalleryFilters ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer {{ $hasActiveGalleryFilters ? 'border-brand-300 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 hover:border-brand-300 bg-white hover:bg-brand-50/50 text-gray-700 hover:text-brand-800' }}"
                     >
-                        <i class="fa-solid fa-sliders text-xs {{ $hasActiveGalleryFilters ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                        <i class="fa-solid fa-sliders text-xs {{ $hasActiveGalleryFilters ? 'text-brand-700' : 'text-gray-500' }}"></i>
                         <span id="galleryToggleFiltersText">{{ $isGalleryFilterOpen ? 'Hide Filters' : 'Show Filters' }}</span>
                         @if($hasActiveGalleryFilters)
-                            <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                            <span class="w-1.5 h-1.5 rounded-full bg-brand-700 inline-block" title="Filters are active"></span>
                         @endif
                         <i id="galleryFiltersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ $isGalleryFilterOpen ? 'rotate-180' : '' }}"></i>
                     </button>
@@ -66,7 +66,7 @@
                     <!-- Search Button -->
                     <button
                         type="submit"
-                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                     >
                         <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         <span>Search</span>
@@ -99,14 +99,14 @@
             >
                 <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-xl border border-gray-100 flex flex-wrap items-center gap-3 sm:gap-4">
                     <span class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-                        <i class="fa-solid fa-filter text-purple-600 text-[11px]"></i> Filters & Sort:
+                        <i class="fa-solid fa-filter text-brand-700 text-[11px]"></i> Filters & Sort:
                     </span>
 
                     <!-- Event Type -->
                     <div class="relative min-w-[150px]">
                         <select
                             name="event_type"
-                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                             onchange="document.getElementById('filterForm').submit()"
                         >
                             <option value="">All Event Types</option>
@@ -120,7 +120,7 @@
                     <div class="relative min-w-[150px]">
                         <select
                             name="theme"
-                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                             onchange="document.getElementById('filterForm').submit()"
                         >
                             <option value="">All Themes</option>
@@ -134,7 +134,7 @@
                     <div class="relative min-w-[130px]">
                         <select
                             name="year"
-                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                             onchange="document.getElementById('filterForm').submit()"
                         >
                             <option value="">All Years</option>
@@ -148,7 +148,7 @@
                     <div class="relative min-w-[140px]">
                         <select
                             name="sort"
-                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs transition cursor-pointer"
+                            class="w-full py-2 px-3 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs transition cursor-pointer"
                             onchange="document.getElementById('filterForm').submit()"
                         >
                             <option value="latest" {{ request('sort', 'latest') == 'latest' ? 'selected' : '' }}>Latest First</option>
@@ -180,7 +180,7 @@
                         : asset('assets/images/background.jpg');
                     $imageCount = $gallery->images->count();
                 @endphp
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 group hover:shadow-xl hover:shadow-purple-900/5 transition-all duration-300 overflow-hidden flex flex-col relative">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 group hover:shadow-xl hover:shadow-brand-900/5 transition-all duration-300 overflow-hidden flex flex-col relative">
                     <div class="relative w-full overflow-hidden bg-slate-100" style="aspect-ratio: 3/2;" onclick="openLightbox('{{ $gallery->id }}')" role="button" tabindex="0">
                         <img src="{{ $coverImage }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out cursor-pointer" alt="{{ $gallery->title }}">
                         <div class="absolute bottom-2 right-2 bg-slate-900/75 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-md flex items-center gap-1.5 pointer-events-none">
@@ -189,19 +189,19 @@
                     </div>
                     <div class="p-4 sm:p-5 flex-1 flex flex-col justify-between">
                         <div>
-                            <h3 class="font-bold text-[#1e293b] text-[15px] sm:text-base mb-1.5 line-clamp-1 group-hover:text-purple-700 transition-colors serif">{{ $gallery->title }}</h3>
+                            <h3 class="font-bold text-[#1e293b] text-[15px] sm:text-base mb-1.5 line-clamp-1 group-hover:text-brand-800 transition-colors serif">{{ $gallery->title }}</h3>
                             <div class="flex items-center text-slate-500 text-[11px] sm:text-xs font-medium mb-3">
                                 <i class="fa-regular fa-calendar mr-1.5"></i> {{ \Carbon\Carbon::parse($gallery->event_date)->format('F j, Y') }}
                             </div>
                             <div class="flex gap-1.5 flex-wrap mb-4">
-                                <span class="px-2.5 py-1 bg-[#f3e8ff] text-[#6b21a8] rounded-full text-[10px] font-semibold tracking-wide">{{ $gallery->event_type }}</span>
-                                <span class="px-2.5 py-1 bg-[#f3e8ff] text-[#6b21a8] rounded-full text-[10px] font-semibold tracking-wide">{{ $gallery->theme }}</span>
+                                <span class="px-2.5 py-1 bg-brand-100 text-brand-800 rounded-full text-[10px] font-semibold tracking-wide">{{ $gallery->event_type }}</span>
+                                <span class="px-2.5 py-1 bg-brand-100 text-brand-800 rounded-full text-[10px] font-semibold tracking-wide">{{ $gallery->theme }}</span>
                             </div>
                         </div>
                         
                         <!-- Admin Actions -->
                         <div class="flex items-center justify-between pt-3 border-t border-slate-100">
-                            <button onclick="openLightbox('{{ $gallery->id }}')" class="text-sm font-semibold text-purple-600 hover:text-purple-800 flex items-center gap-1.5 transition-colors">
+                            <button onclick="openLightbox('{{ $gallery->id }}')" class="text-sm font-semibold text-brand-700 hover:text-brand-800 flex items-center gap-1.5 transition-colors">
                                 <i class="fa-regular fa-eye"></i> View
                             </button>
                             <a href="{{ route('admin.gallery.edit', $gallery) }}" class="text-sm font-semibold text-blue-500 hover:text-blue-700 flex items-center gap-1.5 transition-colors">

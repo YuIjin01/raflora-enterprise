@@ -2,7 +2,7 @@
     <div class="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
             <div class="flex items-center gap-3">
-                <a href="{{ route('admin.inventory.index') }}" class="text-gray-400 hover:text-purple-600 transition">
+                <a href="{{ route('admin.inventory.index') }}" class="text-gray-400 hover:text-brand-800 transition">
                     <i class="fa-solid fa-arrow-left"></i>
                 </a>
                 <h2 class="text-xl font-bold text-gray-800">Archived Inventory</h2>
@@ -67,7 +67,7 @@
                             <td class="px-6 py-4 text-right">
                                 <form action="{{ route('admin.inventory.restore', $item->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Restore this item to active inventory?');">
                                     @csrf
-                                    <button type="submit" class="inline-flex items-center justify-center px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition" title="Restore Item">
+                                    <button type="submit" class="inline-flex items-center justify-center px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-800 hover:border-brand-200 transition" title="Restore Item">
                                         <i class="fa-solid fa-rotate-left mr-1.5"></i> Restore
                                     </button>
                                 </form>

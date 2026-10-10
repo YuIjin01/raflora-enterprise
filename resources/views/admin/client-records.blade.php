@@ -20,7 +20,7 @@
                                 name="search"
                                 value="{{ $currentSearch ?? '' }}"
                                 placeholder="Search client name, email, or phone..."
-                                class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition shadow-2xs"
+                                class="w-full pl-9 pr-3.5 py-2 bg-gray-50/70 border border-gray-200 rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-600 transition shadow-2xs"
                             >
                         </div>
 
@@ -31,12 +31,12 @@
                             onclick="toggleFilterPanel()"
                             aria-expanded="{{ !empty($hasActiveFilters) ? 'true' : 'false' }}"
                             aria-controls="clientFilterPanel"
-                            class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer {{ !empty($hasActiveFilters) ? 'border-purple-300 bg-purple-50 text-purple-700 font-semibold' : 'border-gray-200 hover:border-purple-300 bg-white hover:bg-purple-50/50 text-gray-700 hover:text-purple-700' }}"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-2 border rounded-xl text-sm font-medium transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer {{ !empty($hasActiveFilters) ? 'border-brand-300 bg-brand-50 text-brand-700 font-semibold' : 'border-gray-200 hover:border-brand-300 bg-white hover:bg-brand-50/50 text-gray-700 hover:text-brand-800' }}"
                         >
-                            <i class="fa-solid fa-sliders text-xs {{ !empty($hasActiveFilters) ? 'text-purple-600' : 'text-gray-500' }}"></i>
+                            <i class="fa-solid fa-sliders text-xs {{ !empty($hasActiveFilters) ? 'text-brand-700' : 'text-gray-500' }}"></i>
                             <span id="toggleFiltersText">{{ !empty($hasActiveFilters) ? 'Hide Filters' : 'Show Filters' }}</span>
                             @if(!empty($hasActiveFilters))
-                                <span class="w-1.5 h-1.5 rounded-full bg-purple-600 inline-block" title="Filters are active"></span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-brand-700 inline-block" title="Filters are active"></span>
                             @endif
                             <i id="filtersChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200 {{ !empty($hasActiveFilters) ? 'rotate-180' : '' }}"></i>
                         </button>
@@ -44,7 +44,7 @@
                         <!-- Search Submit Button -->
                         <button
                             type="submit"
-                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                            class="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                         >
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                             <span>Search</span>
@@ -62,7 +62,7 @@
 
                     <!-- Client Count Badge -->
                     <div class="flex items-center gap-2 shrink-0">
-                        <span class="inline-flex items-center rounded-full bg-purple-50 text-purple-700 border border-purple-200/60 px-3.5 py-1.5 text-xs font-bold tracking-wide">
+                        <span class="inline-flex items-center rounded-full bg-brand-50 text-brand-700 border border-brand-200/60 px-3.5 py-1.5 text-xs font-bold tracking-wide">
                             {{ $clients->total() }} {{ Str::plural('Client', $clients->total()) }}
                         </span>
                     </div>
@@ -75,7 +75,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Booking Activity</label>
                             <div class="relative">
-                                <select name="activity" onchange="this.form.submit()" class="w-full py-2 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="activity" onchange="this.form.submit()" class="w-full py-2 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="all" {{ ($currentActivity ?? 'all') === 'all' ? 'selected' : '' }}>All Clients</option>
                                     <option value="has_bookings" {{ ($currentActivity ?? '') === 'has_bookings' ? 'selected' : '' }}>Has Bookings</option>
                                     <option value="no_bookings" {{ ($currentActivity ?? '') === 'no_bookings' ? 'selected' : '' }}>No Bookings</option>
@@ -90,7 +90,7 @@
                         <div>
                             <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Sort By</label>
                             <div class="relative">
-                                <select name="sort" onchange="this.form.submit()" class="w-full py-2 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-2xs appearance-none transition cursor-pointer">
+                                <select name="sort" onchange="this.form.submit()" class="w-full py-2 pl-3 pr-8 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-600 shadow-2xs appearance-none transition cursor-pointer">
                                     <option value="name_asc" {{ ($currentSort ?? 'name_asc') === 'name_asc' ? 'selected' : '' }}>Name A–Z</option>
                                     <option value="name_desc" {{ ($currentSort ?? '') === 'name_desc' ? 'selected' : '' }}>Name Z–A</option>
                                     <option value="latest_activity" {{ ($currentSort ?? '') === 'latest_activity' ? 'selected' : '' }}>Latest Activity</option>
@@ -104,7 +104,7 @@
 
                         <!-- Reset Link -->
                         <div class="flex items-end">
-                            <a href="{{ route('admin.client-records') }}" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-purple-700 hover:text-purple-900 transition">
+                            <a href="{{ route('admin.client-records') }}" class="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-brand-700 hover:text-brand-900 transition">
                                 <i class="fa-solid fa-rotate-left text-xs"></i>
                                 <span>Reset to default</span>
                             </a>
@@ -138,7 +138,7 @@
                                 }
                                 $paletteIndex = abs(crc32($client->email ?? (string)$client->id)) % 6;
                                 $avatarThemes = [
-                                    ['bg' => 'bg-purple-100', 'text' => 'text-purple-700', 'border' => 'border-purple-200'],
+                                    ['bg' => 'bg-brand-100', 'text' => 'text-brand-700', 'border' => 'border-brand-200'],
                                     ['bg' => 'bg-emerald-100', 'text' => 'text-emerald-700', 'border' => 'border-emerald-200'],
                                     ['bg' => 'bg-rose-100', 'text' => 'text-rose-700', 'border' => 'border-rose-200'],
                                     ['bg' => 'bg-sky-100', 'text' => 'text-sky-700', 'border' => 'border-sky-200'],
@@ -187,7 +187,7 @@
                                 <!-- BOOKING ACTIVITY Column -->
                                 <td class="px-6 py-4">
                                     @if($client->bookings_count > 0)
-                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/70 px-3 py-1 text-xs font-semibold">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 text-brand-700 border border-brand-200/70 px-3 py-1 text-xs font-semibold">
                                             <i class="fa-solid fa-calendar-check text-[10px]"></i>
                                             {{ $client->bookings_count }} {{ Str::plural('booking', $client->bookings_count) }}
                                         </span>
@@ -221,7 +221,7 @@
                                     <button
                                         type="button"
                                         onclick="openClientDrawer({{ $client->id }})"
-                                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 hover:text-purple-800 border border-purple-200 text-xs font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                                        class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 hover:text-brand-800 border border-brand-200 text-xs font-semibold rounded-xl transition shadow-2xs focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                                         title="View details for {{ $client->full_name }}"
                                     >
                                         <i class="fa-regular fa-eye text-xs"></i>
@@ -249,7 +249,7 @@
                                                 <button
                                                     type="button"
                                                     onclick="closeClientDrawer()"
-                                                    class="rounded-xl p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer shrink-0"
+                                                    class="rounded-xl p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer shrink-0"
                                                     aria-label="Close client drawer"
                                                 >
                                                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -261,12 +261,12 @@
                                                 <!-- CONTACT INFORMATION -->
                                                 <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs space-y-3">
                                                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                                                        <i class="fa-regular fa-address-card text-purple-600"></i>
+                                                        <i class="fa-regular fa-address-card text-brand-700"></i>
                                                         <span>Contact Information</span>
                                                     </h3>
                                                     <div class="space-y-2.5 pt-1">
                                                         <div class="flex items-center gap-3 text-sm text-slate-700">
-                                                            <div class="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                                                            <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center shrink-0">
                                                                 <i class="fa-regular fa-envelope text-xs"></i>
                                                             </div>
                                                             <span class="break-all font-medium select-all">{{ $client->email }}</span>
@@ -293,13 +293,13 @@
                                                 <!-- BOOKING SUMMARY -->
                                                 <div>
                                                     <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-2">
-                                                        <i class="fa-solid fa-chart-pie text-purple-600"></i>
+                                                        <i class="fa-solid fa-chart-pie text-brand-700"></i>
                                                         <span>Booking Summary</span>
                                                     </h3>
                                                     <div class="grid grid-cols-2 gap-3">
                                                         <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                                                             <p class="text-xs font-semibold text-slate-500">Total Bookings</p>
-                                                            <p class="mt-1 text-2xl font-bold text-purple-700">{{ $client->bookings_count }}</p>
+                                                            <p class="mt-1 text-2xl font-bold text-brand-700">{{ $client->bookings_count }}</p>
                                                         </div>
                                                         <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
                                                             <p class="text-xs font-semibold text-slate-500">Latest Activity</p>
@@ -320,7 +320,7 @@
                                                 <div class="space-y-3">
                                                     <div class="flex items-center justify-between">
                                                         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                                                            <i class="fa-solid fa-calendar-days text-purple-600"></i>
+                                                            <i class="fa-solid fa-calendar-days text-brand-700"></i>
                                                             <span>Recent Bookings</span>
                                                         </h3>
                                                         @if($client->bookings_count > 0)
@@ -331,17 +331,17 @@
                                                     </div>
 
                                                     @forelse($client->bookings->take(5) as $booking)
-                                                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-purple-200 transition space-y-2">
+                                                        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-brand-200 transition space-y-2">
                                                             <div class="flex items-start justify-between gap-2">
                                                                 <div>
-                                                                    <span class="text-xs font-bold text-purple-700 font-mono">
+                                                                    <span class="text-xs font-bold text-brand-700 font-mono">
                                                                         Booking #{{ $booking->id }}
                                                                     </span>
                                                                     <h4 class="text-sm font-bold text-slate-900 mt-0.5">
                                                                         {{ $booking->event_type ? ucwords(str_replace('_', ' ', $booking->event_type)) : 'General Event' }}
                                                                     </h4>
                                                                 </div>
-                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ in_array($booking->status, ['confirmed', 'completed'], true) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : (in_array($booking->status, ['cancelled', 'declined'], true) ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-purple-50 text-purple-700 border border-purple-200') }}">
+                                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ in_array($booking->status, ['confirmed', 'completed'], true) ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : (in_array($booking->status, ['cancelled', 'declined'], true) ? 'bg-slate-100 text-slate-600 border border-slate-200' : 'bg-brand-50 text-brand-700 border border-brand-200') }}">
                                                                     {{ $booking->status_display_label }}
                                                                 </span>
                                                             </div>
@@ -376,7 +376,7 @@
                                             <div class="p-6 border-t border-slate-100 bg-slate-50/80 sticky bottom-0 z-10">
                                                 <a
                                                     href="{{ route('admin.bookings', ['search' => $client->email]) }}"
-                                                    class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl shadow-xs transition focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+                                                    class="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold rounded-xl shadow-xs transition focus:outline-none focus:ring-2 focus:ring-brand-500 cursor-pointer"
                                                 >
                                                     <span>View Booking History</span>
                                                     <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -391,13 +391,13 @@
                                 <td colspan="5" class="px-6 py-14 text-center">
                                     @if(!empty($currentSearch) || !empty($hasActiveFilters))
                                         <div class="max-w-md mx-auto text-slate-500">
-                                            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3">
+                                            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-700 flex items-center justify-center mx-auto mb-3">
                                                 <i class="fa-solid fa-magnifying-glass text-xl"></i>
                                             </div>
                                             <p class="text-sm font-semibold text-slate-800">No matching clients found</p>
                                             <p class="text-xs text-slate-500 mt-1">Try adjusting your search or clearing the filters.</p>
                                             <div class="mt-4">
-                                                <a href="{{ route('admin.client-records') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
+                                                <a href="{{ route('admin.client-records') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-brand-700 hover:bg-brand-800 text-white text-xs font-semibold rounded-lg transition shadow-2xs">
                                                     <i class="fa-solid fa-rotate-left text-xs"></i>
                                                     <span>Clear Filters</span>
                                                 </a>

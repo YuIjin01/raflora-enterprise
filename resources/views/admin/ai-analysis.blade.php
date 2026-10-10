@@ -6,8 +6,8 @@
 
     @if($aiBookings->isEmpty())
         <div class="rf-panel p-12 text-center">
-            <div class="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fa-solid fa-brain text-purple-300 text-2xl"></i>
+            <div class="w-16 h-16 bg-brand-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa-solid fa-brain text-brand-300 text-2xl"></i>
             </div>
             <h3 class="text-lg font-bold text-gray-800 mb-1">No AI Analyses Yet</h3>
             <p class="text-gray-500 text-sm max-w-sm mx-auto">When clients upload inspiration photos during booking, our AI will automatically suggest floral materials here.</p>
@@ -23,7 +23,7 @@
                 <article class="rf-panel overflow-hidden">
                     <div class="flex flex-wrap items-center justify-between gap-4 border-b border-gray-100 bg-gray-50 px-5 py-4 sm:px-6">
                         <div>
-                            <span class="text-xs uppercase tracking-wider font-bold text-purple-600">Booking #{{ $booking->id }}</span>
+                            <span class="text-xs uppercase tracking-wider font-bold text-brand-700">Booking #{{ $booking->id }}</span>
                             <h3 class="text-lg font-bold text-gray-800">{{ $booking->event_type }} - {{ $booking->client?->full_name ?? 'Guest' }}</h3>
                             <p class="text-sm text-gray-500">{{ $booking->updated_at->diffForHumans() }}</p>
                         </div>
@@ -50,9 +50,9 @@
                         <!-- AI Suggested Materials -->
                         <div class="lg:col-span-2">
                             <p class="mb-2 text-sm font-semibold text-gray-800">AI Suggested Materials <span class="rf-badge rf-badge--warning ml-2 align-middle">Review required</span></p>
-                            <div class="bg-purple-50 rounded-xl p-4 h-48 overflow-y-auto border border-purple-100">
+                            <div class="bg-brand-50 rounded-xl p-4 h-48 overflow-y-auto border border-brand-100">
                                 @if(empty($suggestedItems))
-                                    <p class="text-sm text-purple-600 italic">No specific materials identified by AI.</p>
+                                    <p class="text-sm text-brand-700 italic">No specific materials identified by AI.</p>
                                 @else
                                     <ul class="space-y-2">
                                         @foreach($suggestedItems as $item)

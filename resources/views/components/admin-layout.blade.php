@@ -1,5 +1,54 @@
 @props(['title' => 'Admin Dashboard', 'description' => null])
 
+@php
+    $unreadAlerts = \App\Models\AdminAlert::where('is_read', false)->count()
+        + \App\Models\Booking::whereIn('status', ['payment_submitted', 'payment_pending'])->count();
+
+    // Single source for the sidebar, its active state, and the header breadcrumb.
+    $adminNav = [
+        'Overview' => [
+            ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'active' => ['admin.dashboard*'], 'icon' => 'fa-solid fa-gauge-high'],
+        ],
+        'Bookings' => [
+            ['label' => 'Booking Management', 'route' => 'admin.bookings', 'active' => ['admin.bookings*'], 'icon' => 'fa-solid fa-calendar-days'],
+            ['label' => 'Notifications', 'route' => 'admin.notifications', 'active' => ['admin.notifications*'], 'icon' => 'fa-solid fa-bell', 'badge' => $unreadAlerts],
+        ],
+        'Operations' => [
+            ['label' => 'Gallery Management', 'route' => 'admin.gallery', 'active' => ['admin.gallery*'], 'icon' => 'fa-regular fa-image'],
+            ['label' => 'Package Management', 'route' => 'admin.packages.index', 'active' => ['admin.packages*'], 'icon' => 'fa-solid fa-gift'],
+            ['label' => 'Inventory Management', 'route' => 'admin.inventory.index', 'active' => ['admin.inventory*'], 'icon' => 'fa-solid fa-boxes-stacked'],
+            ['label' => 'Return Tracking', 'route' => 'admin.return-tracking', 'active' => ['admin.return-tracking*'], 'icon' => 'fa-solid fa-truck-ramp-box'],
+        ],
+        'Clients' => [
+            ['label' => 'Client Records', 'route' => 'admin.client-records', 'active' => ['admin.client-records*'], 'icon' => 'fa-solid fa-folder-open'],
+        ],
+        'Analytics' => [
+            ['label' => 'Reports & Analytics', 'route' => 'admin.reports', 'active' => ['admin.reports*'], 'icon' => 'fa-solid fa-chart-pie'],
+        ],
+        'System' => [
+            ['label' => 'Account Management', 'route' => 'admin.settings', 'active' => ['admin.settings*', 'admin.users*'], 'icon' => 'fa-solid fa-users-gear'],
+        ],
+    ];
+
+    $currentSection = null;
+    $currentItem = null;
+    foreach ($adminNav as $section => $items) {
+        foreach ($items as $item) {
+            if (request()->routeIs(...$item['active'])) {
+                [$currentSection, $currentItem] = [$section, $item];
+                break 2;
+            }
+        }
+    }
+    // Child pages (booking review, add item, ...) link back to their module; module pages show their section.
+    $isChildPage = $currentItem && ! request()->routeIs($currentItem['route']);
+
+    $adminUser = auth()->user();
+    $adminName = $adminUser->name ?? 'Raflora Admin';
+    $adminInitials = strtoupper(substr($adminName ?: 'RA', 0, 2));
+    $showHeaderSearch = ! request()->routeIs('admin.bookings');
+@endphp
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,13 +56,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }} — Raflora Enterprises</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
-        body { font-family: 'Montserrat', sans-serif; }
-        .serif { font-family: 'Playfair Display', serif; }
-    </style>
     <script>
         (function() {
             try {
@@ -24,43 +71,37 @@
         })();
     </script>
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased">
+<body class="rf-admin bg-slate-50 text-slate-700 antialiased">
     <div class="min-h-screen w-full bg-slate-50">
 
     <!-- Mobile Slide-Over Backdrop -->
-    <div id="adminSidebarBackdrop" class="fixed inset-0 z-30 hidden bg-slate-950/40 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden" aria-hidden="true" onclick="closeAdminSidebar()"></div>
-
-    @php
-        $unreadAlerts = \App\Models\AdminAlert::where('is_read', false)->count()
-            + \App\Models\Booking::whereIn('status', ['payment_submitted', 'payment_pending'])->count();
-    @endphp
+    <div id="adminSidebarBackdrop" class="fixed inset-0 z-30 hidden bg-slate-950/50 backdrop-blur-[2px] transition-opacity duration-300 lg:hidden" aria-hidden="true" onclick="closeAdminSidebar()"></div>
 
     <!-- LEFT SIDEBAR: RESPONSIVE OFF-CANVAS / FIXED DESKTOP -->
     <aside
         id="adminSidebar"
-        class="fixed inset-y-0 left-0 w-64 h-full flex-shrink-0 bg-white border-r border-slate-200 z-40 -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col justify-between overflow-hidden shadow-xs"
+        class="fixed inset-y-0 left-0 w-64 h-full flex-shrink-0 bg-navy-950 text-navy-100 z-40 -translate-x-full lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col justify-between overflow-hidden"
         aria-label="Admin sidebar"
     >
-        <!-- Top Section: Brand Header & Collapse Toggles -->
-        <div class="rf-sidebar-header p-4 border-b border-slate-100 flex items-center justify-between gap-3 bg-white shrink-0">
-            <div class="flex items-center gap-3 min-w-0">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 min-w-0 group" title="Raflora Admin Dashboard">
-                    <img src="{{ asset('assets/images/raflora_flower_emblem_transparent.png') }}" alt="Raflora Enterprises" class="h-9 w-9 object-contain shrink-0">
-                    <div class="rf-sidebar-brand-text min-w-0">
-                        <span class="block text-sm font-bold text-slate-900 tracking-tight font-serif truncate group-hover:text-emerald-700 transition">Raflora</span>
-                        <span class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">Floral Event Management</span>
-                    </div>
-                </a>
-            </div>
+        <!-- Brand Header & Collapse Toggles -->
+        <div class="rf-sidebar-header h-16 px-4 border-b border-white/10 flex items-center justify-between gap-3 shrink-0">
+            <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 min-w-0 group" title="Raflora Admin Dashboard">
+                <span class="h-8 w-8 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm">
+                    <img src="{{ asset('assets/images/raflora_flower_emblem_transparent.png') }}" alt="Raflora Enterprises" class="h-5 w-6 object-contain">
+                </span>
+                <div class="rf-sidebar-brand-text min-w-0">
+                    <span class="block text-base font-bold text-white tracking-tight font-serif leading-tight truncate">Raflora</span>
+                    <span class="block text-[11px] font-medium text-navy-300 truncate">Floral Event Management</span>
+                </div>
+            </a>
 
-            <!-- Action Controls (Desktop Collapse Button / Mobile Close Button) -->
             <div class="flex items-center gap-1 shrink-0">
                 <!-- Desktop Collapse Button -->
                 <button
                     type="button"
                     id="desktopSidebarToggleBtn"
                     onclick="toggleDesktopSidebar()"
-                    class="hidden lg:flex items-center justify-center w-7 h-7 rounded-lg border border-slate-200 hover:border-slate-300 bg-white hover:bg-slate-50 text-slate-400 hover:text-slate-700 transition shadow-2xs cursor-pointer"
+                    class="hidden lg:flex items-center justify-center w-7 h-7 rounded-md border border-white/10 text-navy-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
                     aria-label="Toggle sidebar collapse"
                     title="Toggle sidebar width"
                 >
@@ -71,7 +112,7 @@
                 <button
                     type="button"
                     onclick="closeAdminSidebar()"
-                    class="lg:hidden p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+                    class="lg:hidden p-2 rounded-md text-navy-300 hover:text-white hover:bg-white/10 transition cursor-pointer"
                     aria-label="Close navigation"
                 >
                     <i class="fa-solid fa-xmark text-base"></i>
@@ -79,231 +120,100 @@
             </div>
         </div>
 
-        <!-- Middle Section: Scrolling Navigation Region -->
-        <nav class="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-5" aria-label="Admin navigation">
-            <!-- GROUP 1: OVERVIEW -->
-            <div class="rf-nav-section">
-                <p class="rf-sidebar-section-title text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">Overview</p>
-                <div class="space-y-1">
-                    <a
-                        href="{{ route('admin.dashboard') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.dashboard*') ? 'is-active' : '' }}"
-                        title="Dashboard"
-                        data-title="Dashboard"
-                        @if(request()->routeIs('admin.dashboard*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-gauge-high w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Dashboard</span>
-                        <span class="rf-collapsed-tooltip">Dashboard</span>
-                    </a>
+        <!-- Scrolling Navigation Region -->
+        <nav class="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-5 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.15)_transparent]" aria-label="Admin navigation">
+            @foreach($adminNav as $section => $items)
+                <div class="rf-nav-section">
+                    <p class="rf-sidebar-section-title text-[10.5px] font-semibold text-navy-400 uppercase tracking-[0.12em] px-3 mb-1.5">{{ $section }}</p>
+                    <div class="space-y-0.5">
+                        @foreach($items as $item)
+                            @php $isActive = request()->routeIs(...$item['active']); @endphp
+                            <a
+                                href="{{ route($item['route']) }}"
+                                class="rf-nav-item relative group {{ $isActive ? 'is-active' : '' }}"
+                                title="{{ $item['label'] }}"
+                                data-title="{{ $item['label'] }}"
+                                @if($isActive) aria-current="page" @endif
+                            >
+                                @if(isset($item['badge']))
+                                    <div class="relative w-5 text-center shrink-0 flex items-center justify-center">
+                                        <i class="{{ $item['icon'] }} text-sm" aria-hidden="true"></i>
+                                        @if($item['badge'] > 0)
+                                            <span class="rf-nav-badge-dot hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-600 rounded-full ring-2 ring-navy-950"></span>
+                                        @endif
+                                    </div>
+                                @else
+                                    <i class="{{ $item['icon'] }} w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
+                                @endif
+                                <span class="rf-sidebar-label text-sm truncate">{{ $item['label'] }}</span>
+                                @if(isset($item['badge']) && $item['badge'] > 0)
+                                    <span class="rf-nav-badge-pill ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ $item['badge'] > 99 ? '99+' : $item['badge'] }}</span>
+                                @endif
+                                {{-- Nav labels are static strings defined above, so they render unescaped like the original markup. --}}
+                                <span class="rf-collapsed-tooltip">{!! $item['label'] !!}</span>
+                            </a>
+                        @endforeach
+                    </div>
                 </div>
-            </div>
-
-            <!-- GROUP 2: BOOKINGS -->
-            <div class="rf-nav-section">
-                <p class="rf-sidebar-section-title text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">Bookings</p>
-                <div class="space-y-1">
-                    <a
-                        href="{{ route('admin.bookings') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.bookings*') ? 'is-active' : '' }}"
-                        title="Booking Management"
-                        data-title="Booking Management"
-                        @if(request()->routeIs('admin.bookings*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-calendar-days w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Booking Management</span>
-                        <span class="rf-collapsed-tooltip">Booking Management</span>
-                    </a>
-
-                    <a
-                        href="{{ route('admin.notifications') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.notifications*') ? 'is-active' : '' }}"
-                        title="Notifications"
-                        data-title="Notifications"
-                        @if(request()->routeIs('admin.notifications*')) aria-current="page" @endif
-                    >
-                        <div class="relative w-5 text-center shrink-0 flex items-center justify-center">
-                            <i class="fa-solid fa-bell text-sm" aria-hidden="true"></i>
-                            @if($unreadAlerts > 0)
-                                <span class="rf-nav-badge-dot hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-600 rounded-full ring-2 ring-white"></span>
-                            @endif
-                        </div>
-                        <span class="rf-sidebar-label text-sm truncate">Notifications</span>
-                        @if($unreadAlerts > 0)
-                            <span class="rf-nav-badge-pill ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-red-600 px-2 py-0.5 text-[11px] font-semibold text-white">{{ $unreadAlerts > 99 ? '99+' : $unreadAlerts }}</span>
-                        @endif
-                        <span class="rf-collapsed-tooltip">Notifications</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- GROUP 3: OPERATIONS -->
-            <div class="rf-nav-section">
-                <p class="rf-sidebar-section-title text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">Operations</p>
-                <div class="space-y-1">
-                    <a
-                        href="{{ route('admin.gallery') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.gallery*') ? 'is-active' : '' }}"
-                        title="Gallery Management"
-                        data-title="Gallery Management"
-                        @if(request()->routeIs('admin.gallery*')) aria-current="page" @endif
-                    >
-                        <i class="fa-regular fa-image w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Gallery Management</span>
-                        <span class="rf-collapsed-tooltip">Gallery Management</span>
-                    </a>
-
-                    <a
-                        href="{{ route('admin.packages.index') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.packages*') ? 'is-active' : '' }}"
-                        title="Package Management"
-                        data-title="Package Management"
-                        @if(request()->routeIs('admin.packages*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-gift w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Package Management</span>
-                        <span class="rf-collapsed-tooltip">Package Management</span>
-                    </a>
-
-                    <a
-                        href="{{ route('admin.inventory.index') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.inventory*') ? 'is-active' : '' }}"
-                        title="Inventory Management"
-                        data-title="Inventory Management"
-                        @if(request()->routeIs('admin.inventory*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-boxes-stacked w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Inventory Management</span>
-                        <span class="rf-collapsed-tooltip">Inventory Management</span>
-                    </a>
-
-                    <a
-                        href="{{ route('admin.return-tracking') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.return-tracking*') ? 'is-active' : '' }}"
-                        title="Return Tracking"
-                        data-title="Return Tracking"
-                        @if(request()->routeIs('admin.return-tracking*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-truck-ramp-box w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Return Tracking</span>
-                        <span class="rf-collapsed-tooltip">Return Tracking</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- GROUP 4: CLIENTS -->
-            <div class="rf-nav-section">
-                <p class="rf-sidebar-section-title text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">Clients</p>
-                <div class="space-y-1">
-                    <a
-                        href="{{ route('admin.client-records') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.client-records*') ? 'is-active' : '' }}"
-                        title="Client Records"
-                        data-title="Client Records"
-                        @if(request()->routeIs('admin.client-records*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-folder-open w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Client Records</span>
-                        <span class="rf-collapsed-tooltip">Client Records</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- GROUP 5: ANALYTICS -->
-            <div class="rf-nav-section">
-                <p class="rf-sidebar-section-title text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">Analytics</p>
-                <div class="space-y-1">
-                    <a
-                        href="{{ route('admin.reports') }}"
-                        class="rf-nav-item relative group {{ request()->routeIs('admin.reports*') ? 'is-active' : '' }}"
-                        title="Reports & Analytics"
-                        data-title="Reports & Analytics"
-                        @if(request()->routeIs('admin.reports*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-chart-pie w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Reports & Analytics</span>
-                        <span class="rf-collapsed-tooltip">Reports & Analytics</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- GROUP 6: SYSTEM -->
-            <div class="rf-nav-section">
-                <p class="rf-sidebar-section-title text-[11px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-1.5">System</p>
-                <div class="space-y-1">
-                    <a
-                        href="{{ route('admin.settings') }}"
-                        class="rf-nav-item relative group {{ (request()->routeIs('admin.settings*') || request()->routeIs('admin.users*')) ? 'is-active' : '' }}"
-                        title="Account Management"
-                        data-title="Account Management"
-                        @if(request()->routeIs('admin.settings*') || request()->routeIs('admin.users*')) aria-current="page" @endif
-                    >
-                        <i class="fa-solid fa-users-gear w-5 text-center text-sm shrink-0" aria-hidden="true"></i>
-                        <span class="rf-sidebar-label text-sm truncate">Account Management</span>
-                        <span class="rf-collapsed-tooltip">Account Management</span>
-                    </a>
-                </div>
-            </div>
+            @endforeach
         </nav>
 
-        <!-- Bottom Section: Profile / Account Footer -->
-        <div class="rf-sidebar-footer relative p-3 border-t border-slate-200/80 bg-white shrink-0">
+        <!-- Profile / Account Footer -->
+        <div class="rf-sidebar-footer relative p-3 border-t border-white/10 shrink-0">
             <!-- Account Popover Menu -->
             <div
                 id="adminUserDropdownMenu"
                 style="display: none;"
-                class="absolute bottom-full left-3 right-3 mb-2 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 text-xs transform transition-all"
+                class="absolute bottom-full left-3 right-3 mb-2 bg-white rounded-xl shadow-xl ring-1 ring-slate-900/10 p-1.5 z-50 text-[13px] text-slate-700"
             >
-                <div class="p-2 border-b border-slate-100 mb-1">
-                    <p class="font-bold text-slate-800 truncate">{{ auth()->user()->name ?? 'Raflora Admin' }}</p>
-                    <p class="text-[11px] text-slate-400 truncate">{{ auth()->user()->email ?? 'admin@raflora.com' }}</p>
+                <div class="px-2.5 py-2 border-b border-slate-100 mb-1">
+                    <p class="font-semibold text-slate-900 truncate">{{ $adminName }}</p>
+                    <p class="text-xs text-slate-500 truncate">{{ $adminUser->email ?? 'admin@raflora.com' }}</p>
                 </div>
-                <a href="{{ route('admin.settings') }}" class="flex items-center gap-2.5 p-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-emerald-700 font-semibold transition">
-                    <i class="fa-solid fa-gear text-slate-400"></i>
+                <a href="{{ route('admin.settings') }}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-900 font-medium transition">
+                    <i class="fa-solid fa-gear w-4 text-center text-slate-400"></i>
                     <span>Account Settings</span>
                 </a>
-                <a href="{{ route('home') }}" class="flex items-center gap-2.5 p-2 rounded-xl text-slate-700 hover:bg-slate-50 hover:text-purple-700 font-semibold transition">
-                    <i class="fa-solid fa-arrow-up-right-from-square text-slate-400"></i>
+                <a href="{{ route('home') }}" class="flex items-center gap-2.5 px-2.5 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-900 font-medium transition">
+                    <i class="fa-solid fa-arrow-up-right-from-square w-4 text-center text-slate-400"></i>
                     <span>View Public Site</span>
                 </a>
                 <form method="POST" action="{{ route('logout') }}" class="w-full mt-1 pt-1 border-t border-slate-100">
                     @csrf
-                    <button type="submit" class="w-full flex items-center gap-2.5 p-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition cursor-pointer text-left">
-                        <i class="fa-solid fa-right-from-bracket"></i>
+                    <button type="submit" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-rose-600 hover:bg-rose-50 font-medium transition cursor-pointer text-left">
+                        <i class="fa-solid fa-right-from-bracket w-4 text-center"></i>
                         <span>Log Out</span>
                     </button>
                 </form>
             </div>
 
-            <!-- Profile Summary Card -->
-            <div class="flex items-center justify-between gap-2.5">
+            <div class="flex items-center justify-between gap-2">
                 <button
                     type="button"
                     onclick="toggleAdminUserMenu()"
-                    class="flex items-center gap-2.5 min-w-0 flex-1 p-1 rounded-xl hover:bg-slate-50 transition text-left cursor-pointer"
+                    class="flex items-center gap-2.5 min-w-0 flex-1 p-1.5 rounded-lg hover:bg-white/5 transition text-left cursor-pointer"
                     aria-haspopup="true"
                     aria-expanded="false"
                     id="adminUserMenuBtn"
-                    title="{{ auth()->user()->name ?? 'Raflora Admin' }} (Administrator)"
+                    title="{{ $adminName }} (Administrator)"
                 >
                     <div class="relative shrink-0">
-                        <div class="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center justify-center font-bold text-xs shadow-2xs select-none">
-                            {{ strtoupper(substr(auth()->user()->name ?? 'RA', 0, 2)) }}
+                        <div class="w-9 h-9 rounded-full bg-brand-500/20 text-brand-200 ring-1 ring-brand-400/30 flex items-center justify-center font-semibold text-xs select-none">
+                            {{ $adminInitials }}
                         </div>
-                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+                        <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-brand-400 ring-2 ring-navy-950"></span>
                     </div>
                     <div class="rf-sidebar-footer-text min-w-0 flex-1">
-                        <p class="text-xs font-bold text-slate-800 truncate">{{ auth()->user()->name ?? 'Raflora Admin' }}</p>
-                        <p class="text-[10px] text-slate-400 font-medium truncate">Administrator</p>
+                        <p class="text-[13px] font-semibold text-white truncate">{{ $adminName }}</p>
+                        <p class="text-[11px] text-navy-300 truncate">Administrator</p>
                     </div>
                 </button>
 
-                <!-- Quick Logout Button in Expanded Footer -->
                 <form method="POST" action="{{ route('logout') }}" class="rf-sidebar-footer-text shrink-0">
                     @csrf
                     <button
                         type="submit"
-                        class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
+                        class="p-2 text-navy-300 hover:text-white hover:bg-white/10 rounded-lg transition cursor-pointer"
                         title="Log Out"
                         aria-label="Log Out"
                     >
@@ -316,38 +226,78 @@
 
     <!-- RIGHT MAIN CONTAINER -->
     <div id="adminMainContainer" class="flex flex-col lg:pl-64 min-h-screen w-full transition-all duration-300 ease-in-out">
-        
+
         <!-- Mobile Top Bar -->
-        <div class="sticky top-0 z-30 bg-white px-4 py-3 border-b border-slate-200 flex items-center justify-between lg:hidden shadow-2xs">
+        <div class="sticky top-0 z-30 bg-white/95 backdrop-blur px-4 h-14 border-b border-slate-200 flex items-center justify-between gap-3 lg:hidden">
             <button
                 id="mobileAdminBrandToggle"
                 type="button"
-                class="flex items-center gap-3 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+                class="flex items-center gap-3 min-w-0 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 cursor-pointer"
                 aria-controls="adminSidebar"
                 aria-expanded="false"
                 aria-label="Toggle admin navigation"
             >
-                <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-700 shadow-2xs">
+                <span class="w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 shrink-0">
                     <i class="fa-solid fa-bars text-sm"></i>
-                </div>
-                <img src="{{ asset('assets/images/raflora_flower_emblem_transparent.png') }}" alt="Raflora logo" class="h-8 w-8 object-contain">
-                <span id="mobileAdminPanelName" class="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800 truncate max-w-[200px]">{{ $title }}</span>
+                </span>
+                <img src="{{ asset('assets/images/raflora_flower_emblem_transparent.png') }}" alt="Raflora logo" class="h-6 w-7 object-contain shrink-0">
+                <span id="mobileAdminPanelName" class="text-sm font-semibold text-slate-900 truncate max-w-[200px]">{{ $title }}</span>
             </button>
         </div>
 
-        <!-- Top Fixed Page Header on Desktop (Single Source of Page Context) -->
-        <header class="hidden lg:flex flex-shrink-0 z-10 bg-white border-b border-slate-200 px-6 py-4 items-center justify-between shadow-2xs min-h-[4.25rem]">
-            <div class="min-w-0">
-                <h1 class="serif text-xl md:text-2xl font-bold text-slate-900 tracking-tight">{{ $title }}</h1>
-                @if(!empty($description))
-                    <p class="text-xs sm:text-sm text-slate-500 mt-0.5">{{ $description }}</p>
-                @endif
+        <!-- Desktop Page Header (single source of page context) -->
+        <header class="hidden lg:block sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-slate-200">
+            <div class="mx-auto w-full max-w-[1600px] px-6 xl:px-8 min-h-[4.5rem] py-3 flex items-center justify-between gap-6">
+                <div class="min-w-0">
+                    @if($currentItem)
+                        <nav class="flex items-center gap-1.5 text-xs font-medium text-slate-500 mb-0.5" aria-label="Breadcrumb">
+                            @if($isChildPage)
+                                <a href="{{ route($currentItem['route']) }}" class="hover:text-brand-700 transition">{{ $currentItem['label'] }}</a>
+                                <i class="fa-solid fa-chevron-right text-[9px] text-slate-300" aria-hidden="true"></i>
+                                <span class="text-slate-700 truncate" aria-current="page">{{ $title }}</span>
+                            @else
+                                <span class="text-[11px] font-semibold tracking-[0.12em] text-brand-700">{{ strtoupper($currentSection) }}</span>
+                            @endif
+                        </nav>
+                    @endif
+                    <h1 class="serif text-[1.375rem] leading-tight font-bold text-navy-900 tracking-tight truncate">{{ $title }}</h1>
+                    @if(!empty($description))
+                        <p class="text-[13px] text-slate-500 mt-0.5 truncate">{{ $description }}</p>
+                    @endif
+                </div>
+
+                <div class="flex items-center gap-3 shrink-0">
+                    @if($showHeaderSearch)
+                        <form method="GET" action="{{ route('admin.bookings') }}" role="search" class="relative hidden xl:block">
+                            <label for="adminGlobalSearch" class="sr-only">Search bookings</label>
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 pointer-events-none" aria-hidden="true"></i>
+                            <input
+                                id="adminGlobalSearch"
+                                type="search"
+                                name="search"
+                                placeholder="Search bookings…"
+                                autocomplete="off"
+                                class="w-72 h-9 pl-8 pr-9 rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-800 placeholder-slate-400 focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none transition"
+                            >
+                            <kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 border border-slate-200 rounded px-1.5 py-px bg-white pointer-events-none">/</kbd>
+                        </form>
+                    @endif
+                    @isset($actions)
+                        <div class="flex items-center gap-2">{{ $actions }}</div>
+                    @endisset
+                </div>
             </div>
         </header>
 
         <!-- Main Work Area -->
-        <main class="flex-1 bg-slate-50 p-4 pb-12 sm:p-6" aria-label="Admin workspace content">
-            {{ $slot }}
+        <main class="flex-1 bg-slate-50 p-4 pb-12 sm:p-6 xl:px-8" aria-label="Admin workspace content">
+            <div class="mx-auto w-full max-w-[1600px]">
+                {{-- The actions slot renders here on mobile and in the header on desktop, so keep it to id-free links and buttons. --}}
+                @isset($actions)
+                    <div class="lg:hidden flex flex-wrap items-center gap-2 mb-4">{{ $actions }}</div>
+                @endisset
+                {{ $slot }}
+            </div>
         </main>
     </div>
 
@@ -449,11 +399,19 @@
             window.toggleAdminSidebar = toggleAdminSidebarState;
             window.closeAdminSidebar = closeAdminSidebar;
 
-            // Keyboard Escape Listener
             document.addEventListener('keydown', function(event) {
                 if (event.key === 'Escape') {
                     closeAdminSidebar();
                     closeAdminUserMenu();
+                }
+
+                // "/" focuses the header booking search unless the admin is already typing somewhere.
+                const search = document.getElementById('adminGlobalSearch');
+                const target = event.target;
+                const isTyping = target && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
+                if (event.key === '/' && search && !isTyping && search.offsetParent !== null) {
+                    event.preventDefault();
+                    search.focus();
                 }
             });
 
@@ -506,5 +464,6 @@
     </div>
 
     <x-confirm-modal />
+    </div>
 </body>
 </html>

@@ -2,7 +2,7 @@
     <x-auth-layout brandStyle="plain" :hideBrandingOnMobile="true">
         <div class="w-full max-w-md mx-auto bg-white rounded-3xl shadow-lg border border-raflora-border p-6 sm:p-8 lg:p-10">
             <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-raflora-primary-50 text-[#1E7E34] mb-3 border border-raflora-primary-200">
+                <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-raflora-primary-50 text-brand-700 mb-3 border border-raflora-primary-200">
                     <i class="fa-solid fa-envelope-circle-check text-2xl"></i>
                 </div>
                 <h1 class="font-serif text-2xl md:text-3xl font-bold text-raflora-heading tracking-wide">ENTER RESET CODE</h1>
@@ -67,7 +67,7 @@
                 <button
                     type="submit"
                     id="resend-btn"
-                    class="text-xs text-[#1E7E34] hover:text-[#155b25] underline disabled:opacity-50 disabled:no-underline font-semibold"
+                    class="text-xs text-brand-700 hover:text-brand-800 underline disabled:opacity-50 disabled:no-underline font-semibold"
                     @if($cooldownSeconds > 0) disabled @endif
                 >
                     Resend Code <span id="cooldown-timer">@if($cooldownSeconds > 0)({{ $cooldownSeconds }}s)@endif</span>
@@ -98,7 +98,7 @@
                 <a href="{{ route('admin.recovery.show') }}" class="text-xs text-red-500 font-semibold hover:text-red-700 transition block mb-2">
                     <i class="fa-solid fa-life-ring mr-1"></i> Cannot access your email? Emergency Recovery
                 </a>
-                <a href="{{ route('login') }}" class="text-sm text-[#1E7E34] font-bold hover:text-[#155b25] transition underline">
+                <a href="{{ route('login') }}" class="text-sm text-brand-700 font-bold hover:text-brand-800 transition underline">
                     &larr; Back to Login
                 </a>
             </div>

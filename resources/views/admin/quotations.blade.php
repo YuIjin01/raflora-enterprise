@@ -60,18 +60,18 @@
 
         <div class="overflow-x-auto mt-4 w-full">
             <table class="rf-table--stack w-full">
-                <thead class="bg-purple-50">
+                <thead class="bg-brand-50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Booking</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Client</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Version</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Estimate</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Validity</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Status</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-purple-900">Actions</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Booking</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Client</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Version</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Estimate</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Validity</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-brand-900">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-purple-100">
+                <tbody class="divide-y divide-brand-100">
                     @forelse($quotations as $quotation)
                         @php
                             $isExpired = $quotation->valid_until && $quotation->valid_until->endOfDay()->isPast();
@@ -116,7 +116,7 @@
                                 @endif
                             </td>
                             <td data-label="Version" class="px-6 py-4 text-sm text-gray-600 whitespace-nowrap">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-brand-100 text-brand-800">
                                     v{{ $quotation->version ?? 1 }}
                                 </span>
                             </td>
@@ -166,7 +166,7 @@
                                 @if(!empty($searchTerm) || $statusFilter !== 'active')
                                     No quotations found matching your filter criteria.
                                     <div class="mt-2">
-                                        <a href="{{ route('admin.quotations') }}" class="text-sm font-semibold text-purple-600 hover:text-purple-800 underline">Clear filters</a>
+                                        <a href="{{ route('admin.quotations') }}" class="text-sm font-semibold text-brand-700 hover:text-brand-800 underline">Clear filters</a>
                                     </div>
                                 @else
                                     No pending quotations found.
@@ -186,7 +186,7 @@
     </section>
 
     <section class="rf-panel p-5 sm:p-6" aria-labelledby="reconfirmation-heading">
-        <h2 id="reconfirmation-heading" class="text-sm font-semibold uppercase text-purple-700 mb-3">Price Reconfirmation Notes</h2>
+        <h2 id="reconfirmation-heading" class="text-sm font-semibold uppercase text-brand-700 mb-3">Price Reconfirmation Notes</h2>
         <p class="text-gray-600 text-sm">Review current stock availability and adjust quotation details before sending a final confirmation to the client.</p>
     </section>
 </x-admin-layout>
